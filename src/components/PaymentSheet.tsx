@@ -5,7 +5,7 @@ import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { SideSheet } from "@/components/SideSheet";
 import { useToast } from "@/components/Toast";
-import type { PaymentKind, PaymentMode } from "@/lib/enums";
+import type { CollectPaymentKind, PaymentMode } from "@/lib/enums";
 
 export function PaymentSheet({
   invoiceId,
@@ -21,13 +21,26 @@ export function PaymentSheet({
   onDone: () => void;
 }) {
   const toast = useToast();
-  const [kind, setKind] = useState<PaymentKind>("part");
+  const [kind, setKind] = useState<CollectPaymentKind>("part");
   const [mode, setMode] = useState<PaymentMode>("cash");
   const [amount, setAmount] = useState(String(Math.min(balance, 20000)));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const posted = kind === "full" ? balance : Number(amount);
+
+  function kindLabel(k: CollectPaymentKind): string {
+    switch (k) {
+      case "full":
+        return "Full settlement";
+      case "part":
+        return "Part payment";
+      default: {
+        const _exhaustive: never = k;
+        return _exhaustive;
+      }
+    }
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -44,7 +57,7 @@ export function PaymentSheet({
         }),
       });
       toast(
-        `${kind === "full" ? "Full settlement" : kind === "advance" ? "Cash advance" : "Part payment"} of Rs ${posted.toLocaleString("en-PK")} recorded${invoiceCode ? ` · ${invoiceCode}` : ""} balance Rs ${res.invoice.balance.toLocaleString("en-PK")}`,
+        `${kindLabel(kind)} of Rs ${posted.toLocaleString("en-PK")} recorded${invoiceCode ? ` · ${invoiceCode}` : ""} balance Rs ${res.invoice.balance.toLocaleString("en-PK")}`,
       );
       onDone();
     } catch (err) {
@@ -69,7 +82,6 @@ export function PaymentSheet({
             {(
               [
                 ["part", "Part payment"],
-                ["advance", "Cash advance"],
                 ["full", "Full settlement"],
               ] as const
             ).map(([id, label]) => (

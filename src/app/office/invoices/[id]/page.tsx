@@ -11,6 +11,23 @@ import { OfficeChrome } from "@/components/OfficeChrome";
 import { PaymentSheet } from "@/components/PaymentSheet";
 import { initials } from "@/lib/person";
 import { useToast } from "@/components/Toast";
+import type { PaymentKind } from "@/lib/enums";
+
+function paymentKindLabel(kind: string | undefined): string {
+  const k = (kind ?? "part") as PaymentKind;
+  switch (k) {
+    case "advance":
+      return "Advance";
+    case "full":
+      return "Full settlement";
+    case "part":
+      return "Part payment";
+    default: {
+      const _exhaustive: never = k;
+      return _exhaustive;
+    }
+  }
+}
 
 type InvoiceDetail = {
   id: string;
@@ -178,11 +195,7 @@ export default function InvoiceDetailPage() {
             inv.payments.map((p) => (
               <div className="prow" key={p.id}>
                 <span>
-                  {p.kind === "advance"
-                    ? "Advance"
-                    : p.kind === "full"
-                      ? "Full settlement"
-                      : "Part payment"}{" "}
+                  {paymentKindLabel(p.kind)}{" "}
                   ·{" "}
                   {new Date(p.createdAt).toLocaleDateString("en-GB", {
                     timeZone: "Asia/Karachi",

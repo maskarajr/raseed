@@ -38,7 +38,12 @@ type OrderDetail = {
       reorderLevel: number | null;
     };
   }[];
-  invoice: { id: string; code: string } | null;
+  invoice: {
+    id: string;
+    code: string;
+    paymentStatus: string;
+    balance: number;
+  } | null;
 };
 
 function placedLabel(iso: string) {
@@ -119,7 +124,14 @@ export default function OrderDetailPage() {
     <OfficeChrome
       title={order.code}
       kicker={`Orders / ${order.code}`}
-      status={<StatusPill status={order.status} />}
+      status={
+        <>
+          <StatusPill status={order.status} />
+          {order.invoice ? (
+            <StatusPill status={order.invoice.paymentStatus} />
+          ) : null}
+        </>
+      }
       actions={
         <>
           <button
@@ -176,6 +188,14 @@ export default function OrderDetailPage() {
               Invoice {order.invoice.code}
             </Link>
           )}
+          {order.invoice && order.invoice.balance > 0 ? (
+            <Link
+              href={`/office/invoices/${order.invoice.id}`}
+              className="btn-primary"
+            >
+              Collect payment
+            </Link>
+          ) : null}
         </>
       }
     >
@@ -208,7 +228,11 @@ export default function OrderDetailPage() {
             </div>
             <div>
               <dt>Fulfilment</dt>
-              <dd>Cash on delivery</dd>
+              <dd>
+                {order.invoice?.paymentStatus === "paid"
+                  ? "Collected"
+                  : "Cash on delivery"}
+              </dd>
             </div>
           </dl>
         </div>

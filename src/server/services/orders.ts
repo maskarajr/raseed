@@ -16,7 +16,6 @@ export type CreateOrderInput = {
   notes?: string;
   items: OrderItemInput[];
   submit: boolean;
-  advance?: number;
 };
 
 export type StockWarning = {
@@ -81,7 +80,7 @@ export async function createOrder(input: CreateOrderInput) {
         notes: input.notes,
         status: input.submit ? "submitted" : "draft",
         subtotal,
-        advance: Math.max(0, Math.min(input.advance ?? 0, subtotal)),
+        advance: 0,
         items: {
           create: input.items.map((i) => ({
             productId: i.productId,

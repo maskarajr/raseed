@@ -4,6 +4,7 @@ import { ApiError } from "@/server/http";
 import { applyStockMovement } from "./stock";
 import { deriveInvoiceState } from "./invoiceMath";
 import { nextInvoiceCode } from "./codes";
+import { settleOrderIfPaid } from "./settle";
 
 // Generate an invoice from a confirmed order. Creates the invoice, moves the
 // order to `invoiced`, and deducts stock via the stock service (reason
@@ -24,8 +25,7 @@ export async function generateInvoice(session: SessionUser, orderId: string) {
     }
 
     const total = order.subtotal;
-    const advance = Math.min(order.advance, total);
-    const { balance, paymentStatus } = deriveInvoiceState(total, advance);
+    const { balance, paymentStatus } = deriveInvoiceState(total, 0);
     const code = await nextInvoiceCode(tx);
 
     const invoice = await tx.invoice.create({
@@ -34,23 +34,11 @@ export async function generateInvoice(session: SessionUser, orderId: string) {
         orderId: order.id,
         customerId: order.customerId,
         total,
-        amountPaid: advance,
+        amountPaid: 0,
         balance,
         paymentStatus,
       },
     });
-
-    if (advance > 0) {
-      await tx.payment.create({
-        data: {
-          invoiceId: invoice.id,
-          amount: advance,
-          mode: "cash",
-          kind: "advance",
-          createdBy: session.id,
-        },
-      });
-    }
 
     // Deduct stock for each line via the stock service.
     for (const item of order.items) {
@@ -68,6 +56,8 @@ export async function generateInvoice(session: SessionUser, orderId: string) {
       where: { id: order.id },
       data: { status: "invoiced" },
     });
+
+    await settleOrderIfPaid(tx, order.id, balance);
 
     return invoice;
   });

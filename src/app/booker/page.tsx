@@ -44,14 +44,26 @@ export default function BookerHome() {
     .filter((o) => new Date(o.createdAt).getTime() >= weekStart)
     .reduce((s, o) => s + o.subtotal, 0);
   const collectedAmt = orders
-    .filter((o) => o.status === "settled")
+    .filter(
+      (o) =>
+        o.status === "settled" ||
+        o.invoice?.paymentStatus === "paid" ||
+        (o.invoice != null && (o.invoice.balance ?? 1) <= 0),
+    )
     .reduce((s, o) => s + o.subtotal, 0);
   const pct =
     todayBooked > 0
       ? Math.min(100, Math.round((collectedAmt / todayBooked) * 100))
       : 0;
   const first = name?.split(" ")[0] ?? "Booker";
-  const nextStops = orders.filter((o) => !CLOSED.includes(o.status)).slice(0, 3);
+  const nextStops = orders
+    .filter((o) => {
+      if (CLOSED.includes(o.status)) return false;
+      if (o.invoice?.paymentStatus === "paid") return false;
+      if (o.invoice != null && (o.invoice.balance ?? 1) <= 0) return false;
+      return true;
+    })
+    .slice(0, 3);
 
   return (
     <BookerChrome title={`Salaam, ${first}`}>
