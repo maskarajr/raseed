@@ -1,7 +1,5 @@
 import type { Config } from "tailwindcss";
 
-// Colors are driven by the locked design tokens declared as CSS variables in
-// globals.css. Referencing the variables here keeps a single source of truth.
 const config: Config = {
   content: [
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
@@ -13,20 +11,22 @@ const config: Config = {
         canvas: "var(--bg)",
         surface: "var(--surface)",
         line: "var(--border)",
-        ink: "var(--text)",
-        muted: "var(--text-muted)",
+        ink: "var(--fg)",
+        muted: "var(--muted)",
         primary: {
-          DEFAULT: "var(--primary)",
-          hover: "var(--primary-hover)",
-          soft: "var(--primary-soft)",
+          DEFAULT: "var(--accent)",
+          hover: "var(--accent-hover)",
+          soft: "var(--accent-soft)",
         },
         accent: "var(--accent)",
-        danger: "var(--danger)",
-        warning: "var(--warning)",
-        success: "var(--success)",
+        danger: "var(--bad-fg)",
+        warning: "var(--warn-fg)",
+        success: "var(--ok-fg)",
       },
       fontFamily: {
-        sans: ['"Segoe UI"', "system-ui", "sans-serif"],
+        sans: ["var(--font-body)"],
+        display: ["var(--font-display)"],
+        mono: ["var(--font-mono)"],
       },
     },
   },

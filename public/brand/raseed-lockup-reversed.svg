@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 32" width="240" height="64" role="img" aria-label="Raseed">
+  <title>Raseed lockup (reversed, on ink)</title>
+  <!-- Reversed lockup — for ink, green or photographic grounds only. Full ink is
+       the darkest permitted ground; do not place the mark on the muted grey or on
+       a tint of ink (contrast drops below 4.5:1). -->
+  <g fill="#FFFFFF" transform="translate(0 4)">
+    <rect x="2" y="5.4" width="20" height="2.8" rx="1.4"/>
+    <rect x="4.4" y="8.2" width="2.8" height="3.4" rx="1.4"/>
+    <rect x="16.8" y="8.2" width="2.8" height="3.4" rx="1.4"/>
+    <rect x="2" y="11.6" width="7.6" height="3.4" rx="1.7"/>
+    <rect x="14.4" y="11.6" width="7.6" height="3.4" rx="1.7"/>
+    <rect x="10.6" y="8.2" width="2.8" height="7.6" rx="1.4"/>
+    <rect x="6.3" y="15.8" width="11.4" height="2.8" rx="1.4"/>
+  </g>
+  <text x="33" y="22.5" font-family="'Iowan Old Style','Charter',Georgia,'Times New Roman',serif" font-size="22" font-weight="600" letter-spacing="-0.44" fill="#FFFFFF">Raseed</text>
+</svg>

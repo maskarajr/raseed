@@ -1,82 +1,16 @@
-"use client";
+import type { Metadata } from "next";
+import { LoginForm } from "@/components/LoginForm";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { api } from "@/lib/client";
-import type { Role } from "@/lib/enums";
+export const metadata: Metadata = {
+  title: "Sign in · Raseed",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Raseed",
+  },
+};
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    try {
-      const { user } = await api<{ user: { role: Role } }>("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
-      router.replace(user.role === "booker" ? "/booker" : "/office");
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <main className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-primary">Raseed</h1>
-          <p className="mt-1 text-sm text-muted">
-            Wholesale distribution ops
-          </p>
-        </div>
-        <form onSubmit={onSubmit} className="card space-y-4">
-          <div>
-            <label className="label" htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              className="input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="username"
-              required
-            />
-          </div>
-          <div>
-            <label className="label" htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              className="input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </div>
-          {error && <p className="text-sm text-danger">{error}</p>}
-          <button type="submit" className="btn-primary w-full" disabled={loading}>
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-        <p className="mt-4 text-center text-xs text-muted">
-          PKR · English · office hours only
-        </p>
-      </div>
-    </main>
-  );
+  return <LoginForm />;
 }

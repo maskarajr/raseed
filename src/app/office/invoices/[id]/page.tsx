@@ -7,6 +7,10 @@ import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { SideSheet } from "@/components/SideSheet";
+import { OfficeChrome } from "@/components/OfficeChrome";
+import { PaymentSheet } from "@/components/PaymentSheet";
+import { initials } from "@/lib/person";
+import { useToast } from "@/components/Toast";
 
 type InvoiceDetail = {
   id: string;
@@ -21,6 +25,7 @@ type InvoiceDetail = {
     status: string;
     subtotal: number;
     customer: { name: string; phone: string; area: string | null };
+    booker: { name: string };
     items: {
       id: string;
       qty: number;
@@ -29,7 +34,7 @@ type InvoiceDetail = {
       product: { sku: string; name: string; unit: string };
     }[];
   };
-  payments: { id: string; amount: number; mode: string; createdAt: string }[];
+  payments: { id: string; amount: number; mode: string; kind?: string; createdAt: string }[];
   returns: {
     id: string;
     qty: number;
@@ -42,6 +47,7 @@ type InvoiceDetail = {
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const toast = useToast();
   const [inv, setInv] = useState<InvoiceDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sheet, setSheet] = useState<"payment" | "return" | null>(null);
@@ -67,173 +73,198 @@ export default function InvoiceDetailPage() {
     [inv],
   );
 
-  if (error && !inv) return <p className="text-danger">{error}</p>;
-  if (!inv) return <p className="text-muted">Loading…</p>;
+  if (error && !inv) {
+    return (
+      <OfficeChrome title="Invoice">
+        <p className="muted">{error}</p>
+      </OfficeChrome>
+    );
+  }
+  if (!inv) {
+    return (
+      <OfficeChrome title="Invoice">
+        <p className="muted">Loading…</p>
+      </OfficeChrome>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Link href="/office/invoices" className="text-sm text-primary">
-            ← Invoices
-          </Link>
-          <h1 className="mt-1 flex flex-wrap items-center gap-2 text-2xl font-bold">
-            {inv.code}
-            <StatusPill status={inv.paymentStatus} />
-            <StatusPill status={inv.order.status} />
-            {inv.returns.length > 0 && <StatusPill status="return_logged" />}
-          </h1>
-          <p className="text-sm text-muted">
-            Order {inv.order.code} · {inv.order.customer.name}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button className="btn-primary" onClick={() => setSheet("payment")}>
-            Record payment
+    <OfficeChrome
+      title={inv.code}
+      kicker={`Invoices / ${inv.code}`}
+      status={<StatusPill status={inv.paymentStatus} />}
+      actions={
+        <>
+          <button
+            type="button"
+            className="btn-sec"
+            onClick={() => toast(`Invoice sent on WhatsApp · ${inv.code}`)}
+          >
+            Send
           </button>
-          <button className="btn-secondary" onClick={() => setSheet("return")}>
+          <Link href={`/office/invoices/${inv.id}/print`} className="btn-sec">
+            Print
+          </Link>
+          <button type="button" className="btn-sec" onClick={() => setSheet("return")}>
             Log return
           </button>
-          <Link
-            href={`/office/invoices/${inv.id}/print`}
-            className="btn-secondary"
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => setSheet("payment")}
           >
-            Print / PDF
-          </Link>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="card lg:col-span-2">
-          <h2 className="mb-3 font-semibold">Items</h2>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Desc</th>
-                <th className="text-right">Qty</th>
-                <th className="text-right">Unit Rs</th>
-                <th className="text-right">Line Rs</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inv.order.items.map((i) => (
-                <tr key={i.id}>
-                  <td className="font-mono text-xs text-muted">
-                    {i.product.sku}
-                  </td>
-                  <td>{i.product.name}</td>
-                  <td className="tnum text-right">
-                    {i.qty} {i.product.unit}
-                  </td>
-                  <td className="text-right">
-                    <Money value={i.unitPrice} />
-                  </td>
-                  <td className="text-right">
-                    <Money value={i.qty * i.unitPrice} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Totals block */}
-        <div className="card h-fit">
-          <h2 className="mb-3 font-semibold">Totals</h2>
-          <dl className="space-y-2 text-sm">
-            <TotalRow label="Subtotal">
-              <Money value={inv.order.subtotal} />
-            </TotalRow>
-            <TotalRow label="Returns">
-              <span className="text-accent">
-                {returnsTotal > 0 ? "−" : ""}
-                <Money value={returnsTotal} />
+            Record payment
+          </button>
+        </>
+      }
+    >
+      <div className="row" style={{ gap: 16, alignItems: "stretch" }}>
+        <div className="card2" style={{ flex: 1 }}>
+          <p className="ptitle-s" style={{ marginBottom: 10 }}>
+            Billed to
+          </p>
+          <div className="person">
+            <span className="avatar">{initials(inv.order.customer.name)}</span>
+            <span>
+              <span className="pname">{inv.order.customer.name}</span>
+              <br />
+              <span className="pmeta">
+                {inv.order.customer.area ?? "—"}
+                {inv.order.customer.phone ? ` · ${inv.order.customer.phone}` : ""}
               </span>
-            </TotalRow>
-            <TotalRow label="Paid">
-              <span className="text-success">
-                {inv.amountPaid > 0 ? "−" : ""}
+            </span>
+          </div>
+          <dl className="dl" style={{ marginTop: 12 }}>
+            <div>
+              <dt>Issued</dt>
+              <dd className="num">
+                {new Date(inv.createdAt).toLocaleDateString("en-GB", {
+                  timeZone: "Asia/Karachi",
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </dd>
+            </div>
+            <div>
+              <dt>Collection</dt>
+              <dd>Cash on delivery</dd>
+            </div>
+            <div>
+              <dt>Collects</dt>
+              <dd>{inv.order.booker.name}</dd>
+            </div>
+            <div>
+              <dt>Received</dt>
+              <dd className="num">
                 <Money value={inv.amountPaid} />
-              </span>
-            </TotalRow>
-            <div className="mt-2 flex items-center justify-between border-t border-line pt-3">
-              <dt className="text-base font-semibold">Balance due</dt>
-              <dd className="text-2xl font-bold text-primary">
+              </dd>
+            </div>
+            <div>
+              <dt>To collect</dt>
+              <dd className="num" style={{ color: "var(--warn-fg)" }}>
                 <Money value={inv.balance} />
               </dd>
             </div>
           </dl>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="card">
-          <h2 className="mb-2 font-semibold">Payments</h2>
+        <div className="card2" style={{ width: 340 }}>
+          <p className="ptitle-s" style={{ marginBottom: 10 }}>
+            Payment history
+          </p>
           {inv.payments.length === 0 ? (
-            <p className="text-sm text-muted">No payments yet.</p>
+            <p className="muted">No payments yet.</p>
           ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>When</th>
-                  <th>Method</th>
-                  <th className="text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inv.payments.map((p) => (
-                  <tr key={p.id}>
-                    <td className="text-xs">
-                      {new Date(p.createdAt).toLocaleString()}
-                    </td>
-                    <td className="capitalize">{p.mode}</td>
-                    <td className="text-right">
-                      <Money value={p.amount} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            inv.payments.map((p) => (
+              <div className="prow" key={p.id}>
+                <span>
+                  {p.kind === "advance"
+                    ? "Advance"
+                    : p.kind === "full"
+                      ? "Full settlement"
+                      : "Part payment"}{" "}
+                  ·{" "}
+                  {new Date(p.createdAt).toLocaleDateString("en-GB", {
+                    timeZone: "Asia/Karachi",
+                    day: "2-digit",
+                    month: "short",
+                  })}
+                </span>
+                <span className="num">
+                  <Money value={p.amount} />
+                </span>
+              </div>
+            ))
           )}
+          <div className="prow">
+            <span className="pname">To collect</span>
+            <span className="num" style={{ fontWeight: 600, color: "var(--warn-fg)" }}>
+              <Money value={inv.balance} />
+            </span>
+          </div>
         </div>
-
-        <div className="card">
-          <h2 className="mb-2 font-semibold">Returns</h2>
-          {inv.returns.length === 0 ? (
-            <p className="text-sm text-muted">No returns.</p>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>When</th>
-                  <th>Product</th>
-                  <th className="text-right">Qty</th>
-                  <th className="text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inv.returns.map((r) => (
-                  <tr key={r.id}>
-                    <td className="text-xs">
-                      {new Date(r.createdAt).toLocaleString()}
-                    </td>
-                    <td>{r.product.sku}</td>
-                    <td className="tnum text-right">{r.qty}</td>
-                    <td className="text-right">
-                      <Money value={r.amount} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+      </div>
+      <div className="card2 grow">
+        <div className="card2-h">
+          <h2 className="h3s">Charges</h2>
+          <span className="meta">from order {inv.order.code}</span>
+        </div>
+        <table className="tbl store">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Product</th>
+              <th className="r">Qty</th>
+              <th className="r">Rate</th>
+              <th className="r">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {inv.order.items.map((i) => (
+              <tr key={i.id}>
+                <td className="sku">{i.product.sku}</td>
+                <td>{i.product.name}</td>
+                <td className="r num">
+                  {i.qty} {i.product.unit}
+                </td>
+                <td className="money">
+                  <Money value={i.unitPrice} />
+                </td>
+                <td className="money">
+                  <Money value={i.qty * i.unitPrice} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="totals" style={{ marginTop: 14 }}>
+          <div className="trow">
+            <span className="muted">Subtotal</span>
+            <span className="num">
+              <Money value={inv.order.subtotal} />
+            </span>
+          </div>
+          {returnsTotal > 0 ? (
+            <div className="trow">
+              <span className="muted">Returns</span>
+              <span className="num">
+                −<Money value={returnsTotal} />
+              </span>
+            </div>
+          ) : null}
+          <div className="trow grand">
+            <span>Invoice total</span>
+            <span className="num">
+              <Money value={inv.total} />
+            </span>
+          </div>
         </div>
       </div>
 
       {sheet === "payment" && (
         <PaymentSheet
           invoiceId={inv.id}
+          invoiceCode={inv.code}
           balance={inv.balance}
           onClose={() => setSheet(null)}
           onDone={() => {
@@ -252,88 +283,7 @@ export default function InvoiceDetailPage() {
           }}
         />
       )}
-    </div>
-  );
-}
-
-function TotalRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <dt className="text-muted">{label}</dt>
-      <dd>{children}</dd>
-    </div>
-  );
-}
-
-function PaymentSheet({
-  invoiceId,
-  balance,
-  onClose,
-  onDone,
-}: {
-  invoiceId: string;
-  balance: number;
-  onClose: () => void;
-  onDone: () => void;
-}) {
-  // Amount defaults to the current outstanding balance. v1 is cash-only.
-  const [amount, setAmount] = useState(String(balance));
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setError(null);
-    try {
-      await api("/api/payments", {
-        method: "POST",
-        body: JSON.stringify({ invoiceId, amount: Number(amount), mode: "cash" }),
-      });
-      onDone();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Payment failed");
-      setSaving(false);
-    }
-  }
-
-  return (
-    <SideSheet title="Record payment" onClose={onClose}>
-      <form onSubmit={save} className="space-y-4">
-        <p className="text-sm text-muted">
-          Outstanding balance: <Money value={balance} className="font-semibold text-ink" />
-        </p>
-        <div>
-          <label className="label">Amount (PKR)</label>
-          <input
-            className="input"
-            type="number"
-            min={1}
-            max={balance}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-          />
-          <p className="mt-1 text-xs text-muted">
-            Partial payments allowed. Cannot exceed the balance.
-          </p>
-        </div>
-        <div>
-          <label className="label">Method</label>
-          <p className="input flex items-center bg-canvas text-muted">Cash</p>
-        </div>
-        {error && <p className="text-sm text-danger">{error}</p>}
-        <button className="btn-primary w-full" disabled={saving || balance <= 0}>
-          {balance <= 0 ? "Already settled" : "Record payment"}
-        </button>
-      </form>
-    </SideSheet>
+    </OfficeChrome>
   );
 }
 
@@ -366,7 +316,6 @@ function ReturnSheet({
 
   // Per-line return qty + optional reason (reason is UI-only in v1).
   const [qtys, setQtys] = useState<Record<string, number>>({});
-  const [reasons, setReasons] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -405,83 +354,52 @@ function ReturnSheet({
 
   return (
     <SideSheet title={`Log returns — Invoice #${invoice.code}`} onClose={onClose}>
-      <div className="space-y-4">
-        <div className="space-y-3">
-          {lines.map((l) => {
+      <div className="stack" style={{ gap: 12 }}>
+        {lines.map((l) => {
             const qty = qtys[l.productId] ?? 0;
             const disabled = l.max === 0;
             return (
-              <div key={l.productId} className="rounded-md border border-line p-3">
-                <div className="flex items-start justify-between">
-                  <div className="min-w-0">
-                    <p className="font-mono text-xs text-muted">{l.sku}</p>
-                    <p className="truncate text-sm font-medium">{l.name}</p>
-                    <p className="text-xs text-muted">
-                      Invoiced qty: <span className="tnum">{l.invoicedQty}</span>
-                      {l.max < l.invoicedQty && (
-                        <span> · returnable {l.max}</span>
-                      )}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
+              <div key={l.productId} className="qty-row">
+                <span className="grow">
+                  <span className="pname">{l.name}</span>
+                  <br />
+                  <span className="pmeta num">
+                    {l.sku} · invoiced {l.invoicedQty}
+                    {l.max < l.invoicedQty ? ` · returnable ${l.max}` : ""}
+                  </span>
+                </span>
+                <span className="qty-ctl">
                     <button
                       type="button"
-                      className="flex h-9 w-9 items-center justify-center rounded-md border border-line text-lg font-semibold disabled:opacity-40"
+                      className="qty-btn"
                       disabled={disabled || qty <= 0}
                       onClick={() => setQty(l.productId, qty - 1, l.max)}
                       aria-label={`decrease ${l.sku}`}
                     >
                       −
                     </button>
-                    <input
-                      className="input h-9 w-14 text-center"
-                      type="number"
-                      min={0}
-                      max={l.max}
-                      value={qty}
-                      disabled={disabled}
-                      onChange={(e) =>
-                        setQty(l.productId, Number(e.target.value), l.max)
-                      }
-                    />
+                    <span className="qty-val">{qty}</span>
                     <button
                       type="button"
-                      className="flex h-9 w-9 items-center justify-center rounded-md border border-line text-lg font-semibold disabled:opacity-40"
+                      className="qty-btn"
                       disabled={disabled || qty >= l.max}
                       onClick={() => setQty(l.productId, qty + 1, l.max)}
                       aria-label={`increase ${l.sku}`}
                     >
                       +
                     </button>
-                  </div>
-                </div>
-                <input
-                  className="input mt-2 h-9 text-sm"
-                  placeholder="Reason (optional)"
-                  value={reasons[l.productId] ?? ""}
-                  disabled={disabled}
-                  onChange={(e) =>
-                    setReasons((prev) => ({
-                      ...prev,
-                      [l.productId]: e.target.value,
-                    }))
-                  }
-                />
+                </span>
               </div>
             );
           })}
-        </div>
 
-        <div className="rounded-md bg-primary-soft p-3 text-sm">
-          <p className="font-medium text-primary">Preview</p>
-          <p className="tnum mt-1">
-            Restock +{totalQty} · Invoice −<Money value={totalAmount} />
-          </p>
-        </div>
+        <p className="meta">
+          Restock +{totalQty} · Invoice −<Money value={totalAmount} />
+        </p>
 
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && <p className="muted">{error}</p>}
         <button
-          className="btn-primary w-full"
+          className="btn-primary btn-block"
           disabled={saving || totalQty === 0}
           onClick={save}
         >

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { SessionUser } from "@/server/auth/session";
 import { ApiError } from "@/server/http";
-import type { PaymentMode } from "@/lib/enums";
+import type { PaymentKind, PaymentMode } from "@/lib/enums";
 import { deriveInvoiceState } from "./invoiceMath";
 import { settleOrderIfPaid } from "./settle";
 
@@ -9,13 +9,9 @@ export type RecordPaymentInput = {
   invoiceId: string;
   amount: number;
   mode: PaymentMode;
+  kind?: PaymentKind;
 };
 
-// Record a payment against an invoice and update amountPaid/balance/status.
-// Partial payments are allowed and leaving a balance unpaid is valid (the
-// balance-due figure is itself the credit signal). A single payment cannot
-// exceed the outstanding balance. When the balance reaches 0 the order is
-// auto-settled.
 export async function recordPayment(
   session: SessionUser,
   input: RecordPaymentInput,
@@ -23,17 +19,26 @@ export async function recordPayment(
   return prisma.$transaction(async (tx) => {
     const invoice = await tx.invoice.findUnique({
       where: { id: input.invoiceId },
+      include: { order: { select: { bookerId: true } } },
     });
     if (!invoice) throw new ApiError(404, "Invoice not found");
 
-    if (input.amount > invoice.balance) {
+    if (session.role === "booker" && invoice.order.bookerId !== session.id) {
+      throw new ApiError(403, "Forbidden");
+    }
+
+    const kind = input.kind ?? "part";
+    let amount = input.amount;
+    if (kind === "full") amount = invoice.balance;
+    if (amount < 1) throw new ApiError(400, "Amount must be at least Rs 1");
+    if (amount > invoice.balance) {
       throw new ApiError(
         400,
-        `Payment ${input.amount} exceeds outstanding balance ${invoice.balance}`,
+        `Payment ${amount} exceeds outstanding balance ${invoice.balance}`,
       );
     }
 
-    const newAmountPaid = invoice.amountPaid + input.amount;
+    const newAmountPaid = invoice.amountPaid + amount;
     const { balance, paymentStatus } = deriveInvoiceState(
       invoice.total,
       newAmountPaid,
@@ -42,8 +47,9 @@ export async function recordPayment(
     const payment = await tx.payment.create({
       data: {
         invoiceId: invoice.id,
-        amount: input.amount,
+        amount,
         mode: input.mode,
+        kind,
         createdBy: session.id,
       },
     });

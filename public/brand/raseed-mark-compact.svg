@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Raseed">
+  <title>Raseed mark (compact)</title>
+  <!-- Compact mark — beam and two trays only. This is the app-tile and favicon
+       glyph, for anything under 28px where the post and base would turn to mush. -->
+  <g fill="currentColor">
+    <rect x="1.5" y="6.35" width="21" height="3.4" rx="1.7"/>
+    <rect x="4.15" y="9.75" width="2.8" height="3.4" rx="1.4"/>
+    <rect x="17.05" y="9.75" width="2.8" height="3.4" rx="1.4"/>
+    <rect x="1.5" y="13.15" width="8.1" height="4.4" rx="2.2"/>
+    <rect x="14.4" y="13.15" width="8.1" height="4.4" rx="2.2"/>
+  </g>
+</svg>

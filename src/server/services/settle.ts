@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { SETTLEABLE_STATUSES, type OrderStatus } from "@/lib/enums";
 
 // Drive the order to `settled` the moment its invoice balance reaches 0.

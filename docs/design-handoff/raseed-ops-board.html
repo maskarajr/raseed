@@ -1,0 +1,1674 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Raseed — Ops Surfaces</title>
+<style>
+:root{
+  --bg:#F4F5F7; --surface:#FFFFFF; --fg:#14181C; --muted:#626C76; --border:#E1E5EA; --accent:#0B6E4F;
+  --warm:#C45C26;
+  --ok-fg:#0A4C37; --ok-bg:#E4F1EC;
+  --info-fg:#14486F; --info-bg:#E3EEF6;
+  --warn-fg:#7A3512; --warn-bg:#FBE9DF;
+  --bad-fg:#7A1F1F; --bad-bg:#F7E3E3;
+  --neu-fg:#49525A; --neu-bg:#ECEEF1;
+  --accent-soft:color-mix(in oklch, var(--accent) 12%, transparent);
+  --fg-soft:color-mix(in oklch, var(--fg) 5%, transparent);
+  --font-display:'Iowan Old Style','Charter',Georgia,'Times New Roman',serif;
+  --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --font-mono:ui-monospace,'JetBrains Mono','SF Mono',Menlo,monospace;
+  --fs-meta:13px; --radius:10px; --radius-lg:16px;
+  --s-desktop:1; --s-pwa:1;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+img,svg{display:block;max-width:100%}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+a{color:inherit;text-decoration:none}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+p{margin:0;text-wrap:pretty}
+.ic{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ic-sm{width:14px;height:14px}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.meta{font-family:var(--font-mono);font-size:var(--fs-meta);color:var(--muted)}
+.h3s{font-family:var(--font-display);font-size:16px;font-weight:650;letter-spacing:-.005em}
+.eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.row{display:flex;align-items:center;gap:12px}
+.rowb{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.grow{flex:1;min-width:0}
+.stack{display:flex;flex-direction:column;gap:16px}
+
+/* board */
+.board{max-width:1480px;margin-inline:auto;padding:48px 32px 96px}
+.btitle{font-family:var(--font-display);font-size:38px;line-height:1.1;letter-spacing:-.02em}
+.bsub{color:var(--muted);font-size:15px;max-width:68ch;margin-top:10px}
+.bnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.bnav a{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:5px 13px;font-size:12px;color:var(--muted)}
+.bnav a:hover{border-color:var(--fg);color:var(--fg)}
+.legend{margin-top:28px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 24px}
+.lgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px 24px;margin-top:16px}
+.lsw{display:flex;align-items:center;gap:8px;font-size:12px}
+.lsw span.c{width:12px;height:12px;border-radius:3px;border:1px solid var(--border);flex:none}
+.lnote{margin-top:18px;padding-top:16px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+.lnote strong{color:var(--fg);font-weight:600}
+.bsec{margin-top:56px}
+.bsec-h{border-top:1px solid var(--fg);padding-top:14px;display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.bsec-h h2{font-family:var(--font-display);font-size:22px;letter-spacing:-.015em}
+.bsec-h p{font-size:13px;color:var(--muted)}
+.bframes{display:flex;flex-wrap:wrap;gap:24px;margin-top:24px;align-items:flex-start}
+.fcard{margin:0}
+.fcap{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.fname{font-size:13px;font-weight:600}
+.fmeta{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.wrap{overflow:hidden;border-radius:12px;box-shadow:0 1px 2px rgba(20,24,28,.06),0 12px 32px -18px rgba(20,24,28,.28);background:var(--surface)}
+.frame{--s:1;width:var(--fw);height:var(--fh);zoom:var(--s);position:relative;overflow:hidden;background:var(--bg);display:flex}
+.f-desktop{--fw:1120px;--fh:720px;--s:var(--s-desktop)}
+.f-pwa{--fw:390px;--fh:780px;--s:var(--s-pwa)}
+
+/* app shell */
+.rail{width:232px;flex:none;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:18px 14px 14px}
+.rbrand{display:flex;align-items:center;gap:9px;font-family:var(--font-display);font-size:18px;font-weight:600;letter-spacing:-.01em;padding:2px 6px 0}
+.rmark{width:22px;height:22px;border-radius:6px;background:var(--accent);color:var(--surface);display:grid;place-items:center;font-family:var(--font-mono);font-size:12px}
+.rnav{margin-top:22px;display:flex;flex-direction:column;gap:2px}
+.rgroup{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:14px 8px 6px}
+.ritem{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:8px;font-size:14px;color:var(--muted);text-align:left;width:100%}
+.ritem:hover{background:var(--fg-soft);color:var(--fg)}
+.ritem.is-on{background:var(--fg);color:var(--surface)}
+.rfoot{margin-top:auto;border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:2px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.appbar{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.ptitle{font-family:var(--font-display);font-size:22px;font-weight:600;letter-spacing:-.015em}
+.psub{font-size:12px;color:var(--muted);margin-top:2px}
+.acts{display:flex;align-items:center;gap:10px}
+.content{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+.pad{display:flex;flex-direction:column;gap:16px;min-height:0;flex:1}
+.card2{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
+.card2-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.content > .card2.grow{flex:1 0 auto}
+
+/* controls */
+.btn-primary{background:var(--accent);color:var(--surface);border-radius:var(--radius);padding:9px 16px;font-size:14px;font-weight:550;display:inline-flex;align-items:center;gap:8px}
+.btn-primary:hover{background:color-mix(in oklch, var(--accent) 88%, black)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed}
+.btn-sec{border:1px solid var(--border);border-radius:var(--radius);padding:9px 16px;font-size:14px;font-weight:500;background:var(--surface);display:inline-flex;align-items:center;gap:8px}
+.btn-sec:hover{border-color:var(--fg)}
+.btn-ghost{border-radius:var(--radius);padding:9px 12px;font-size:14px;color:var(--muted);display:inline-flex;align-items:center;gap:8px}
+.btn-ghost:hover{color:var(--fg);background:var(--fg-soft)}
+.btn-sm{padding:6px 11px;font-size:13px;border-radius:8px}
+.btn-block{width:100%;justify-content:center}
+.search{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;font:inherit;font-size:13px;width:260px;color:var(--fg)}
+.search:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-size:12px;color:var(--muted);background:var(--surface)}
+.chip:hover{border-color:var(--fg);color:var(--fg)}
+.chip.is-on{background:var(--fg);border-color:var(--fg);color:var(--surface)}
+.seg{display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px}
+.seg-item{padding:6px 12px;border-radius:7px;font-size:13px;color:var(--muted)}
+.seg-item.is-on{background:var(--surface);color:var(--fg);font-weight:550;box-shadow:0 1px 2px rgba(20,24,28,.07)}
+.switch{width:38px;height:22px;border-radius:999px;background:var(--neu-bg);border:1px solid var(--border);position:relative;flex:none;transition:background .15s}
+.switch::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:999px;background:var(--surface);box-shadow:0 1px 2px rgba(20,24,28,.25);transition:left .15s}
+.switch.is-on{background:var(--fg);border-color:var(--fg)}
+.switch.is-on::after{left:18px}
+
+/* data */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;text-align:left;padding:0 10px 9px;border-bottom:1px solid var(--border)}
+.tbl td{padding:10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl tbody tr:hover{background:var(--fg-soft)}
+.tbl tbody tr[hidden]{display:none}
+.r{text-align:right}
+.money{font-family:var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
+.sku{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+.status{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-family:var(--font-mono);font-size:11px;letter-spacing:.03em;white-space:nowrap}
+.status::before{content:'';width:5px;height:5px;border-radius:999px;background:currentColor;opacity:.75}
+.s-ok{color:var(--ok-fg);background:var(--ok-bg)}
+.s-info{color:var(--info-fg);background:var(--info-bg)}
+.s-warn{color:var(--warn-fg);background:var(--warn-bg)}
+.s-bad{color:var(--bad-fg);background:var(--bad-bg)}
+.s-neu{color:var(--neu-fg);background:var(--neu-bg)}
+.tbl-empty{font-size:13px;color:var(--muted);padding:22px 10px;text-align:center}
+.tbl-wrap{min-width:0;overflow-x:auto;scrollbar-width:thin}
+.tbl.tight th,.tbl.tight td{padding-left:7px;padding-right:7px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.klab{font-size:12px;color:var(--muted)}
+.kval{font-family:var(--font-display);font-size:27px;line-height:1.15;letter-spacing:-.02em;font-weight:600;margin-top:6px}
+.kdelta{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:4px}
+.person{display:flex;align-items:center;gap:9px}
+.avatar{width:28px;height:28px;border-radius:999px;background:var(--fg-soft);color:var(--fg);display:grid;place-items:center;font-family:var(--font-mono);font-size:11px;flex:none}
+.pname{font-size:13px;font-weight:550}
+.pmeta{font-size:11px;color:var(--muted)}
+.dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
+.dl dt{font-size:11px;color:var(--muted);font-family:var(--font-mono);letter-spacing:.08em;text-transform:uppercase}
+.dl dd{margin:4px 0 0;font-size:14px}
+.totals{display:flex;flex-direction:column;gap:8px;max-width:280px;margin-left:auto}
+.trow{display:flex;justify-content:space-between;gap:16px;font-size:13px}
+.trow.grand{border-top:1px solid var(--fg);padding-top:9px;font-size:15px;font-weight:600}
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl-item{display:flex;gap:10px;padding-bottom:14px;position:relative}
+.tl-item::before{content:'';position:absolute;left:5px;top:14px;bottom:0;width:1px;background:var(--border)}
+.tl-item:last-child::before{display:none}
+.tl-dot{width:11px;height:11px;border-radius:999px;border:2px solid var(--border);background:var(--surface);margin-top:3px;flex:none}
+.tl-dot.done{border-color:var(--fg);background:var(--fg)}
+.warnbox{background:var(--warn-bg);color:var(--warn-fg);border-radius:10px;padding:10px 12px;font-size:12px;display:flex;gap:8px;align-items:flex-start}
+
+/* pwa */
+.pwa{width:100%;height:100%;background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
+.pstatus{background:var(--surface);padding:7px 20px 3px;display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--fg)}
+.pbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px}
+.pbar-t{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.pbody{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding:14px 16px;display:flex;flex-direction:column;gap:14px}
+.ptabs{background:var(--surface);border-top:1px solid var(--border);display:flex;padding:6px 4px 8px}
+.ptab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--muted);padding:4px 0}
+.ptab.is-on{color:var(--fg);font-weight:600}
+.ptab.is-on .ic{stroke-width:2}
+.ptabs{border-bottom:0}
+.pcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 14px}
+.ptitle-s{font-size:12px;font-family:var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pbig{font-family:var(--font-display);font-size:30px;line-height:1.1;letter-spacing:-.02em;font-weight:600}
+.prow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.prow:last-child{border-bottom:0}
+/* sheets & drawers */
+.scrim{position:absolute;inset:0;background:color-mix(in oklch, var(--fg) 42%, transparent);opacity:0;pointer-events:none;transition:opacity .18s}
+.scrim.is-open{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:18px 18px 0 0;padding:10px 16px 18px;transform:translateY(102%);transition:transform .2s ease;max-height:82%;overflow:hidden}
+.sheet.is-open{transform:translateY(0)}
+.grab{width:36px;height:4px;border-radius:999px;background:var(--border);margin:0 auto 12px}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.drawer{position:absolute;top:0;right:0;bottom:0;width:400px;background:var(--surface);border-left:1px solid var(--border);transform:translateX(102%);transition:transform .2s ease;display:flex;flex-direction:column}
+.drawer.is-open{transform:translateX(0)}
+.drawer-h{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.drawer-b{flex:1;overflow:hidden;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.drawer-f{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px}
+/* wizard */
+.wiz{display:flex;flex-direction:column;flex:1;min-height:0}
+.wiz-step{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:12px}
+.wiz-dots{display:flex;align-items:center;gap:8px}
+.wiz-dot{flex:1;height:3px;border-radius:999px;background:var(--border)}
+.wiz-dot.is-on{background:var(--fg)}
+.wiz-dot.is-done{background:color-mix(in oklch, var(--fg) 45%, var(--border))}
+.wiz-foot{padding-top:12px;display:flex;gap:10px}
+.qty-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.qty-row.is-zero{opacity:.5}
+.qty-ctl{display:flex;align-items:center;gap:2px;border:1px solid var(--border);border-radius:9px;padding:2px;flex:none}
+.qty-btn{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:var(--fg)}
+.qty-btn:hover{background:var(--fg-soft)}
+.qty-val{font-family:var(--font-mono);font-variant-numeric:tabular-nums;width:26px;text-align:center;font-size:13px}
+.opt{border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:11px;background:var(--surface);text-align:left;width:100%}
+.opt:hover{border-color:var(--fg)}
+.opt.is-on{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+.totbar{margin-top:auto;background:var(--surface);border-top:1px solid var(--border);padding:12px 0 0}
+/* toast */
+.toast{position:absolute;left:50%;bottom:26px;transform:translate(-50%,14px);background:var(--fg);color:var(--surface);border-radius:999px;padding:9px 18px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:60;white-space:nowrap}
+.toast.is-on{opacity:1;transform:translate(-50%,0)}
+/* login */
+.login{width:100%;height:100%;display:grid;grid-template-columns:1fr 1fr}
+.login-l{background:var(--surface);display:flex;flex-direction:column;justify-content:center;padding:0 64px}
+.login-r{background:var(--bg);border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;padding:48px}
+.lfield{display:flex;flex-direction:column;gap:6px}
+.lfield label{font-size:12px;color:var(--muted)}
+.linput{border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font:inherit;font-size:14px;background:var(--surface);width:100%}
+.linput:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+.role-opt.is-on{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+/* print doc */
+.doc{background:var(--surface);margin:0 auto;width:100%;padding:34px 38px;height:100%;overflow:hidden;display:flex;flex-direction:column;gap:18px}
+.doc-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--fg);padding-bottom:14px}
+.doc-t{font-family:var(--font-display);font-size:26px;letter-spacing:-.02em}
+.pilllg{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:12px;font-family:var(--font-mono)}
+/* board frame scale — frames keep their true canvas size and only the optical scale moves */
+@media (max-width:1280px){:root{--s-desktop:.95}}
+@media (max-width:1120px){:root{--s-desktop:.8}}
+@media (max-width:960px){:root{--s-desktop:.68;--s-pwa:.9}}
+@media (max-width:760px){:root{--s-desktop:.52;--s-pwa:.72}}
+@media (max-width:640px){.board{padding:28px 16px 64px}}
+@media (max-width:560px){:root{--s-desktop:.38;--s-pwa:.55}}
+@media (max-width:420px){:root{--s-desktop:.29;--s-pwa:.44}}
+/* office overlay: the same sheet pattern, centred as a modal instead of full-bleed */
+.sheet-d{left:50%;right:auto;width:560px;bottom:22px;border-radius:18px;padding:16px 20px 20px;transform:translate(-50%,102%);box-shadow:0 24px 60px -24px color-mix(in oklch, var(--fg) 45%, transparent)}
+.sheet-d.is-open{transform:translate(-50%,0)}
+@media print{
+  .board{max-width:none;padding:0;margin:0}
+  .bhead,.legend,.bsec-h,.fcap{display:none}
+  .bframes{display:block;margin:0}
+  .fcard{display:none}
+  .fcard.is-printable{display:block}
+  .fcard.is-printable .wrap{overflow:visible;border-radius:0;box-shadow:none}
+  .fcard.is-printable .frame{zoom:1;width:auto;height:auto;overflow:visible}
+  .fcard.is-printable .doc{height:auto;padding:0;overflow:visible}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-grid"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></g>
+<g id="i-chart"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></g>
+<g id="i-cart"><path d="M3 4h2l2.4 10.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L20.5 7H6"/><circle cx="10" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/></g>
+<g id="i-doc"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></g>
+<g id="i-box"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></g>
+<g id="i-users"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M17 11a2.6 2.6 0 0 0 0-5M18 20a5 5 0 0 0-2-4"/></g>
+<g id="i-truck"><path d="M3 6h11v9H3zM14 9h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/></g>
+<g id="i-gear"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></g>
+<g id="i-search"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></g>
+<g id="i-plus"><path d="M12 5v14M5 12h14"/></g>
+<g id="i-bell"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6M10.5 20a2 2 0 0 0 3 0"/></g>
+<g id="i-back"><path d="M15 5l-7 7 7 7"/></g>
+<g id="i-check"><path d="m5 13 4.5 4.5L19 7"/></g>
+<g id="i-x"><path d="M6 6l12 12M18 6 6 18"/></g>
+<g id="i-print"><path d="M7 9V3h10v6M7 19H5a2 2 0 0 1-2-2v-5h18v5a2 2 0 0 1-2 2h-2M7 15h10v6H7z"/></g>
+<g id="i-home"><path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></g>
+<g id="i-user"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></g>
+<g id="i-phone"><rect x="7" y="2" width="10" height="20" rx="2.4"/><path d="M11 18.5h2"/></g>
+<g id="i-warn"><path d="M12 3 2 20h20zM12 10v4M12 17.5v.5"/></g>
+<g id="i-money"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12a2 2 0 1 0 0-.01M6 12h.01M18 12h.01"/></g>
+<g id="i-return"><path d="M3 10h12a5 5 0 0 1 0 10h-6M3 10l4-4M3 10l4 4"/></g>
+</defs></svg>
+
+<div class="board">
+  <header class="bhead">
+    <h1 class="btitle">Raseed — operations surfaces</h1>
+    <p class="bsub">One board, two surfaces: the office desktop app and the booker PWA. Light only. Every colour below resolves to a token in <span class="num">:root</span>; every status is one of five matched StatusPill pairs. The loop: the booker calls on shops and captures the order, the office confirms and invoices, then the booker delivers and collects the cash. Payments are cash advance or partial only — no installments, no credit terms.</p>
+    <nav class="bnav" aria-label="Board sections">
+      <a href="#sec-office-access">1 · Access</a>
+      <a href="#sec-office-overview">2 · Office overview</a>
+      <a href="#sec-office-sales">3 · Orders &amp; invoices</a>
+      <a href="#sec-office-catalogue">4 · Catalogue &amp; stock</a>
+      <a href="#sec-office-people">5 · Customers &amp; bookers</a>
+      <a href="#sec-booker">6 · Booker PWA</a>
+      <a href="#sec-overlays">7 · Overlays</a>
+    </nav>
+    <div class="legend">
+      <p class="eyebrow">Locked tokens</p>
+      <div class="lgrid">
+        <div class="lsw"><span class="c" style="background:var(--bg)"></span><span class="num">--bg · #F4F5F7</span></div>
+        <div class="lsw"><span class="c" style="background:var(--surface)"></span><span class="num">--surface · #FFFFFF</span></div>
+        <div class="lsw"><span class="c" style="background:var(--fg)"></span><span class="num">--fg · #14181C</span></div>
+        <div class="lsw"><span class="c" style="background:var(--muted)"></span><span class="num">--muted · #626C76</span></div>
+        <div class="lsw"><span class="c" style="background:var(--border)"></span><span class="num">--border · #E1E5EA</span></div>
+        <div class="lsw"><span class="c" style="background:var(--accent)"></span><span class="num">--accent · #0B6E4F</span></div>
+        <div class="lsw"><span class="c" style="background:var(--warm)"></span><span class="num">--warm · #C45C26 (graphic fill only)</span></div>
+      </div>
+      <p class="eyebrow" style="margin-top:22px">StatusPill pairs</p>
+      <div class="lgrid">
+        <div class="lsw"><span class="status s-ok">Paid</span><span class="num">ok</span></div>
+        <div class="lsw"><span class="status s-info">Scheduled</span><span class="num">info</span></div>
+        <div class="lsw"><span class="status s-warn">To collect</span><span class="num">warn</span></div>
+        <div class="lsw"><span class="status s-bad">Cancelled</span><span class="num">bad</span></div>
+        <div class="lsw"><span class="status s-neu">Draft</span><span class="num">neu</span></div>
+      </div>
+      <p class="lnote"><strong>Open flag — PR #8.</strong> The proposed dark A/B on office chrome is deliberately not rendered anywhere on this board. Dark chrome would fork <span class="num">--bg</span> / <span class="num">--surface</span> per frame, so the same screen would be reviewable against two palettes. Held as a code-level flag until <span class="num">VISUAL.md</span> is amended with a dark canvas token. See the Settings frame for the in-product note.</p>
+    </div>
+  </header>
+
+  <!-- OFFICE · ACCESS -->
+  <section class="bsec" id="sec-office-access" data-od-id="sec-office-access">
+    <div class="bsec-h"><h2>Office · Access</h2><p>1120 × 720 · desktop chrome</p></div>
+    <div class="bframes">
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Login</span><span class="fmeta">rail absent until role resolves</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-login">
+          <div class="login">
+            <div class="login-l" style="gap:18px">
+              <div class="row" style="gap:9px"><span class="rmark">R</span><span style="font-family:var(--font-display);font-size:19px;font-weight:600">Raseed</span></div>
+              <div style="max-width:34ch">
+                <h2 style="font-family:var(--font-display);font-size:28px;letter-spacing:-.02em">Sign in to the office</h2>
+                <p class="muted" style="font-size:14px;margin-top:8px">Office hours 09:00–19:00 · Asia/Karachi</p>
+              </div>
+              <div class="stack" style="max-width:340px;gap:14px">
+                <div class="lfield"><label for="lg-email">Work email</label><input id="lg-email" class="linput" type="email" value="adnan@raseed.pk" /></div>
+                <div class="lfield"><label for="lg-pass">Password</label><input id="lg-pass" class="linput" type="password" value="rasheed2026" /></div>
+                <button class="btn-primary btn-block" data-toast="Signed in as Office · Karachi HQ">Sign in</button>
+                <p class="meta">Trouble signing in? Ask your supervisor to reset your password.</p>
+              </div>
+            </div>
+            <div class="login-r">
+              <div style="max-width:300px;width:100%;display:flex;flex-direction:column;gap:10px">
+                <p class="ptitle-s">Continue as</p>
+                <button class="opt role-opt is-on" data-hint="Desktop app · full rail">
+                  <svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>
+                  <span><span class="pname">Office</span><br><span class="pmeta">Dashboard, orders, invoices</span></span>
+                </button>
+                <button class="opt role-opt" data-hint="Phone layout · route first">
+                  <svg class="ic" viewBox="0 0 24 24"><use href="#i-phone"/></svg>
+                  <span><span class="pname">Booker</span><br><span class="pmeta">Route, capture, collections</span></span>
+                </button>
+                <p class="meta" id="rolehint" style="margin-top:4px">Desktop app · full rail</p>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- OFFICE · OVERVIEW -->
+  <section class="bsec" id="sec-office-overview" data-od-id="sec-office-overview">
+    <div class="bsec-h"><h2>Office · Overview</h2><p>Dashboard and Reports · rail groups Overview</p></div>
+    <div class="bframes">
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Dashboard</span><span class="fmeta">KPI strip over today's position</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-office-dashboard">
+          <div class="rail">
+            <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+            <nav class="rnav">
+              <p class="rgroup">Overview</p>
+              <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+              <p class="rgroup">Store</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+            </nav>
+            <div class="rfoot">
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+              <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+            </div>
+          </div>
+          <div class="main">
+            <header class="appbar">
+              <div><h3 class="ptitle">Dashboard</h3><p class="psub">Tuesday, 15 Sep 2026 · office hours 09:00–19:00</p></div>
+              <div class="acts">
+                <label class="search row" style="gap:8px;width:280px"><svg class="ic ic-sm muted" viewBox="0 0 24 24"><use href="#i-search"/></svg><input data-filter placeholder="Search orders, customers, SKUs" style="border:0;background:none;outline:none;font:inherit;font-size:13px;width:100%" /></label>
+                <button class="btn-ghost" data-toast="3 notifications">Bell</button>
+                <button class="btn-primary" data-toast="New order form opened"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New order</button>
+              </div>
+            </header>
+            <div class="content">
+              <div class="kpis">
+                <div class="kpi"><p class="klab">Booked today</p><p class="kval num">Rs 512,300</p><p class="kdelta">38 orders · +6 vs yesterday</p></div>
+                <div class="kpi"><p class="klab">Outstanding</p><p class="kval num">Rs 1,240,500</p><p class="kdelta">14 invoices open</p></div>
+                <div class="kpi"><p class="klab">Awaiting confirmation</p><p class="kval num">6</p><p class="kdelta">Oldest 42 min</p></div>
+                <div class="kpi"><p class="klab">Low stock SKUs</p><p class="kval num">7</p><p class="kdelta">1 out of stock</p></div>
+              </div>
+              <div class="card2 grow" style="display:flex;flex-direction:column;min-height:0">
+                <div class="card2-h"><h4 class="h3s">Orders awaiting confirmation</h4><button class="btn-ghost btn-sm" data-toast="Filtered to Awaiting confirm">View all</button></div>
+                <table class="tbl">
+                  <thead><tr><th>Order</th><th>Customer</th><th>Booker</th><th class="r">Items</th><th class="r">Value</th><th>Status</th></tr></thead>
+                  <tbody>
+                    <tr><td class="num">RS-4821</td><td>Al-Madina Store</td><td>Ahmed Raza</td><td class="r num">6</td><td class="money">Rs 42,800</td><td><span class="status s-info">Scheduled</span></td></tr>
+                    <tr><td class="num">RS-4819</td><td>Shaheen Traders</td><td>Sana Iqbal</td><td class="r num">11</td><td class="money">Rs 96,200</td><td><span class="status s-warn">Awaiting confirm</span></td></tr>
+                    <tr><td class="num">RS-4818</td><td>Bismillah Mart</td><td>Ahmed Raza</td><td class="r num">4</td><td class="money">Rs 27,600</td><td><span class="status s-ok">Confirmed</span></td></tr>
+                    <tr><td class="num">RS-4816</td><td>Gulshan Superstore</td><td>Hina Shah</td><td class="r num">5</td><td class="money">Rs 38,900</td><td><span class="status s-neu">Draft</span></td></tr>
+                    <tr><td class="num">RS-4813</td><td>Noor Cash &amp; Carry</td><td>Usman Ali</td><td class="r num">8</td><td class="money">Rs 61,050</td><td><span class="status s-bad">Cancelled</span></td></tr>
+                  </tbody>
+                </table>
+                <p class="tbl-empty" hidden>No rows match this search.</p>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Reports</span><span class="fmeta">range segmented control drives the numbers</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-office-reports">
+          <div class="rail">
+            <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+            <nav class="rnav">
+              <p class="rgroup">Overview</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+              <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+              <p class="rgroup">Store</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+            </nav>
+            <div class="rfoot">
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+              <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+            </div>
+          </div>
+          <div class="main">
+            <header class="appbar">
+              <div><h3 class="ptitle">Reports</h3><p class="psub">Booker performance · 01–15 Sep 2026</p></div>
+              <div class="acts">
+                <div class="seg">
+                  <button class="seg-item" data-toast="Range: Today">Today</button>
+                  <button class="seg-item" data-toast="Range: 7 days">7 days</button>
+                  <button class="seg-item is-on" data-toast="Range: This month">This month</button>
+                </div>
+                <button class="btn-sec" data-toast="CSV exported for 01–15 Sep"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Export</button>
+              </div>
+            </header>
+            <div class="content">
+              <div class="kpis">
+                <div class="kpi"><p class="klab">Orders</p><p class="kval num">412</p><p class="kdelta">01–15 Sep</p></div>
+                <div class="kpi"><p class="klab">Value</p><p class="kval num">Rs 6,184,200</p><p class="kdelta">Avg Rs 15,010 / order</p></div>
+                <div class="kpi"><p class="klab">Collections</p><p class="kval num">Rs 4,930,700</p><p class="kdelta">79.7% of invoiced</p></div>
+                <div class="kpi"><p class="klab">Returns</p><p class="kval num">Rs 88,400</p><p class="kdelta">1.4% of value</p></div>
+              </div>
+              <div class="card2 grow" style="display:flex;flex-direction:column;min-height:0">
+                <div class="card2-h"><h4 class="h3s">By booker</h4><span class="meta">5 active</span></div>
+                <table class="tbl">
+                  <thead><tr><th>Booker</th><th>Route</th><th class="r">Orders</th><th class="r">Value</th><th class="r">Collected</th><th class="r">Returns</th><th>Status</th></tr></thead>
+                  <tbody>
+                    <tr><td>Ahmed Raza</td><td class="num">Route 3</td><td class="r num">96</td><td class="money">Rs 1,412,900</td><td class="money">Rs 1,180,400</td><td class="money">Rs 12,300</td><td><span class="status s-ok">Confirmed</span></td></tr>
+                    <tr><td>Bilal Khan</td><td class="num">Route 1</td><td class="r num">74</td><td class="money">Rs 1,046,500</td><td class="money">Rs 902,100</td><td class="money">Rs 8,900</td><td><span class="status s-ok">Confirmed</span></td></tr>
+                    <tr><td>Sana Iqbal</td><td class="num">Route 5</td><td class="r num">108</td><td class="money">Rs 1,688,300</td><td class="money">Rs 1,344,600</td><td class="money">Rs 41,200</td><td><span class="status s-ok">Confirmed</span></td></tr>
+                    <tr><td>Usman Ali</td><td class="num">Route 2</td><td class="r num">81</td><td class="money">Rs 1,213,700</td><td class="money">Rs 998,500</td><td class="money">Rs 18,000</td><td><span class="status s-info">Scheduled</span></td></tr>
+                    <tr><td>Hina Shah</td><td class="num">Route 4</td><td class="r num">53</td><td class="money">Rs 822,800</td><td class="money">Rs 505,100</td><td class="money">Rs 8,000</td><td><span class="status s-neu">Draft</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- OFFICE · SALES -->
+  <section class="bsec" id="sec-office-sales" data-od-id="sec-office-sales">
+    <div class="bsec-h"><h2>Office · Sales</h2><p>Orders → order detail → invoices → invoice detail → print</p></div>
+    <div class="bframes">
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Orders</span><span class="fmeta">chips + search filter the table</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-office-orders">
+          <div class="rail">
+            <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+            <nav class="rnav">
+              <p class="rgroup">Overview</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+              <p class="rgroup">Store</p>
+              <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+            </nav>
+            <div class="rfoot">
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+              <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+            </div>
+          </div>
+          <div class="main">
+            <header class="appbar">
+              <div><h3 class="ptitle">Orders</h3><p class="psub"><span data-count>6</span> shown · 38 placed today</p></div>
+              <div class="acts">
+                <button class="btn-sec" data-toast="Filters panel opened">Filters</button>
+                <button class="btn-primary" data-toast="New order form opened"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New order</button>
+              </div>
+            </header>
+            <div class="content">
+              <div class="rowb">
+                <div class="chips">
+                  <button class="chip is-on" data-f="">All</button>
+                  <button class="chip" data-f="scheduled">Scheduled</button>
+                  <button class="chip" data-f="confirmed">Confirmed</button>
+                  <button class="chip" data-f="awaiting">Awaiting confirm</button>
+                  <button class="chip" data-f="draft">Draft</button>
+                </div>
+                <label class="search row" style="gap:8px;width:260px"><svg class="ic ic-sm muted" viewBox="0 0 24 24"><use href="#i-search"/></svg><input data-filter placeholder="Order, customer, booker" style="border:0;background:none;outline:none;font:inherit;font-size:13px;width:100%" /></label>
+              </div>
+              <div class="card2 grow" style="display:flex;flex-direction:column;min-height:0">
+                <table class="tbl">
+                  <thead><tr><th>Order</th><th>Customer</th><th>Booker</th><th>Route</th><th class="r">Items</th><th class="r">Value</th><th>Status</th></tr></thead>
+                  <tbody>
+                    <tr><td class="num">RS-4821</td><td>Al-Madina Store</td><td>Ahmed Raza</td><td class="num">Route 3</td><td class="r num">6</td><td class="money">Rs 42,800</td><td><span class="status s-info">Scheduled</span></td></tr>
+                    <tr><td class="num">RS-4820</td><td>Karachi Grocers</td><td>Bilal Khan</td><td class="num">Route 1</td><td class="r num">3</td><td class="money">Rs 18,450</td><td><span class="status s-ok">Confirmed</span></td></tr>
+                    <tr><td class="num">RS-4819</td><td>Shaheen Traders</td><td>Sana Iqbal</td><td class="num">Route 5</td><td class="r num">11</td><td class="money">Rs 96,200</td><td><span class="status s-warn">Awaiting confirm</span></td></tr>
+                    <tr><td class="num">RS-4818</td><td>Bismillah Mart</td><td>Ahmed Raza</td><td class="num">Route 3</td><td class="r num">4</td><td class="money">Rs 27,600</td><td><span class="status s-ok">Confirmed</span></td></tr>
+                    <tr><td class="num">RS-4817</td><td>Noor Cash &amp; Carry</td><td>Usman Ali</td><td class="num">Route 2</td><td class="r num">8</td><td class="money">Rs 61,050</td><td><span class="status s-bad">Cancelled</span></td></tr>
+                    <tr><td class="num">RS-4816</td><td>Gulshan Superstore</td><td>Hina Shah</td><td class="num">Route 4</td><td class="r num">5</td><td class="money">Rs 38,900</td><td><span class="status s-neu">Draft</span></td></tr>
+                  </tbody>
+                </table>
+                <p class="tbl-empty" hidden>No orders match this filter.</p>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Order detail</span><span class="fmeta">timeline + line items</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-office-order-detail">
+          <div class="rail">
+            <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+            <nav class="rnav">
+              <p class="rgroup">Overview</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+              <p class="rgroup">Store</p>
+              <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+            </nav>
+            <div class="rfoot">
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+              <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+            </div>
+          </div>
+          <div class="main">
+            <header class="appbar">
+              <div>
+                <p class="meta">Orders / RS-4819</p>
+                <div class="row" style="gap:10px;margin-top:2px"><h3 class="ptitle">RS-4819</h3><span class="status s-warn">Awaiting confirm</span></div>
+              </div>
+              <div class="acts">
+                <button class="btn-ghost" data-toast="Order duplicated as RS-4822">Duplicate</button>
+                <button class="btn-sec" data-toast="Reassigned to Bilal Khan">Reassign booker</button>
+                <button class="btn-primary" data-toast="RS-4819 confirmed"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-check"/></svg>Confirm order</button>
+              </div>
+            </header>
+            <div class="content">
+              <div class="row" style="gap:16px;align-items:stretch">
+                <div class="card2" style="flex:1">
+                  <p class="ptitle-s" style="margin-bottom:10px">Customer</p>
+                  <div class="person"><span class="avatar">ST</span><span><span class="pname">Shaheen Traders</span><br><span class="pmeta">Gulshan · Route 5</span></span></div>
+                  <dl class="dl" style="margin-top:14px">
+                    <div><dt>Booker</dt><dd>Sana Iqbal</dd></div>
+                    <div><dt>Placed</dt><dd class="num">15 Sep, 10:42</dd></div>
+                    <div><dt>Delivery</dt><dd class="num">16 Sep</dd></div>
+                    <div><dt>Fulfilment</dt><dd>Cash on delivery</dd></div>
+                    <div><dt>Collects</dt><dd>Sana Iqbal</dd></div>
+                  </dl>
+                </div>
+                <div class="card2" style="width:250px">
+                  <p class="ptitle-s" style="margin-bottom:10px">Timeline</p>
+                  <div class="timeline">
+                    <div class="tl-item"><span class="tl-dot done"></span><div><p class="pname">Captured on route</p><p class="pmeta">15 Sep, 10:42 · Sana Iqbal</p></div></div>
+                    <div class="tl-item"><span class="tl-dot done"></span><div><p class="pname">Stock reserved</p><p class="pmeta">15 Sep, 10:44 · system</p></div></div>
+                    <div class="tl-item"><span class="tl-dot"></span><div><p class="pname">Awaiting confirmation</p><p class="pmeta">office review before dispatch</p></div></div>
+                  </div>
+                </div>
+              </div>
+              <div class="card2 grow" style="display:flex;flex-direction:column;min-height:0">
+                <div class="card2-h"><h4 class="h3s">Line items</h4><span class="meta">11 lines</span></div>
+                <table class="tbl">
+                  <thead><tr><th>SKU</th><th>Product</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th><th>Stock</th></tr></thead>
+                  <tbody>
+                    <tr><td class="sku">RS-BR25</td><td>Basmati Rice 25kg</td><td class="r num">4</td><td class="money">Rs 11,900</td><td class="money">Rs 47,600</td><td><span class="status s-ok">In stock</span></td></tr>
+                    <tr><td class="sku">RS-SO5</td><td>Sunflower Oil 5L</td><td class="r num">6</td><td class="money">Rs 3,180</td><td class="money">Rs 19,080</td><td><span class="status s-warn">Low</span></td></tr>
+                    <tr><td class="sku">RS-SU50</td><td>Sugar 50kg</td><td class="r num">3</td><td class="money">Rs 6,400</td><td class="money">Rs 19,200</td><td><span class="status s-ok">In stock</span></td></tr>
+                    <tr><td class="sku">RS-LE5</td><td>Red Lentils 5kg</td><td class="r num">5</td><td class="money">Rs 1,780</td><td class="money">Rs 8,900</td><td><span class="status s-ok">In stock</span></td></tr>
+                    <tr><td class="sku">RS-BR5</td><td>Basmati Rice 5kg</td><td class="r num">1</td><td class="money">Rs 2,450</td><td class="money">Rs 2,450</td><td><span class="status s-ok">In stock</span></td></tr>
+                  </tbody>
+                </table>
+                <div class="totals" style="margin-top:14px">
+                  <div class="trow"><span class="muted">Subtotal</span><span class="num">Rs 97,230</span></div>
+                  <div class="trow"><span class="muted">Discount</span><span class="num">− Rs 1,030</span></div>
+                  <div class="trow grand"><span>Total</span><span class="num">Rs 96,200</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Invoices</span><span class="fmeta">outstanding is the loudest column</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-office-invoices">
+          <div class="rail">
+            <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+            <nav class="rnav">
+              <p class="rgroup">Overview</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+              <p class="rgroup">Store</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+            </nav>
+            <div class="rfoot">
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+              <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+            </div>
+          </div>
+          <div class="main">
+            <header class="appbar">
+              <div><h3 class="ptitle">Invoices</h3><p class="psub">Rs 1,240,500 outstanding · Rs 50,000 collected on route today</p></div>
+              <div class="acts"><button class="btn-primary" data-toast="Recorded a payment"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-money"/></svg>Record payment</button></div>
+            </header>
+            <div class="content">
+              <div class="rowb">
+                <div class="chips">
+                  <button class="chip is-on" data-f="">All</button>
+                  <button class="chip" data-f="to collect">To collect</button>
+                  <button class="chip" data-f="paid">Paid</button>
+                  <button class="chip" data-f="draft">Draft</button>
+                </div>
+                <label class="search row" style="gap:8px;width:260px"><svg class="ic ic-sm muted" viewBox="0 0 24 24"><use href="#i-search"/></svg><input data-filter placeholder="Invoice or customer" style="border:0;background:none;outline:none;font:inherit;font-size:13px;width:100%" /></label>
+              </div>
+              <div class="card2 grow" style="display:flex;flex-direction:column;min-height:0">
+                <table class="tbl">
+                  <thead><tr><th>Invoice</th><th>Customer</th><th>Booker</th><th>Issued</th><th class="r">Collected</th><th class="r">Value</th><th>Status</th></tr></thead>
+                  <tbody>
+                    <tr><td class="num">INV-2291</td><td>Al-Madina Store</td><td class="num">Ahmed Raza</td><td class="num">04 Sep</td><td class="money">—</td><td class="money">Rs 42,800</td><td><span class="status s-warn">To collect</span></td></tr>
+                    <tr><td class="num">INV-2290</td><td>Karachi Grocers</td><td class="num">Ahmed Raza</td><td class="num">02 Sep</td><td class="money">Rs 18,450</td><td class="money">Rs 18,450</td><td><span class="status s-ok">Paid</span></td></tr>
+                    <tr><td class="num">INV-2289</td><td>Shaheen Traders</td><td class="num">Sana Iqbal</td><td class="num">28 Aug</td><td class="money">Rs 50,000</td><td class="money">Rs 96,200</td><td><span class="status s-warn">To collect</span></td></tr>
+                    <tr><td class="num">INV-2288</td><td>Bismillah Mart</td><td class="num">Ahmed Raza</td><td class="num">26 Aug</td><td class="money">Rs 27,600</td><td class="money">Rs 27,600</td><td><span class="status s-ok">Paid</span></td></tr>
+                    <tr><td class="num">INV-2287</td><td>Noor Cash &amp; Carry</td><td class="num">Usman Ali</td><td class="num">22 Aug</td><td class="money">Rs 61,050</td><td class="money">Rs 61,050</td><td><span class="status s-ok">Paid</span></td></tr>
+                    <tr><td class="num">INV-2286</td><td>Gulshan Superstore</td><td class="num">Hina Shah</td><td class="num">20 Aug</td><td class="money">—</td><td class="money">Rs 38,900</td><td><span class="status s-neu">Draft</span></td></tr>
+                  </tbody>
+                </table>
+                <p class="tbl-empty" hidden>No invoices match this filter.</p>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Invoice detail</span><span class="fmeta">payment history + print handoff</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-office-invoice-detail">
+          <div class="rail">
+            <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+            <nav class="rnav">
+              <p class="rgroup">Overview</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+              <p class="rgroup">Store</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+            </nav>
+            <div class="rfoot">
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+              <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+            </div>
+          </div>
+          <div class="main">
+            <header class="appbar">
+              <div>
+                <p class="meta">Invoices / INV-2289</p>
+                <div class="row" style="gap:10px;margin-top:2px"><h3 class="ptitle">INV-2289</h3><span class="status s-warn">To collect</span></div>
+              </div>
+              <div class="acts">
+                <button class="btn-sec" data-toast="Invoice sent on WhatsApp">Send</button>
+                <button class="btn-sec" data-print><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-print"/></svg>Print</button>
+                <button class="btn-sec" data-open="#sheet-return"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-return"/></svg>Log return</button>
+                <button class="btn-primary" data-open="#sheet-payment"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-money"/></svg>Record payment</button>
+              </div>
+            </header>
+            <div class="content">
+              <div class="row" style="gap:16px;align-items:stretch">
+                <div class="card2" style="flex:1">
+                  <p class="ptitle-s" style="margin-bottom:10px">Billed to</p>
+                  <div class="person"><span class="avatar">ST</span><span><span class="pname">Shaheen Traders</span><br><span class="pmeta">Gulshan · Route 5 · NTN 4218873-6</span></span></div>
+                  <dl class="dl" style="margin-top:12px;grid-template-columns:repeat(3,1fr);gap:10px">
+                    <div><dt>Issued</dt><dd class="num">28 Aug 2026</dd></div>
+                    <div><dt>Delivery</dt><dd class="num">29 Aug 2026</dd></div>
+                    <div><dt>Collection</dt><dd>Cash on delivery</dd></div>
+                    <div><dt>Collects</dt><dd>Sana Iqbal · Route 5</dd></div>
+                    <div><dt>Received</dt><dd class="num">Rs 50,000</dd></div>
+                    <div><dt>To collect</dt><dd class="num" style="color:var(--warn-fg)">Rs 46,200</dd></div>
+                  </dl>
+                </div>
+                <div class="card2" style="width:340px">
+                  <p class="ptitle-s" style="margin-bottom:10px">Payment history</p>
+                  <div class="prow"><span>Advance · 28 Aug</span><span class="num">Rs 20,000</span></div>
+                  <div class="prow"><span>Part payment · 05 Sep</span><span class="num">Rs 30,000</span></div>
+                  <div class="prow"><span class="pname">To collect</span><span class="num" style="font-weight:600;color:var(--warn-fg)">Rs 46,200</span></div>
+                </div>
+              </div>
+              <div class="card2 grow" style="display:flex;flex-direction:column;min-height:0">
+                <div class="card2-h"><h4 class="h3s">Charges</h4><span class="meta">from order RS-4788</span></div>
+                <table class="tbl">
+                  <thead><tr><th>SKU</th><th>Product</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
+                  <tbody>
+                    <tr><td class="sku">RS-BR25</td><td>Basmati Rice 25kg</td><td class="r num">5</td><td class="money">Rs 11,900</td><td class="money">Rs 59,500</td></tr>
+                    <tr><td class="sku">RS-SU50</td><td>Sugar 50kg</td><td class="r num">4</td><td class="money">Rs 6,400</td><td class="money">Rs 25,600</td></tr>
+                    <tr><td class="sku">RS-LE5</td><td>Red Lentils 5kg</td><td class="r num">6</td><td class="money">Rs 1,780</td><td class="money">Rs 10,680</td></tr>
+                  </tbody>
+                </table>
+                <div class="totals" style="margin-top:14px">
+                  <div class="trow"><span class="muted">Subtotal</span><span class="num">Rs 95,780</span></div>
+                  <div class="trow"><span class="muted">Freight</span><span class="num">Rs 420</span></div>
+                  <div class="trow grand"><span>Invoice total</span><span class="num">Rs 96,200</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="scrim" data-close></div>
+          <div class="sheet sheet-d" id="sheet-payment">
+            <div class="grab"></div>
+            <div class="sheet-h"><h4 class="h3s">Record payment · INV-2289</h4><button class="btn-ghost btn-sm" data-close aria-label="Close payment sheet"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-x"/></svg></button></div>
+            <div class="stack" style="gap:12px">
+              <div class="rowb"><span class="muted" style="font-size:13px">To collect</span><span class="money" style="font-size:15px;font-weight:600">Rs 46,200</span></div>
+              <div class="lfield"><label>Payment type</label><div class="chips"><button class="chip is-on" data-toast="Type: Part payment">Part payment</button><button class="chip" data-toast="Type: Cash advance">Cash advance</button><button class="chip" data-toast="Type: Full settlement">Full settlement</button></div></div>
+              <div class="lfield"><label>Amount collected</label><input class="linput num" value="20,000" /></div>
+              <div class="lfield"><label>Method</label><div class="chips"><button class="chip is-on" data-toast="Method: Cash">Cash</button><button class="chip" data-toast="Method: Bank transfer">Bank</button><button class="chip" data-toast="Method: Cheque">Cheque</button></div></div>
+              <div class="lfield"><label>Reference</label><input class="linput num" placeholder="Receipt or cheque number" /></div>
+              <div class="row" style="gap:10px;padding-top:4px"><button class="btn-sec grow" data-close style="justify-content:center">Cancel</button><button class="btn-primary grow" data-close data-toast="Part payment of Rs 20,000 recorded · INV-2289 balance Rs 26,200" style="justify-content:center"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-check"/></svg>Record payment</button></div>
+            </div>
+          </div>
+          <div class="sheet sheet-d" id="sheet-return">
+            <div class="grab"></div>
+            <div class="sheet-h"><h4 class="h3s">Log return · INV-2289</h4><button class="btn-ghost btn-sm" data-close aria-label="Close return sheet"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-x"/></svg></button></div>
+            <div class="stack" style="gap:10px">
+              <div class="qty-row" data-price="11900"><span class="grow"><span class="pname">Basmati Rice 25kg</span><br><span class="pmeta num">Rs 11,900 · sack</span></span><span class="qty-ctl"><button class="qty-btn" data-qty="dec" aria-label="Decrease Basmati Rice"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button><span class="qty-val" data-n="0">0</span><button class="qty-btn" data-qty="inc" aria-label="Increase Basmati Rice"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg></button></span></div>
+              <div class="qty-row" data-price="6400"><span class="grow"><span class="pname">Sugar 50kg</span><br><span class="pmeta num">Rs 6,400 · sack</span></span><span class="qty-ctl"><button class="qty-btn" data-qty="dec" aria-label="Decrease Sugar"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button><span class="qty-val" data-n="1">1</span><button class="qty-btn" data-qty="inc" aria-label="Increase Sugar"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg></button></span></div>
+              <div class="qty-row" data-price="1780"><span class="grow"><span class="pname">Red Lentils 5kg</span><br><span class="pmeta num">Rs 1,780 · bag</span></span><span class="qty-ctl"><button class="qty-btn" data-qty="dec" aria-label="Decrease Red Lentils"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button><span class="qty-val" data-n="0">0</span><button class="qty-btn" data-qty="inc" aria-label="Increase Red Lentils"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg></button></span></div>
+              <div class="lfield"><label>Reason</label><input class="linput" value="Damaged sacks on delivery" /></div>
+              <div class="rowb"><span class="muted" style="font-size:13px">Return value</span><span class="num" style="font-size:15px;font-weight:600" data-total>Rs 6,400</span></div>
+              <div class="row" style="gap:10px"><button class="btn-sec grow" data-close style="justify-content:center">Cancel</button><button class="btn-primary grow" data-close data-toast="Return logged · stock restocked, pending office approval" style="justify-content:center"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-return"/></svg>Log return</button></div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+
+      <figure class="fcard is-printable">
+        <figcaption class="fcap"><span class="fname">Print view</span><span class="fmeta">A4, greyscale-safe</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-office-print">
+          <div class="doc">
+            <div class="doc-head">
+              <div>
+                <p class="doc-t">Raseed Traders</p>
+                <p class="meta" style="margin-top:6px">Plot 14, SITE Area, Karachi · 021 3456 7890<br>NTN 1129983-4 · Strn 0789-1123</p>
+              </div>
+              <div style="text-align:right">
+                <p class="pilllg" style="background:var(--neu-bg);color:var(--neu-fg)">TAX INVOICE</p>
+                <p class="num" style="font-size:20px;margin-top:8px">INV-2289</p>
+                <p class="meta">Issued 28 Aug 2026 · Delivered 29 Aug 2026</p>
+              </div>
+            </div>
+            <div class="row" style="gap:40px">
+              <div><p class="ptitle-s">Billed to</p><p class="pname" style="margin-top:6px">Shaheen Traders</p><p class="meta">Gulshan Block 6, Karachi<br>Route 5 · NTN 4218873-6</p></div>
+              <div><p class="ptitle-s">Booker</p><p class="pname" style="margin-top:6px">Sana Iqbal</p><p class="meta">0301 9988776</p></div>
+              <div><p class="ptitle-s">Collection</p><p class="pname" style="margin-top:6px">Cash on delivery</p><p class="meta">Advance or part payments accepted</p></div>
+            </div>
+            <table class="tbl">
+              <thead><tr><th>SKU</th><th>Description</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
+              <tbody>
+                <tr><td class="sku">RS-BR25</td><td>Basmati Rice 25kg · sack</td><td class="r num">5</td><td class="money">Rs 11,900</td><td class="money">Rs 59,500</td></tr>
+                <tr><td class="sku">RS-SU50</td><td>Sugar 50kg · sack</td><td class="r num">4</td><td class="money">Rs 6,400</td><td class="money">Rs 25,600</td></tr>
+                <tr><td class="sku">RS-LE5</td><td>Red Lentils 5kg · bag</td><td class="r num">6</td><td class="money">Rs 1,780</td><td class="money">Rs 10,680</td></tr>
+                <tr><td class="sku"></td><td>Freight</td><td class="r num">1</td><td class="money">Rs 420</td><td class="money">Rs 420</td></tr>
+              </tbody>
+            </table>
+            <div class="totals">
+              <div class="trow"><span class="muted">Subtotal</span><span class="num">Rs 96,200</span></div>
+              <div class="trow"><span class="muted">Received to date</span><span class="num">− Rs 50,000</span></div>
+              <div class="trow grand"><span>To collect</span><span class="num">Rs 46,200</span></div>
+            </div>
+            <p class="meta" style="margin-top:auto;border-top:1px solid var(--border);padding-top:12px">Goods remain the property of Raseed Traders until paid in full. Queries within 7 days of receipt. · Page 1 of 1</p>
+          </div>
+        </div></div>
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- OFFICE · CATALOGUE & STOCK -->
+  <section class="bsec" id="sec-office-catalogue" data-od-id="sec-office-catalogue">
+    <div class="bsec-h"><h2>Office · Catalogue &amp; stock</h2><p>Products and Stock · Stock sits outside the primary rail</p></div>
+    <div class="bframes">
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Products</span><span class="fmeta">row click opens the drawer</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-office-products">
+          <div class="rail">
+            <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+            <nav class="rnav">
+              <p class="rgroup">Overview</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+              <p class="rgroup">Store</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+              <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+            </nav>
+            <div class="rfoot">
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+              <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+            </div>
+          </div>
+          <div class="main">
+            <header class="appbar">
+              <div><h3 class="ptitle">Products</h3><p class="psub"><span data-count>6</span> shown · 41 active SKUs</p></div>
+              <div class="acts">
+                <button class="btn-sec" data-open="#drawer-product">Edit Basmati Rice 5kg</button>
+                <button class="btn-primary" data-toast="New product form opened"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New product</button>
+              </div>
+            </header>
+            <div class="content">
+              <div class="rowb">
+                <div class="chips">
+                  <button class="chip is-on" data-f="">All</button>
+                  <button class="chip" data-f="rice">Rice</button>
+                  <button class="chip" data-f="oil">Oil</button>
+                  <button class="chip" data-f="grocery">Grocery</button>
+                  <button class="chip" data-f="pulses">Pulses</button>
+                </div>
+                <label class="search row" style="gap:8px;width:260px"><svg class="ic ic-sm muted" viewBox="0 0 24 24"><use href="#i-search"/></svg><input data-filter placeholder="SKU or product name" style="border:0;background:none;outline:none;font:inherit;font-size:13px;width:100%" /></label>
+              </div>
+              <div class="card2 grow" style="display:flex;flex-direction:column;min-height:0">
+                <table class="tbl">
+                  <thead><tr><th>SKU</th><th>Product</th><th>Unit</th><th>Category</th><th class="r">Rate</th><th>Stock</th></tr></thead>
+                  <tbody>
+                    <tr><td class="sku">RS-BR25</td><td>Basmati Rice 25kg</td><td>Sack</td><td>Rice</td><td class="money">Rs 11,900</td><td><span class="status s-ok">In stock</span></td></tr>
+                    <tr><td class="sku">RS-BR5</td><td>Basmati Rice 5kg</td><td>Bag</td><td>Rice</td><td class="money">Rs 2,450</td><td><span class="status s-ok">In stock</span></td></tr>
+                    <tr><td class="sku">RS-SO5</td><td>Sunflower Oil 5L</td><td>Carton</td><td>Oil</td><td class="money">Rs 3,180</td><td><span class="status s-warn">Low</span></td></tr>
+                    <tr><td class="sku">RS-SU50</td><td>Sugar 50kg</td><td>Sack</td><td>Grocery</td><td class="money">Rs 6,400</td><td><span class="status s-ok">In stock</span></td></tr>
+                    <tr><td class="sku">RS-WF20</td><td>Wheat Flour 20kg</td><td>Sack</td><td>Grocery</td><td class="money">Rs 2,150</td><td><span class="status s-bad">Out</span></td></tr>
+                    <tr><td class="sku">RS-LE5</td><td>Red Lentils 5kg</td><td>Bag</td><td>Pulses</td><td class="money">Rs 1,780</td><td><span class="status s-ok">In stock</span></td></tr>
+                  </tbody>
+                </table>
+                <p class="tbl-empty" hidden>No products match this filter.</p>
+              </div>
+            </div>
+          </div>
+          <div class="scrim" data-close-drawer></div>
+          <aside class="drawer" id="drawer-product">
+            <div class="drawer-h"><h4 class="h3s">Product details</h4><button class="btn-ghost btn-sm" data-close><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-x"/></svg></button></div>
+            <div class="drawer-b">
+              <div><p class="ptitle-s">SKU</p><p class="num" style="font-size:15px">RS-BR5</p></div>
+              <div class="lfield"><label>Name</label><input class="linput" value="Basmati Rice 5kg" /></div>
+              <div class="row" style="gap:12px;align-items:flex-start">
+                <div class="lfield grow"><label>Unit</label><input class="linput" value="Bag" /></div>
+                <div class="lfield grow"><label>Rate (PKR)</label><input class="linput num" value="2,450" /></div>
+              </div>
+              <div class="lfield"><label>Category</label><input class="linput" value="Rice" /></div>
+              <div class="warnbox"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-warn"/></svg><span>Changing the rate does not reprice orders already confirmed. Bookers see the new rate on their next sync.</span></div>
+            </div>
+            <div class="drawer-f"><button class="btn-sec grow" data-close>Cancel</button><button class="btn-primary grow" data-close data-toast="Product saved">Save changes</button></div>
+          </aside>
+        </div></div>
+      </figure>
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Stock</span><span class="fmeta">available = on hand − reserved</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-office-stock">
+          <div class="rail">
+            <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+            <nav class="rnav">
+              <p class="rgroup">Overview</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+              <p class="rgroup">Store</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+            </nav>
+            <div class="rfoot">
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+              <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+              <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+            </div>
+          </div>
+          <div class="main">
+            <header class="appbar">
+              <div><h3 class="ptitle">Stock</h3><p class="psub">Godown A · last counted 14 Sep 2026</p></div>
+              <div class="acts">
+                <div class="seg"><button class="seg-item is-on" data-toast="Showing all warehouses">All</button><button class="seg-item" data-toast="Showing Godown A">Godown A</button><button class="seg-item" data-toast="Showing Godown B">Godown B</button></div>
+                <button class="btn-sec" data-toast="Stock adjustment started">Adjust</button>
+              </div>
+            </header>
+            <div class="content">
+              <div class="row" style="gap:16px;align-items:stretch">
+                <div class="card2 grow" style="display:flex;flex-direction:column;min-height:0">
+                  <div class="tbl-wrap">
+                    <table class="tbl tight">
+                      <thead><tr><th>SKU</th><th>Product</th><th class="r">On hand</th><th class="r">Reserved</th><th class="r">Available</th><th class="r">Reorder at</th><th>Status</th></tr></thead>
+                      <tbody>
+                        <tr><td class="sku">RS-BR25</td><td>Basmati Rice 25kg</td><td class="r num">184</td><td class="r num">36</td><td class="r num">148</td><td class="r num">60</td><td><span class="status s-ok">In stock</span></td></tr>
+                        <tr><td class="sku">RS-BR5</td><td>Basmati Rice 5kg</td><td class="r num">312</td><td class="r num">48</td><td class="r num">264</td><td class="r num">80</td><td><span class="status s-ok">In stock</span></td></tr>
+                        <tr><td class="sku">RS-SO5</td><td>Sunflower Oil 5L</td><td class="r num">54</td><td class="r num">41</td><td class="r num">13</td><td class="r num">40</td><td><span class="status s-warn">Low</span></td></tr>
+                        <tr><td class="sku">RS-SU50</td><td>Sugar 50kg</td><td class="r num">96</td><td class="r num">22</td><td class="r num">74</td><td class="r num">30</td><td><span class="status s-ok">In stock</span></td></tr>
+                        <tr><td class="sku">RS-WF20</td><td>Wheat Flour 20kg</td><td class="r num">9</td><td class="r num">9</td><td class="r num">0</td><td class="r num">25</td><td><span class="status s-bad">Out</span></td></tr>
+                        <tr><td class="sku">RS-LE5</td><td>Red Lentils 5kg</td><td class="r num">208</td><td class="r num">31</td><td class="r num">177</td><td class="r num">50</td><td><span class="status s-ok">In stock</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="card2" style="width:224px">
+                  <p class="ptitle-s" style="margin-bottom:10px">Recent movements</p>
+                  <div class="prow"><span><span class="pname">RS-BR25</span><br><span class="pmeta">Inward · GRN-3391</span></span><span class="num">+120</span></div>
+                  <div class="prow"><span><span class="pname">RS-SO5</span><br><span class="pmeta">Outward · RS-4819</span></span><span class="num">−6</span></div>
+                  <div class="prow"><span><span class="pname">RS-WF20</span><br><span class="pmeta">Outward · RS-4802</span></span><span class="num">−14</span></div>
+                  <div class="prow"><span><span class="pname">RS-LE5</span><br><span class="pmeta">Return · RET-118</span></span><span class="num">+5</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- OFFICE · PEOPLE & SETTINGS -->
+  <section class="bsec" id="sec-office-people" data-od-id="sec-office-people">
+    <div class="bsec-h"><h2>Office · People &amp; settings</h2><p>Customers, Bookers, Settings</p></div>
+    <div class="bframes">
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Customers</span><span class="fmeta">an outstanding balance flags the row</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-office-customers">
+          <div class="rail">
+            <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+            <nav class="rnav">
+              <p class="rgroup">Overview</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+              <p class="rgroup">Store</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+              <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+            </nav>
+            <div class="rfoot">
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+              <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+            </div>
+          </div>
+          <div class="main">
+            <header class="appbar">
+              <div><h3 class="ptitle">Customers</h3><p class="psub"><span data-count>6</span> shown · 214 active shops</p></div>
+              <div class="acts">
+                <label class="search row" style="gap:8px;width:250px"><svg class="ic ic-sm muted" viewBox="0 0 24 24"><use href="#i-search"/></svg><input data-filter placeholder="Shop, area, route" style="border:0;background:none;outline:none;font:inherit;font-size:13px;width:100%" /></label>
+                <button class="btn-primary" data-toast="New customer form opened"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New customer</button>
+              </div>
+            </header>
+            <div class="content">
+              <div class="card2 grow" style="display:flex;flex-direction:column;min-height:0">
+                <table class="tbl">
+                  <thead><tr><th>Shop</th><th>Area</th><th>Route</th><th>Booker</th><th class="r">Outstanding</th><th>Status</th></tr></thead>
+                  <tbody>
+                    <tr><td>Al-Madina Store</td><td>Saddar</td><td class="num">Route 3</td><td>Ahmed Raza</td><td class="money">Rs 42,800</td><td><span class="status s-ok">Active</span></td></tr>
+                    <tr><td>Karachi Grocers</td><td>Clifton</td><td class="num">Route 1</td><td>Bilal Khan</td><td class="money">Rs 0</td><td><span class="status s-ok">Active</span></td></tr>
+                    <tr><td>Shaheen Traders</td><td>Gulshan</td><td class="num">Route 5</td><td>Sana Iqbal</td><td class="money">Rs 46,200</td><td><span class="status s-ok">Active</span></td></tr>
+                    <tr><td>Bismillah Mart</td><td>Korangi</td><td class="num">Route 3</td><td>Ahmed Raza</td><td class="money">Rs 17,500</td><td><span class="status s-ok">Active</span></td></tr>
+                    <tr><td>Noor Cash &amp; Carry</td><td>North Nazimabad</td><td class="num">Route 2</td><td>Usman Ali</td><td class="money">Rs 0</td><td><span class="status s-neu">Inactive</span></td></tr>
+                    <tr><td>Gulshan Superstore</td><td>Gulshan</td><td class="num">Route 4</td><td>Hina Shah</td><td class="money">Rs 0</td><td><span class="status s-ok">Active</span></td></tr>
+                  </tbody>
+                </table>
+                <p class="tbl-empty" hidden>No customers match this search.</p>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Bookers</span><span class="fmeta">route ownership and today's run</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-office-bookers">
+          <div class="rail">
+            <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+            <nav class="rnav">
+              <p class="rgroup">Overview</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+              <p class="rgroup">Store</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+            </nav>
+            <div class="rfoot">
+              <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+              <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+            </div>
+          </div>
+          <div class="main">
+            <header class="appbar">
+              <div><h3 class="ptitle">Bookers</h3><p class="psub">5 on the road today · 1 on leave</p></div>
+              <div class="acts"><button class="btn-primary" data-toast="Invite sent to a new booker"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg>Add booker</button></div>
+            </header>
+            <div class="content">
+              <div class="card2 grow" style="display:flex;flex-direction:column;min-height:0">
+                <table class="tbl">
+                  <thead><tr><th>Booker</th><th>Route</th><th>Phone</th><th class="r">Orders today</th><th class="r">Value today</th><th class="r">Collected</th><th>Status</th></tr></thead>
+                  <tbody>
+                    <tr><td><div class="person"><span class="avatar">AR</span>Ahmed Raza</div></td><td class="num">Route 3</td><td class="num">0300 1234567</td><td class="r num">9</td><td class="money">Rs 128,400</td><td class="money">Rs 91,000</td><td><span class="status s-ok">Confirmed</span></td></tr>
+                    <tr><td><div class="person"><span class="avatar">BK</span>Bilal Khan</div></td><td class="num">Route 1</td><td class="num">0301 7654321</td><td class="r num">6</td><td class="money">Rs 74,900</td><td class="money">Rs 74,900</td><td><span class="status s-ok">Confirmed</span></td></tr>
+                    <tr><td><div class="person"><span class="avatar">SI</span>Sana Iqbal</div></td><td class="num">Route 5</td><td class="num">0301 9988776</td><td class="r num">11</td><td class="money">Rs 96,200</td><td class="money">Rs 50,000</td><td><span class="status s-warn">Awaiting confirm</span></td></tr>
+                    <tr><td><div class="person"><span class="avatar">UA</span>Usman Ali</div></td><td class="num">Route 2</td><td class="num">0302 4455667</td><td class="r num">7</td><td class="money">Rs 61,050</td><td class="money">Rs 61,050</td><td><span class="status s-info">Scheduled</span></td></tr>
+                    <tr><td><div class="person"><span class="avatar">HS</span>Hina Shah</div></td><td class="num">Route 4</td><td class="num">0303 1122334</td><td class="r num">5</td><td class="money">Rs 38,900</td><td class="money">Rs 0</td><td><span class="status s-neu">Draft</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Settings</span><span class="fmeta">carries the PR #8 note in-product</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-office-settings">
+          <div class="rail">
+            <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+            <nav class="rnav">
+              <p class="rgroup">Overview</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+              <p class="rgroup">Store</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+            </nav>
+            <div class="rfoot">
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+              <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+              <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+            </div>
+          </div>
+          <div class="main">
+            <header class="appbar">
+              <div><h3 class="ptitle">Settings</h3><p class="psub">Business, roles and appearance</p></div>
+              <div class="acts"><button class="btn-primary" data-toast="Settings saved">Save</button></div>
+            </header>
+            <div class="content" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;overflow-y:auto">
+              <div class="card2">
+                <div class="card2-h"><h4 class="h3s">Business</h4></div>
+                <div class="stack" style="gap:12px">
+                  <div class="lfield"><label>Business name</label><input class="linput" value="Raseed Traders" /></div>
+                  <div class="row" style="gap:12px;align-items:flex-start">
+                    <div class="lfield grow"><label>Currency</label><input class="linput" value="PKR · Rs" /></div>
+                    <div class="lfield grow"><label>Timezone</label><input class="linput" value="Asia/Karachi" /></div>
+                  </div>
+                  <div class="lfield"><label>Office hours</label><input class="linput num" value="09:00 – 19:00" /></div>
+                </div>
+              </div>
+              <div class="card2">
+                <div class="card2-h"><h4 class="h3s">Roles</h4></div>
+                <div class="stack" style="gap:12px">
+                  <div class="prow"><span><span class="pname">Bookers can see outstanding balances</span><br><span class="pmeta">Shows what each shop still owes before capture</span></span><button class="switch is-on" role="switch" aria-checked="true" aria-label="Bookers can see outstanding balances"></button></div>
+                  <div class="prow"><span><span class="pname">Bookers can discount</span><br><span class="pmeta">Up to 5% without supervisor approval</span></span><button class="switch is-on" role="switch" aria-checked="true" aria-label="Bookers can discount"></button></div>
+                  <div class="prow"><span><span class="pname">Require confirmation on every order</span><br><span class="pmeta">Office confirms before dispatch</span></span><button class="switch" role="switch" aria-checked="false" aria-label="Require confirmation"></button></div>
+                  <div class="prow"><span><span class="pname">Allow offline capture</span><br><span class="pmeta">Queues orders until the phone reconnects</span></span><button class="switch is-on" role="switch" aria-checked="true" aria-label="Allow offline capture"></button></div>
+                </div>
+              </div>
+              <div class="card2">
+                <div class="card2-h"><h4 class="h3s">Appearance</h4><span class="status s-neu">Not shipped</span></div>
+                <div class="prow" style="border-bottom:0">
+                  <span><span class="pname">Dark office chrome (PR #8)</span><br><span class="pmeta">Proposed as an A/B. Deliberately not rendered on this board: it would fork <span class="num">--bg</span> / <span class="num">--surface</span> per frame, so the same screen becomes reviewable against two palettes. Held as a code-level flag until <span class="num">VISUAL.md</span> adds a dark canvas token.</span></span>
+                  <span class="switch" role="switch" aria-checked="false" aria-label="Dark office chrome" style="opacity:.4"></span>
+                </div>
+              </div>
+              <div class="card2">
+                <div class="card2-h"><h4 class="h3s">Session</h4></div>
+                <div class="stack" style="gap:12px">
+                  <div class="prow" style="border-bottom:0">
+                    <span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner · Karachi HQ · signed in 08:52</span></span>
+                    <span class="status s-ok">Active</span>
+                  </div>
+                  <div class="lfield"><label>Booker PIN reset</label><input class="linput num" value="Expires every 90 days" readonly /></div>
+                  <button class="btn-sec btn-block" data-toast="Signed out">Sign out</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- BOOKER PWA -->
+  <section class="bsec" id="sec-booker" data-od-id="sec-booker">
+    <div class="bsec-h"><h2>Booker · PWA</h2><p>390 × 780 · route first, capture fast, work offline</p></div>
+    <div class="bframes">
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Home</span><span class="fmeta">today's run</span></figcaption>
+        <div class="wrap"><div class="frame f-pwa" data-od-id="frame-booker-home">
+          <div class="pwa">
+            <div class="pstatus"><span>10:42</span><span>4G · 82%</span></div>
+            <div class="pbar"><span class="pbar-t">Salaam, Ahmed</span><span class="grow"></span><button class="btn-ghost btn-sm" data-toast="Offline queue empty"><svg class="ic" viewBox="0 0 24 24"><use href="#i-bell"/></svg></button></div>
+            <div class="pbody">
+              <div class="pcard">
+                <p class="ptitle-s">Today's orders</p>
+                <div class="rowb" style="margin-top:6px;align-items:flex-end">
+                  <span class="pbig num">9</span>
+                  <span style="text-align:right"><span class="num" style="font-size:15px;display:block">Rs 128,400</span><span class="pmeta">Route 3 · 12 shops</span></span>
+                </div>
+              </div>
+              <div class="pcard">
+                <div class="rowb" style="margin-bottom:6px"><p class="ptitle-s">Collections</p><span class="pmeta">vs target</span></div>
+                <div class="rowb" style="margin-top:8px"><span class="pname">Rs 91,000 collected</span><span class="status s-ok">On track</span></div>
+                <div style="height:6px;background:var(--border);border-radius:999px;margin-top:10px"><div style="height:6px;width:71%;background:var(--accent);border-radius:999px"></div></div>
+                <p class="pmeta" style="margin-top:6px">71% of Rs 128,400</p>
+              </div>
+              <div class="row" style="gap:10px">
+                <button class="btn-primary grow" data-toast="Capture wizard opened" style="justify-content:center"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New order</button>
+                <button class="btn-sec" data-toast="Collections opened · Route 3"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-money"/></svg>Collect</button>
+              </div>
+              <div class="pcard" style="flex:1 0 auto">
+                <p class="ptitle-s" style="margin-bottom:4px">Next stops</p>
+                <div class="prow"><span><span class="pname">Shahid Kirana</span><br><span class="pmeta">Saddar · 400 m</span></span><span class="status s-info">Scheduled</span></div>
+                <div class="prow"><span><span class="pname">Al-Madina Store</span><br><span class="pmeta">Saddar · 900 m</span></span><span class="status s-ok">Confirmed</span></div>
+                <div class="prow"><span><span class="pname">Bismillah Mart</span><br><span class="pmeta">Korangi · 2.1 km · Rs 17,500 to collect</span></span><span class="status s-warn">To collect</span></div>
+              </div>
+            </div>
+            <nav class="ptabs">
+              <button class="ptab is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-home"/></svg>Home</button>
+              <button class="ptab" data-toast="Orders tab"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ptab" data-toast="New order"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New</button>
+              <button class="ptab" data-toast="Account tab"><svg class="ic" viewBox="0 0 24 24"><use href="#i-user"/></svg>Account</button>
+            </nav>
+            <div class="toast"></div>
+          </div>
+        </div></div>
+      </figure>
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Orders</span><span class="fmeta">filter chips</span></figcaption>
+        <div class="wrap"><div class="frame f-pwa" data-od-id="frame-booker-orders">
+          <div class="pwa">
+            <div class="pstatus"><span>10:44</span><span>4G · 82%</span></div>
+            <div class="pbar"><button class="btn-ghost btn-sm" data-toast="Back to home"><svg class="ic" viewBox="0 0 24 24"><use href="#i-back"/></svg></button><span class="pbar-t">My orders</span><span class="grow"></span><span class="meta">6 today</span></div>
+            <div class="pbody">
+              <div class="chips">
+                <button class="chip is-on" data-f="">All</button>
+                <button class="chip" data-f="scheduled">Scheduled</button>
+                <button class="chip" data-f="to collect">To collect</button>
+                <button class="chip" data-f="collected">Collected</button>
+              </div>
+              <div class="stack" style="gap:10px;overflow:hidden">
+                <div class="pcard" data-row><div class="rowb"><span><span class="pname">Al-Madina Store</span><br><span class="pmeta num">RS-4821 · 6 items</span></span><span class="status s-info">Scheduled</span></div><div class="rowb" style="margin-top:10px"><span class="num" style="font-size:15px">Rs 42,800</span><button class="btn-sec btn-sm" data-toast="RS-4821 opened">Open</button></div></div>
+                <div class="pcard" data-row><div class="rowb"><span><span class="pname">Karachi Grocers</span><br><span class="pmeta num">INV-2290 · cash collected</span></span><span class="status s-ok">Collected</span></div><div class="rowb" style="margin-top:10px"><span class="num" style="font-size:15px">Rs 18,450</span><button class="btn-sec btn-sm" data-toast="RS-4820 opened">Open</button></div></div>
+                <div class="pcard" data-row><div class="rowb"><span><span class="pname">Shaheen Traders</span><br><span class="pmeta num">INV-2289 · Rs 46,200 left</span></span><span class="status s-warn">To collect</span></div><div class="rowb" style="margin-top:10px"><span class="num" style="font-size:15px">Rs 96,200</span><button class="btn-sec btn-sm" data-toast="Rs 46,200 collected from Shaheen Traders">Collect</button></div></div>
+                <div class="pcard" data-row><div class="rowb"><span><span class="pname">Bismillah Mart</span><br><span class="pmeta num">INV-2294 · cash collected</span></span><span class="status s-ok">Collected</span></div><div class="rowb" style="margin-top:10px"><span class="num" style="font-size:15px">Rs 27,600</span><button class="btn-sec btn-sm" data-toast="RS-4818 opened">Open</button></div></div>
+              </div>
+              <p class="tbl-empty" hidden>No orders match this filter.</p>
+            </div>
+            <nav class="ptabs">
+              <button class="ptab" data-toast="Home tab"><svg class="ic" viewBox="0 0 24 24"><use href="#i-home"/></svg>Home</button>
+              <button class="ptab is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ptab" data-toast="New order"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New</button>
+              <button class="ptab" data-toast="Account tab"><svg class="ic" viewBox="0 0 24 24"><use href="#i-user"/></svg>Account</button>
+            </nav>
+            <div class="toast"></div>
+          </div>
+        </div></div>
+      </figure>
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Capture wizard</span><span class="fmeta">3 steps · steppers drive the total</span></figcaption>
+        <div class="wrap"><div class="frame f-pwa" data-od-id="frame-booker-capture">
+          <div class="pwa">
+            <div class="pstatus"><span>10:47</span><span>4G · 81%</span></div>
+            <div class="pbar"><button class="btn-ghost btn-sm" data-toast="Draft saved"><svg class="ic" viewBox="0 0 24 24"><use href="#i-back"/></svg></button><span class="pbar-t">New order</span><span class="grow"></span><span class="meta" data-wizlabel>Step 2 of 3</span></div>
+            <div class="pbody">
+              <div class="wiz" data-current="1">
+                <div class="wiz-dots"><span class="wiz-dot is-done"></span><span class="wiz-dot is-on"></span><span class="wiz-dot"></span></div>
+                <div class="wiz-step" hidden>
+                  <p class="ptitle-s">Step 1 · Pick the shop</p>
+                  <div class="stack" style="gap:8px;overflow:hidden">
+                    <button class="opt is-on"><span class="avatar">AM</span><span><span class="pname">Al-Madina Store</span><br><span class="pmeta">Saddar · outstanding Rs 42,800</span></span></button>
+                    <button class="opt"><span class="avatar">SK</span><span><span class="pname">Shahid Kirana</span><br><span class="pmeta">Saddar · outstanding Rs 6,300</span></span></button>
+                    <button class="opt"><span class="avatar">BM</span><span><span class="pname">Bismillah Mart</span><br><span class="pmeta">Korangi · outstanding Rs 27,600</span></span></button>
+                  </div>
+                </div>
+                <div class="wiz-step">
+                  <p class="ptitle-s">Step 2 · Add products</p>
+                  <div class="stack" style="gap:0;overflow:hidden">
+                    <div class="qty-row" data-price="11900"><span class="grow"><span class="pname">Basmati Rice 25kg</span><br><span class="pmeta num">Rs 11,900 · sack</span></span><span class="qty-ctl"><button class="qty-btn" data-qty="dec"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button><span class="qty-val" data-n="2">2</span><button class="qty-btn" data-qty="inc"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg></button></span></div>
+                    <div class="qty-row" data-price="3180"><span class="grow"><span class="pname">Sunflower Oil 5L</span><br><span class="pmeta num">Rs 3,180 · carton</span></span><span class="qty-ctl"><button class="qty-btn" data-qty="dec"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button><span class="qty-val" data-n="0">0</span><button class="qty-btn" data-qty="inc"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg></button></span></div>
+                    <div class="qty-row" data-price="6400"><span class="grow"><span class="pname">Sugar 50kg</span><br><span class="pmeta num">Rs 6,400 · sack</span></span><span class="qty-ctl"><button class="qty-btn" data-qty="dec"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button><span class="qty-val" data-n="1">1</span><button class="qty-btn" data-qty="inc"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg></button></span></div>
+                  </div>
+                  <div class="warnbox"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-warn"/></svg><span>Sunflower Oil 5L is low at the godown: only 13 available, 41 already reserved.</span></div>
+                </div>
+                <div class="wiz-step" hidden>
+                  <p class="ptitle-s">Step 3 · Advance and submit</p>
+                  <div class="pcard"><div class="prow"><span>Al-Madina Store</span><span class="pmeta">Route 3</span></div><div class="prow"><span>Basmati Rice 25kg × 2</span><span class="num">Rs 23,800</span></div><div class="prow"><span>Sugar 50kg × 1</span><span class="num">Rs 6,400</span></div><div class="prow"><span class="pname">Order total</span><span class="num" style="font-weight:600" data-rev-total>Rs 30,200</span></div><div class="prow"><span>Cash advance taken now</span><span class="num" data-rev-advance>Rs 10,000</span></div><div class="prow"><span class="pname">Collect on delivery</span><span class="num" style="font-weight:600" data-rev-balance>Rs 20,200</span></div></div>
+                  <div class="warnbox"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-warn"/></svg><span>Al-Madina Store already owes Rs 42,800. Take the advance now; the rest is collected when the invoice is delivered.</span></div>
+                </div>
+                <div class="totbar">
+                  <div class="rowb" style="margin-bottom:10px"><span class="meta"><span data-items>3</span> items</span><span class="num" data-total style="font-size:17px;font-weight:600">Rs 30,200</span></div>
+                  <div class="wiz-foot" style="padding-top:0">
+                    <button class="btn-sec" data-step="back" data-toast="Back a step">Back</button>
+                    <button class="btn-primary grow" data-step="next" data-submit style="justify-content:center">Continue</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <nav class="ptabs">
+              <button class="ptab" data-toast="Home tab"><svg class="ic" viewBox="0 0 24 24"><use href="#i-home"/></svg>Home</button>
+              <button class="ptab" data-toast="Orders tab"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ptab is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New</button>
+              <button class="ptab" data-toast="Account tab"><svg class="ic" viewBox="0 0 24 24"><use href="#i-user"/></svg>Account</button>
+            </nav>
+            <div class="toast"></div>
+          </div>
+        </div></div>
+      </figure>
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Account</span><span class="fmeta">sync state is always visible</span></figcaption>
+        <div class="wrap"><div class="frame f-pwa" data-od-id="frame-booker-account">
+          <div class="pwa">
+            <div class="pstatus"><span>18:05</span><span>4G · 34%</span></div>
+            <div class="pbar"><span class="pbar-t">Account</span></div>
+            <div class="pbody">
+              <div class="pcard">
+                <div class="person"><span class="avatar" style="width:40px;height:40px;font-size:13px">AR</span><span><span class="pname">Ahmed Raza</span><br><span class="pmeta">Booker · Route 3</span></span></div>
+              </div>
+              <div class="pcard">
+                <p class="ptitle-s">Today</p>
+                <div class="rowb" style="margin-top:8px;align-items:flex-end"><span class="pbig num">9</span><span style="text-align:right"><span class="num" style="display:block;font-size:15px">Rs 128,400</span><span class="pmeta">booked · Rs 37,400 left to collect</span></span></div>
+                <div style="height:6px;background:var(--border);border-radius:999px;margin-top:12px"><div style="height:6px;width:71%;background:var(--accent);border-radius:999px"></div></div>
+                <p class="pmeta" style="margin-top:6px">Rs 91,000 collected of Rs 128,400</p>
+              </div>
+              <div class="pcard">
+                <div class="prow"><span><span class="pname">Sync</span><br><span class="pmeta">Last synced 2 min ago</span></span><span class="status s-ok">Up to date</span></div>
+                <div class="prow"><span><span class="pname">Offline queue</span><br><span class="pmeta">Orders captured without signal</span></span><span class="status s-neu">0 pending</span></div>
+                <div class="prow"><span><span class="pname">App version</span><br><span class="pmeta num">1.8.2 · PWA</span></span><button class="btn-sec btn-sm" data-toast="Already on the latest version">Check</button></div>
+              </div>
+              <button class="btn-sec btn-block" data-toast="Signed out">Sign out</button>
+            </div>
+            <nav class="ptabs">
+              <button class="ptab" data-toast="Home tab"><svg class="ic" viewBox="0 0 24 24"><use href="#i-home"/></svg>Home</button>
+              <button class="ptab" data-toast="Orders tab"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ptab" data-toast="New order"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New</button>
+              <button class="ptab is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-user"/></svg>Account</button>
+            </nav>
+            <div class="toast"></div>
+          </div>
+        </div></div>
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- OVERLAYS -->
+  <section class="bsec" id="sec-overlays" data-od-id="sec-overlays">
+    <div class="bsec-h"><h2>Overlays</h2><p>Payment sheet · Return sheet · New product drawer</p></div>
+    <div class="bframes">
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Payment sheet</span><span class="fmeta">Office · opened from invoice detail</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-overlay-payment">
+          <div class="rail">
+            <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+            <nav class="rnav">
+              <p class="rgroup">Overview</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+              <p class="rgroup">Store</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+            </nav>
+            <div class="rfoot">
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+              <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+            </div>
+          </div>
+          <div class="main">
+            <header class="appbar" style="opacity:.35">
+              <div><p class="meta">Invoices / INV-2291</p><div class="row" style="gap:10px;margin-top:2px"><h3 class="ptitle">INV-2291</h3><span class="status s-warn">To collect</span></div></div>
+              <div class="acts"><button class="btn-sec"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-print"/></svg>Print</button><button class="btn-sec"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-return"/></svg>Log return</button><button class="btn-primary"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-money"/></svg>Record payment</button></div>
+            </header>
+            <div class="content" style="opacity:.35">
+              <div class="row" style="gap:16px;align-items:stretch">
+                <div class="card2" style="flex:1">
+                  <p class="ptitle-s" style="margin-bottom:10px">Billed to</p>
+                  <div class="person"><span class="avatar">AM</span><span><span class="pname">Al-Madina Store</span><br><span class="pmeta">Saddar · Route 3 · NTN 3309182-1</span></span></div>
+                  <dl class="dl" style="margin-top:14px">
+                    <div><dt>Issued</dt><dd class="num">04 Sep 2026</dd></div>
+                    <div><dt>Collects</dt><dd>Ahmed Raza · Route 3</dd></div>
+                    <div><dt>Collection</dt><dd>Cash on delivery</dd></div>
+                    <div><dt>To collect</dt><dd class="num">Rs 42,800</dd></div>
+                  </dl>
+                </div>
+                <div class="card2" style="width:340px">
+                  <p class="ptitle-s" style="margin-bottom:10px">Summary</p>
+                  <div class="prow"><span>Subtotal</span><span class="num">Rs 42,100</span></div>
+                  <div class="prow"><span>Freight</span><span class="num">Rs 700</span></div>
+                  <div class="prow"><span class="pname">To collect</span><span class="num" style="font-weight:600">Rs 42,800</span></div>
+                </div>
+              </div>
+              <div class="card2 grow">
+                <div class="card2-h"><h4 class="h3s">Charges</h4><span class="meta">from order RS-4821</span></div>
+                <table class="tbl">
+                  <thead><tr><th>SKU</th><th>Product</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
+                  <tbody>
+                    <tr><td class="sku">RS-BR25</td><td>Basmati Rice 25kg</td><td class="r num">3</td><td class="money">Rs 11,900</td><td class="money">Rs 35,700</td></tr>
+                    <tr><td class="sku">RS-SU50</td><td>Sugar 50kg</td><td class="r num">1</td><td class="money">Rs 6,400</td><td class="money">Rs 6,400</td></tr>
+                    <tr><td class="sku">RS-FRT</td><td>Freight</td><td class="r num">1</td><td class="money">Rs 700</td><td class="money">Rs 700</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="scrim is-open"></div>
+          <div class="sheet sheet-d is-open">
+            <div class="grab"></div>
+            <div class="sheet-h"><h4 class="h3s">Record payment · INV-2291</h4><button class="btn-ghost btn-sm" data-close aria-label="Close payment sheet"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-x"/></svg></button></div>
+            <div class="stack" style="gap:12px">
+              <div class="rowb"><span class="muted" style="font-size:13px">To collect</span><span class="money" style="font-size:15px;font-weight:600">Rs 42,800</span></div>
+              <div class="lfield"><label>Payment type</label><div class="chips"><button class="chip is-on" data-toast="Type: Part payment">Part payment</button><button class="chip" data-toast="Type: Cash advance">Cash advance</button><button class="chip" data-toast="Type: Full settlement">Full settlement</button></div></div>
+              <div class="lfield"><label>Amount collected</label><input class="linput num" value="20,000" /></div>
+              <div class="lfield"><label>Method</label><div class="chips"><button class="chip is-on" data-toast="Method: Cash">Cash</button><button class="chip" data-toast="Method: Bank transfer">Bank</button><button class="chip" data-toast="Method: Cheque">Cheque</button></div></div>
+              <div class="lfield"><label>Reference</label><input class="linput num" placeholder="Receipt or cheque number" /></div>
+              <div class="row" style="gap:10px;padding-top:4px"><button class="btn-sec grow" data-close style="justify-content:center">Cancel</button><button class="btn-primary grow" data-close data-toast="Part payment of Rs 20,000 recorded · INV-2291 balance Rs 22,800" style="justify-content:center"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-check"/></svg>Record payment</button></div>
+            </div>
+          </div>
+          <div class="toast"></div>
+        </div></div>
+      </figure>
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">Return sheet</span><span class="fmeta">Office · per-line, opened from invoice detail</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-overlay-return">
+          <div class="rail">
+            <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+            <nav class="rnav">
+              <p class="rgroup">Overview</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+              <p class="rgroup">Store</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+            </nav>
+            <div class="rfoot">
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+              <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+            </div>
+          </div>
+          <div class="main">
+            <header class="appbar" style="opacity:.35">
+              <div><p class="meta">Invoices / INV-2294</p><div class="row" style="gap:10px;margin-top:2px"><h3 class="ptitle">INV-2294</h3><span class="status s-ok">Delivered</span></div></div>
+              <div class="acts"><button class="btn-sec"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-print"/></svg>Print</button><button class="btn-sec"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-return"/></svg>Log return</button><button class="btn-primary"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-money"/></svg>Record payment</button></div>
+            </header>
+            <div class="content" style="opacity:.35">
+              <div class="row" style="gap:16px;align-items:stretch">
+                <div class="card2" style="flex:1">
+                  <p class="ptitle-s" style="margin-bottom:10px">Billed to</p>
+                  <div class="person"><span class="avatar">BM</span><span><span class="pname">Bismillah Mart</span><br><span class="pmeta">Korangi · Route 3 · NTN 5512094-7</span></span></div>
+                  <dl class="dl" style="margin-top:14px">
+                    <div><dt>Issued</dt><dd class="num">15 Sep 2026</dd></div>
+                    <div><dt>Delivered</dt><dd class="num">15 Sep 2026</dd></div>
+                    <div><dt>Collects</dt><dd>Ahmed Raza · Route 3</dd></div>
+                    <div><dt>To collect</dt><dd class="num">Rs 17,500</dd></div>
+                  </dl>
+                </div>
+                <div class="card2" style="width:340px">
+                  <p class="ptitle-s" style="margin-bottom:10px">Summary</p>
+                  <div class="prow"><span>Delivered value</span><span class="num">Rs 17,500</span></div>
+                  <div class="prow"><span>Returned to date</span><span class="num">Rs 0</span></div>
+                  <div class="prow"><span class="pname">To collect</span><span class="num" style="font-weight:600">Rs 17,500</span></div>
+                </div>
+              </div>
+              <div class="card2 grow">
+                <div class="card2-h"><h4 class="h3s">Charges</h4><span class="meta">from order RS-4818</span></div>
+                <table class="tbl">
+                  <thead><tr><th>SKU</th><th>Product</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
+                  <tbody>
+                    <tr><td class="sku">RS-LE5</td><td>Red Lentils 5kg</td><td class="r num">5</td><td class="money">Rs 1,780</td><td class="money">Rs 8,900</td></tr>
+                    <tr><td class="sku">RS-WF20</td><td>Wheat Flour 20kg</td><td class="r num">4</td><td class="money">Rs 2,150</td><td class="money">Rs 8,600</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="scrim is-open"></div>
+          <div class="sheet sheet-d is-open">
+            <div class="grab"></div>
+            <div class="sheet-h"><h4 class="h3s">Log return · INV-2294</h4><button class="btn-ghost btn-sm" data-close aria-label="Close return sheet"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-x"/></svg></button></div>
+            <div class="stack" style="gap:10px">
+              <div class="qty-row" data-price="1780"><span class="grow"><span class="pname">Red Lentils 5kg</span><br><span class="pmeta num">Rs 1,780 · bag</span></span><span class="qty-ctl"><button class="qty-btn" data-qty="dec" aria-label="Decrease Red Lentils"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button><span class="qty-val" data-n="2">2</span><button class="qty-btn" data-qty="inc" aria-label="Increase Red Lentils"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg></button></span></div>
+              <div class="qty-row is-zero" data-price="2150"><span class="grow"><span class="pname">Wheat Flour 20kg</span><br><span class="pmeta num">Rs 2,150 · sack</span></span><span class="qty-ctl"><button class="qty-btn" data-qty="dec" aria-label="Decrease Wheat Flour"><svg class="ic ic-sm" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button><span class="qty-val" data-n="0">0</span><button class="qty-btn" data-qty="inc" aria-label="Increase Wheat Flour"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg></button></span></div>
+              <div class="lfield"><label>Reason</label><input class="linput" value="Leaking bags" /></div>
+              <div class="rowb"><span class="muted" style="font-size:13px">Return value</span><span class="num" style="font-size:15px;font-weight:600" data-total>Rs 3,560</span></div>
+              <div class="row" style="gap:10px"><button class="btn-sec grow" data-close style="justify-content:center">Cancel</button><button class="btn-primary grow" data-close data-toast="Return logged · stock restocked, pending office approval" style="justify-content:center"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-return"/></svg>Log return</button></div>
+            </div>
+          </div>
+          <div class="toast"></div>
+        </div></div>
+      </figure>
+
+      <figure class="fcard">
+        <figcaption class="fcap"><span class="fname">New product drawer</span><span class="fmeta">Office · open by default</span></figcaption>
+        <div class="wrap"><div class="frame f-desktop" data-od-id="frame-overlay-new-product">
+          <div class="rail">
+            <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+            <nav class="rnav">
+              <p class="rgroup">Overview</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+              <p class="rgroup">Store</p>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+              <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+            </nav>
+            <div class="rfoot">
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+              <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+              <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+            </div>
+          </div>
+          <div class="main">
+            <header class="appbar"><div><h3 class="ptitle">Products</h3><p class="psub">41 active SKUs</p></div><div class="acts"><button class="btn-primary" data-toast="New product form opened"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New product</button></div></header>
+            <div class="content">
+              <div class="card2 grow" style="opacity:.4">
+                <table class="tbl">
+                  <thead><tr><th>SKU</th><th>Product</th><th>Unit</th><th class="r">Rate</th></tr></thead>
+                  <tbody>
+                    <tr><td class="sku">RS-BR25</td><td>Basmati Rice 25kg</td><td>Sack</td><td class="money">Rs 11,900</td></tr>
+                    <tr><td class="sku">RS-BR5</td><td>Basmati Rice 5kg</td><td>Bag</td><td class="money">Rs 2,450</td></tr>
+                    <tr><td class="sku">RS-SO5</td><td>Sunflower Oil 5L</td><td>Carton</td><td class="money">Rs 3,180</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="scrim is-open"></div>
+          <aside class="drawer is-open">
+            <div class="drawer-h"><h4 class="h3s">New product</h4><button class="btn-ghost btn-sm" data-close><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-x"/></svg></button></div>
+            <div class="drawer-b">
+              <div class="lfield"><label>Product name</label><input class="linput" placeholder="e.g. Basmati Rice 10kg" /></div>
+              <div class="row" style="gap:12px;align-items:flex-start"><div class="lfield grow"><label>Unit</label><input class="linput" placeholder="Bag" /></div><div class="lfield grow"><label>Rate (PKR)</label><input class="linput num" placeholder="0" /></div></div>
+              <div class="lfield"><label>Category</label><input class="linput" placeholder="Rice" /></div>
+              <div class="lfield"><label>Reorder level</label><input class="linput num" placeholder="50" /></div>
+              <div class="warnbox"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-warn"/></svg><span>The SKU is generated from the category and unit. It cannot be edited after the first order.</span></div>
+            </div>
+            <div class="drawer-f"><button class="btn-sec grow" data-close>Cancel</button><button class="btn-primary grow" data-close data-toast="Product created">Create product</button></div>
+          </aside>
+        </div></div>
+      </figure>
+
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  function q(s,r){return (r||document).querySelector(s)}
+  function qa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+  function fmt(n){return n.toLocaleString('en-PK')}
+
+  function showToast(msg,root){
+    var scope = root && root.closest ? (root.closest('.frame')||document) : document;
+    var t = q('.toast',scope);
+    if(!t && scope !== document && scope.appendChild){
+      t = document.createElement('div');
+      t.className = 'toast';
+      scope.appendChild(t);
+    }
+    if(!t) t = q('#toast');
+    if(!t) return;
+    t.textContent = msg;
+    t.classList.add('is-on');
+    clearTimeout(t._h);
+    t._h = setTimeout(function(){ t.classList.remove('is-on') }, 2200);
+  }
+
+  function filterFrame(el){
+    var frame = el.closest('.frame'); if(!frame) return;
+    var inp = q('input[data-filter]',frame);
+    var term = (inp && inp.value ? inp.value : '').toLowerCase().trim();
+    var chips = qa('.chip.is-on',frame).filter(function(c){
+      return c.hasAttribute('data-f');
+    }).map(function(c){
+      return (c.getAttribute('data-f') || '').toLowerCase().trim();
+    }).filter(Boolean);
+    var rows = qa('.tbl tbody tr',frame);
+    if(!rows.length) rows = qa('[data-row]',frame);
+    var any = false;
+    rows.forEach(function(r){
+      var txt = (r.textContent||'').toLowerCase();
+      var okTerm = !term || txt.indexOf(term) !== -1;
+      var okChip = chips.length === 0 || chips.some(function(c){ return txt.indexOf(c) !== -1 });
+      var vis = okTerm && okChip;
+      r.hidden = !vis;
+      if(vis) any = true;
+    });
+    var empty = q('.tbl-empty',frame);
+    if(empty) empty.hidden = any;
+    var cnt = q('[data-count]',frame);
+    if(cnt) cnt.textContent = rows.filter(function(r){return !r.hidden}).length;
+  }
+
+  function recalc(frame){
+    if(!frame) return;
+    var total = 0, items = 0;
+    qa('.qty-row',frame).forEach(function(r){
+      var v = q('.qty-val',r); if(!v) return;
+      var n = parseInt(v.getAttribute('data-n'),10) || 0;
+      var p = parseFloat(r.getAttribute('data-price')) || 0;
+      total += n * p;
+      if(n > 0) items++;
+    });
+    var t = q('[data-total]',frame); if(t) t.textContent = 'Rs ' + fmt(total);
+    var c = q('[data-items]',frame); if(c) c.textContent = items;
+    var adv = Math.min(10000, total);
+    var rt = q('[data-rev-total]',frame); if(rt) rt.textContent = 'Rs ' + fmt(total);
+    var ra = q('[data-rev-advance]',frame); if(ra) ra.textContent = 'Rs ' + fmt(adv);
+    var rb = q('[data-rev-balance]',frame); if(rb) rb.textContent = 'Rs ' + fmt(Math.max(0, total - adv));
+    var s = q('[data-submit]',frame); if(s) s.disabled = items === 0;
+  }
+
+  function changeQty(btn){
+    var row = btn.closest('.qty-row'); if(!row) return;
+    var v = q('.qty-val',row); if(!v) return;
+    var n = parseInt(v.getAttribute('data-n'),10) || 0;
+    n = btn.getAttribute('data-qty') === 'inc' ? n + 1 : Math.max(0, n - 1);
+    v.setAttribute('data-n', n);
+    v.textContent = n;
+    row.classList.toggle('is-zero', n === 0);
+    recalc(row.closest('.frame'));
+  }
+
+  function stepWizard(btn){
+    var w = btn.closest('.wiz'); if(!w) return;
+    var steps = qa('.wiz-step',w);
+    var dots = qa('.wiz-dot',w);
+    var i = parseInt(w.getAttribute('data-current'),10) || 0;
+    var dir = btn.getAttribute('data-step');
+    if(dir === 'next') i++;
+    else if(dir === 'back') i--;
+    i = Math.max(0, Math.min(steps.length - 1, i));
+    w.setAttribute('data-current', i);
+    steps.forEach(function(s,k){ s.hidden = k !== i });
+    dots.forEach(function(d,k){ d.classList.toggle('is-on', k === i); d.classList.toggle('is-done', k < i) });
+    var lbl = q('[data-wizlabel]',w);
+    if(lbl) lbl.textContent = 'Step ' + (i + 1) + ' of ' + steps.length;
+    var next = q('[data-step="next"]',w);
+    if(next) next.textContent = (i === steps.length - 1) ? 'Submit order' : 'Continue';
+    if(i === steps.length - 1) next.setAttribute('data-toast','Order submitted for office confirmation');
+    else next.removeAttribute('data-toast');
+  }
+
+  function openOverlay(sel, trigger){
+    var frame = trigger.closest('.frame') || document;
+    var t = q(sel, frame); if(!t) return;
+    t.classList.add('is-open');
+    var sc = q('.scrim', frame); if(sc) sc.classList.add('is-open');
+  }
+  function closeOverlay(closeBtn){
+    var frame = closeBtn.closest ? closeBtn.closest('.frame') : null;
+    if(!frame) return;
+    var host = closeBtn.closest('.sheet') || closeBtn.closest('.drawer');
+    if(host){ host.classList.remove('is-open'); }
+    else { qa('.sheet.is-open,.drawer.is-open',frame).forEach(function(h){ h.classList.remove('is-open') }); }
+    var sc = q('.scrim',frame);
+    if(sc) sc.classList.remove('is-open');
+  }
+
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    var seg = t.closest ? t.closest('.seg-item') : null;
+    if(seg){ qa('.seg-item',seg.parentElement).forEach(function(b){ b.classList.toggle('is-on', b === seg) }); }
+
+    var chip = t.closest ? t.closest('.chip') : null;
+    if(chip){
+      var bar = chip.closest('.chips');
+      if(bar) qa('.chip',bar).forEach(function(c){ c.classList.toggle('is-on', c === chip) });
+      if(chip.hasAttribute('data-f')) filterFrame(chip);
+    }
+
+    var sw = t.closest ? t.closest('.switch') : null;
+    if(sw && !sw.hasAttribute('aria-disabled')){
+      sw.classList.toggle('is-on');
+      sw.setAttribute('aria-checked', sw.classList.contains('is-on') ? 'true' : 'false');
+    }
+
+    var opt = t.closest ? t.closest('.opt') : null;
+    if(opt){ qa('.opt',opt.parentElement).forEach(function(o){ o.classList.toggle('is-on', o === opt) });
+      if(opt.classList.contains('role-opt')){ var h=q('#rolehint'); if(h) h.textContent = opt.getAttribute('data-hint') || ''; }
+    }
+
+    var open = t.closest ? t.closest('[data-open]') : null;
+    if(open){ openOverlay(open.getAttribute('data-open'), open); }
+
+    var close = t.closest ? t.closest('[data-close],[data-close-drawer]') : null;
+    if(close){ closeOverlay(close); }
+
+    var pbtn = t.closest ? t.closest('[data-print]') : null;
+    if(pbtn){ window.print(); }
+
+    var qbtn = t.closest ? t.closest('[data-qty]') : null;
+    if(qbtn){ changeQty(qbtn); }
+
+    var sbtn = t.closest ? t.closest('[data-step]') : null;
+    if(sbtn){ stepWizard(sbtn); }
+
+    var toast = t.closest ? t.closest('[data-toast]') : null;
+    if(toast){ showToast(toast.getAttribute('data-toast'), toast); }
+  });
+
+  document.addEventListener('input', function(e){
+    if(e.target && e.target.hasAttribute && e.target.hasAttribute('data-filter')) filterFrame(e.target);
+  });
+
+  qa('.frame').forEach(function(f){ recalc(f) });
+})();
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 // Human-friendly sequential codes. Office usage is effectively single-writer
 // during office hours, and the unique constraint on the column is the ultimate

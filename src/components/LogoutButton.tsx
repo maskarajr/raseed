@@ -11,7 +11,7 @@ export function LogoutButton() {
     router.refresh();
   }
   return (
-    <button onClick={logout} className="btn-secondary text-xs">
+    <button type="button" onClick={logout} className="btn-ghost btn-sm">
       Sign out
     </button>
   );

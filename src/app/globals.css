@@ -2,21 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Locked design tokens */
+/* Compat aliases for leftover utility classes; tokens live in raseed.css */
 :root {
-  --bg: #f4f5f7;
-  --surface: #ffffff;
-  --border: #e2e5ea;
-  --text: #1a1d23;
-  --text-muted: #5c6570;
-  --primary: #0b6e4f;
-  --primary-hover: #095a41;
-  --primary-soft: #e6f4ef;
-  --accent: #c45c26;
-  --danger: #b42318;
-  --warning: #b54708;
-  --success: #067647;
-  color-scheme: light;
+  --text: var(--fg);
+  --text-muted: var(--muted);
+  --primary: var(--accent);
+  --primary-hover: var(--accent-hover);
+  --primary-soft: var(--accent-soft);
+  --danger: var(--bad-fg);
+  --warning: var(--warn-fg);
+  --success: var(--ok-fg);
 }
 
 html,
@@ -24,58 +19,75 @@ body {
   height: 100%;
 }
 
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: "Segoe UI", system-ui, sans-serif;
-  font-size: 14px;
-  -webkit-font-smoothing: antialiased;
+.office-root {
+  display: flex;
+  height: 100%;
+  min-height: 100vh;
+  overflow: hidden;
 }
 
-/* All money uses tabular figures for aligned columns. */
+.pwa-root {
+  height: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  max-width: 390px;
+  margin: 0 auto;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .tnum {
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
-@layer components {
-  .btn {
-    @apply inline-flex min-h-[40px] items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
-  }
-  .btn-primary {
-    @apply btn bg-primary text-white hover:bg-primary-hover;
-  }
-  .btn-secondary {
-    @apply btn border border-line bg-surface text-ink hover:bg-canvas;
-  }
-  .btn-danger {
-    @apply btn text-white;
-    background-color: var(--danger);
-  }
-  .input {
-    @apply w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary focus:ring-2;
-  }
-  .input:focus {
-    --tw-ring-color: var(--primary-soft);
-  }
-  .label {
-    @apply mb-1 block text-sm font-medium text-ink;
-  }
-  .card {
-    @apply rounded-lg border border-line bg-surface p-4;
-  }
-  .table {
-    @apply w-full border-collapse text-sm;
-  }
-  .table th {
-    @apply border-b border-line px-3 py-2 text-left font-semibold text-muted;
-  }
-  .table td {
-    @apply border-b border-line px-3 py-2;
-  }
+.label {
+  font-size: 12px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 6px;
+}
+.input {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  background: var(--surface);
+  width: 100%;
+  color: var(--fg);
+}
+.btn-secondary {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 16px;
+  font-size: 14px;
+  background: var(--surface);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-danger {
+  border: 1px solid var(--bad-fg);
+  color: var(--bad-fg);
+  border-radius: var(--radius);
+  padding: 9px 16px;
+  background: var(--surface);
 }
 
 @media print {
   .no-print {
+    display: none !important;
+  }
+  .office-root {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+  .rail {
     display: none !important;
   }
 }

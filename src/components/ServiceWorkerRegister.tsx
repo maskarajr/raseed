@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect } from "react";
+import {
+  captureInstallPrompt,
+  registerBookerServiceWorker,
+} from "@/lib/pwaInstall";
 
 export function ServiceWorkerRegister() {
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {
-        // Registration failures are non-fatal for this online-only app.
-      });
-    }
+    const stop = captureInstallPrompt();
+    void registerBookerServiceWorker();
+    return stop;
   }, []);
   return null;
 }

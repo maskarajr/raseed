@@ -2,36 +2,50 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-const LINKS = [
-  { href: "/booker", label: "Home" },
-  { href: "/booker/orders", label: "Orders" },
-  { href: "/booker/account", label: "Account" },
-];
+import { Icon } from "@/components/Icon";
 
 export function BookerNav() {
   const pathname = usePathname();
+  const items = [
+    {
+      href: "/booker",
+      label: "Home",
+      icon: "home" as const,
+      on: pathname === "/booker",
+    },
+    {
+      href: "/booker/orders",
+      label: "Orders",
+      icon: "orders" as const,
+      on:
+        pathname.startsWith("/booker/orders") &&
+        pathname !== "/booker/orders/new",
+    },
+    {
+      href: "/booker/orders/new",
+      label: "New",
+      icon: "plus" as const,
+      on: pathname === "/booker/orders/new",
+    },
+    {
+      href: "/booker/account",
+      label: "Account",
+      icon: "user" as const,
+      on: pathname.startsWith("/booker/account"),
+    },
+  ];
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface">
-      <div className="mx-auto flex max-w-md items-stretch justify-around">
-        {LINKS.map((l) => {
-          const active =
-            l.href === "/booker"
-              ? pathname === "/booker"
-              : pathname.startsWith(l.href);
-          return (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`flex min-h-[56px] flex-1 items-center justify-center text-sm font-medium ${
-                active ? "text-primary" : "text-muted"
-              }`}
-            >
-              {l.label}
-            </Link>
-          );
-        })}
-      </div>
+    <nav className="ptabs">
+      {items.map((l) => (
+        <Link
+          key={l.href}
+          href={l.href}
+          className={`ptab${l.on ? " is-on" : ""}`}
+        >
+          <Icon name={l.icon} />
+          {l.label}
+        </Link>
+      ))}
     </nav>
   );
 }

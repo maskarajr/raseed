@@ -2,7 +2,7 @@
 /node_modules
 
 # next.js
-/.next/
+/src/generated/prisma
 /out/
 next-env.d.ts
 
@@ -24,3 +24,5 @@ prisma/dev.db-journal
 *.log
 .DS_Store
 *.tsbuildinfo
+.playwright-mcp/
+qc-*.png

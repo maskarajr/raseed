@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Raseed — dark theme preview</title>
+<style>
+/* ============================================================================
+   handoff/raseed.css — verbatim
+   The single source of truth for both themes. Copied in full so this page is
+   self-contained; do not edit here. Edit handoff/raseed.css and re-copy.
+   ========================================================================= */
+:root{
+  color-scheme:light;
+  /* six locked tokens (docs/VISUAL.md) */
+  --bg:#F4F5F7; --surface:#FFFFFF; --fg:#14181C; --muted:#626C76; --border:#E1E5EA; --accent:#0B6E4F;
+  /* brand secondary — graphic fill only, never a white-text button fill (4.28:1) */
+  --warm:#C45C26;
+  /* StatusPill pairs — the only permitted status colouring */
+  --ok-fg:#0A4C37;   --ok-bg:#E4F1EC;
+  --info-fg:#14486F; --info-bg:#E3EEF6;
+  --warn-fg:#7A3512; --warn-bg:#FBE9DF;
+  --bad-fg:#7A1F1F;  --bad-bg:#F7E3E3;
+  --neu-fg:#49525A;  --neu-bg:#ECEEF1;
+  /* derived */
+  --accent-soft:color-mix(in oklch, var(--accent) 12%, transparent);
+  --fg-soft:color-mix(in oklch, var(--fg) 5%, transparent);
+  /* Four values that the dark set has to invert but that no component should
+     hard-code: ink on --accent, the accent hover, the modal scrim, and the
+     switch knob. All four resolve exactly as the approved board does in light. */
+  --on-accent:var(--surface);
+  --accent-hover:color-mix(in oklch, var(--accent) 88%, black);
+  --scrim:color-mix(in oklch, var(--fg) 42%, transparent);
+  --knob:var(--surface);
+  /* type */
+  --font-display:'Iowan Old Style','Charter',Georgia,'Times New Roman',serif;
+  --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --font-mono:ui-monospace,'JetBrains Mono','SF Mono',Menlo,monospace;
+  /* scale */
+  --fs-meta:13px; --radius:10px; --radius-lg:16px;
+}
+
+@media screen{
+  [data-theme="dark"]{
+    color-scheme:dark;
+    /* six tokens, dark */
+    --bg:oklch(0.190 0.012 248); --surface:oklch(0.243 0.011 248);
+    --fg:oklch(0.955 0.004 248); --muted:oklch(0.725 0.016 248);
+    --border:oklch(0.375 0.013 248); --accent:oklch(0.780 0.130 165);
+    /* the accent is now luminous, so its own label is a deep green ink (9.2:1) */
+    --on-accent:oklch(0.215 0.030 165);
+    /* hover travels lighter on a dark canvas, never darker (L +0.06) */
+    --accent-hover:color-mix(in oklch, var(--accent) 72%, white);
+    /* brand secondary — same graphic-fill-only contract as light */
+    --warm:oklch(0.720 0.140 45);
+    /* StatusPill pairs, dark variants — same five tones, still a matched set */
+    --ok-fg:oklch(0.855 0.100 165);   --ok-bg:oklch(0.300 0.045 165);
+    --info-fg:oklch(0.855 0.070 248); --info-bg:oklch(0.300 0.040 248);
+    --warn-fg:oklch(0.865 0.090 60);  --warn-bg:oklch(0.310 0.050 55);
+    --bad-fg:oklch(0.850 0.080 20);   --bad-bg:oklch(0.310 0.050 20);
+    --neu-fg:oklch(0.830 0.010 248);  --neu-bg:oklch(0.300 0.012 248);
+    /* derived */
+    --accent-soft:color-mix(in oklch, var(--accent) 24%, transparent);
+    --fg-soft:color-mix(in oklch, var(--fg) 8%, transparent);
+    --scrim:color-mix(in oklch, black 62%, transparent);
+    --knob:oklch(0.620 0.012 248);
+  }
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+img,svg{display:block;max-width:100%}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+a{color:inherit;text-decoration:none}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+p{margin:0;text-wrap:pretty}
+
+.ic{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ic-sm{width:14px;height:14px}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.meta{font-family:var(--font-mono);font-size:var(--fs-meta);color:var(--muted)}
+.h3s{font-family:var(--font-display);font-size:16px;font-weight:650;letter-spacing:-.005em}
+.eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.row{display:flex;align-items:center;gap:12px}
+.rowb{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.grow{flex:1;min-width:0}
+.stack{display:flex;flex-direction:column;gap:16px}
+
+.rail{width:232px;flex:none;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:18px 14px 14px}
+.rbrand{display:flex;align-items:center;gap:9px;font-family:var(--font-display);font-size:18px;font-weight:600;letter-spacing:-.01em;padding:2px 6px 0}
+.rmark{width:22px;height:22px;border-radius:6px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-family:var(--font-mono);font-size:12px}
+.rnav{margin-top:22px;display:flex;flex-direction:column;gap:2px}
+.rgroup{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:14px 8px 6px}
+.ritem{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:8px;font-size:14px;color:var(--muted);text-align:left;width:100%}
+.ritem:hover{background:var(--fg-soft);color:var(--fg)}
+.ritem.is-on{background:var(--fg);color:var(--surface)}
+.rfoot{margin-top:auto;border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:2px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.appbar{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.ptitle{font-family:var(--font-display);font-size:22px;font-weight:600;letter-spacing:-.015em}
+.psub{font-size:12px;color:var(--muted);margin-top:2px}
+.acts{display:flex;align-items:center;gap:10px}
+.content{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+.pad{display:flex;flex-direction:column;gap:16px;min-height:0;flex:1}
+.card2{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
+.card2-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.content > .card2.grow{flex:1 0 auto}
+
+.btn-primary{background:var(--accent);color:var(--on-accent);border-radius:var(--radius);padding:9px 16px;font-size:14px;font-weight:550;display:inline-flex;align-items:center;gap:8px}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed}
+.btn-sec{border:1px solid var(--border);border-radius:var(--radius);padding:9px 16px;font-size:14px;font-weight:500;background:var(--surface);display:inline-flex;align-items:center;gap:8px}
+.btn-sec:hover{border-color:var(--fg)}
+.btn-ghost{border-radius:var(--radius);padding:9px 12px;font-size:14px;color:var(--muted);display:inline-flex;align-items:center;gap:8px}
+.btn-ghost:hover{color:var(--fg);background:var(--fg-soft)}
+.btn-sm{padding:6px 11px;font-size:13px;border-radius:8px}
+.btn-block{width:100%;justify-content:center}
+.search{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;font:inherit;font-size:13px;width:260px;color:var(--fg)}
+.search:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-size:12px;color:var(--muted);background:var(--surface)}
+.chip:hover{border-color:var(--fg);color:var(--fg)}
+.chip.is-on{background:var(--fg);border-color:var(--fg);color:var(--surface)}
+.seg{display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px}
+.seg-item{padding:6px 12px;border-radius:7px;font-size:13px;color:var(--muted)}
+.seg-item.is-on{background:var(--surface);color:var(--fg);font-weight:550;box-shadow:0 1px 2px rgba(20,24,28,.07)}
+.switch{width:38px;height:22px;border-radius:999px;background:var(--neu-bg);border:1px solid var(--border);position:relative;flex:none;transition:background .15s}
+.switch::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:999px;background:var(--knob);box-shadow:0 1px 2px rgba(20,24,28,.25);transition:left .15s}
+.switch.is-on{background:var(--fg);border-color:var(--fg)}
+.switch.is-on::after{left:18px}
+
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;text-align:left;padding:0 10px 9px;border-bottom:1px solid var(--border)}
+.tbl td{padding:10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl tbody tr:hover{background:var(--fg-soft)}
+.tbl tbody tr[hidden]{display:none}
+.r{text-align:right}
+.money{font-family:var(--font-mono);font-variant-numeric:tabular-nums;text-align:right}
+.sku{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+.status{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-family:var(--font-mono);font-size:11px;letter-spacing:.03em;white-space:nowrap}
+.status::before{content:'';width:5px;height:5px;border-radius:999px;background:currentColor;opacity:.75}
+.s-ok{color:var(--ok-fg);background:var(--ok-bg)}
+.s-info{color:var(--info-fg);background:var(--info-bg)}
+.s-warn{color:var(--warn-fg);background:var(--warn-bg)}
+.s-bad{color:var(--bad-fg);background:var(--bad-bg)}
+.s-neu{color:var(--neu-fg);background:var(--neu-bg)}
+.tbl-empty{font-size:13px;color:var(--muted);padding:22px 10px;text-align:center}
+.tbl-wrap{min-width:0;overflow-x:auto;scrollbar-width:thin}
+.tbl.tight th,.tbl.tight td{padding-left:7px;padding-right:7px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.klab{font-size:12px;color:var(--muted)}
+.kval{font-family:var(--font-display);font-size:27px;line-height:1.15;letter-spacing:-.02em;font-weight:600;margin-top:6px}
+.kdelta{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:4px}
+.person{display:flex;align-items:center;gap:9px}
+.avatar{width:28px;height:28px;border-radius:999px;background:var(--fg-soft);color:var(--fg);display:grid;place-items:center;font-family:var(--font-mono);font-size:11px;flex:none}
+.pname{font-size:13px;font-weight:550}
+.pmeta{font-size:11px;color:var(--muted)}
+.dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
+.dl dt{font-size:11px;color:var(--muted);font-family:var(--font-mono);letter-spacing:.08em;text-transform:uppercase}
+.dl dd{margin:4px 0 0;font-size:14px}
+.totals{display:flex;flex-direction:column;gap:8px;max-width:280px;margin-left:auto}
+.trow{display:flex;justify-content:space-between;gap:16px;font-size:13px}
+.trow.grand{border-top:1px solid var(--fg);padding-top:9px;font-size:15px;font-weight:600}
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl-item{display:flex;gap:10px;padding-bottom:14px;position:relative}
+.tl-item::before{content:'';position:absolute;left:5px;top:14px;bottom:0;width:1px;background:var(--border)}
+.tl-item:last-child::before{display:none}
+.tl-dot{width:11px;height:11px;border-radius:999px;border:2px solid var(--border);background:var(--surface);margin-top:3px;flex:none}
+.tl-dot.done{border-color:var(--fg);background:var(--fg)}
+.warnbox{background:var(--warn-bg);color:var(--warn-fg);border-radius:10px;padding:10px 12px;font-size:12px;display:flex;gap:8px;align-items:flex-start}
+
+.pwa{width:100%;height:100%;background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
+.pstatus{background:var(--surface);padding:7px 20px 3px;display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--fg)}
+.pbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px}
+.pbar-t{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.pbody{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding:14px 16px;display:flex;flex-direction:column;gap:14px}
+.ptabs{background:var(--surface);border-top:1px solid var(--border);display:flex;padding:6px 4px 8px}
+.ptab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--muted);padding:4px 0}
+.ptab.is-on{color:var(--fg);font-weight:600}
+.ptab.is-on .ic{stroke-width:2}
+.pcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 14px}
+.ptitle-s{font-size:12px;font-family:var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pbig{font-family:var(--font-display);font-size:30px;line-height:1.1;letter-spacing:-.02em;font-weight:600}
+.prow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.prow:last-child{border-bottom:0}
+
+.scrim{position:fixed;inset:0;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .18s;z-index:40}
+.scrim.is-open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-radius:18px 18px 0 0;padding:10px 16px 18px;transform:translateY(102%);transition:transform .2s ease;max-height:82%;overflow:hidden;z-index:50}
+.sheet.is-open{transform:translateY(0)}
+.grab{width:36px;height:4px;border-radius:999px;background:var(--border);margin:0 auto 12px}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sheet-d{left:50%;right:auto;width:560px;bottom:22px;border-radius:18px;padding:16px 20px 20px;transform:translate(-50%,102%);box-shadow:0 24px 60px -24px color-mix(in oklch, var(--fg) 45%, transparent)}
+.sheet-d.is-open{transform:translate(-50%,0)}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:400px;background:var(--surface);border-left:1px solid var(--border);transform:translateX(102%);transition:transform .2s ease;display:flex;flex-direction:column;z-index:50}
+.drawer.is-open{transform:translateX(0)}
+.drawer-h{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.drawer-b{flex:1;overflow-y:auto;overflow-x:hidden;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.drawer-f{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px}
+
+.wiz{display:flex;flex-direction:column;flex:1;min-height:0}
+.wiz-step{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:12px}
+.wiz-dots{display:flex;align-items:center;gap:8px}
+.wiz-dot{flex:1;height:3px;border-radius:999px;background:var(--border)}
+.wiz-dot.is-on{background:var(--fg)}
+.wiz-dot.is-done{background:color-mix(in oklch, var(--fg) 45%, var(--border))}
+.wiz-foot{padding-top:12px;display:flex;gap:10px}
+.qty-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.qty-row.is-zero{opacity:.5}
+.qty-ctl{display:flex;align-items:center;gap:2px;border:1px solid var(--border);border-radius:9px;padding:2px;flex:none}
+.qty-btn{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:var(--fg)}
+.qty-btn:hover{background:var(--fg-soft)}
+.qty-val{font-family:var(--font-mono);font-variant-numeric:tabular-nums;width:26px;text-align:center;font-size:13px}
+.opt{border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:11px;background:var(--surface);text-align:left;width:100%}
+.opt:hover{border-color:var(--fg)}
+.opt.is-on{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+.totbar{margin-top:auto;background:var(--surface);border-top:1px solid var(--border);padding:12px 0 0}
+
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);background:var(--fg);color:var(--surface);border-radius:999px;padding:9px 18px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:60;white-space:nowrap}
+.toast.is-on{opacity:1;transform:translate(-50%,0)}
+
+.login{width:100%;height:100%;display:grid;grid-template-columns:1fr 1fr}
+.login-l{background:var(--surface);display:flex;flex-direction:column;justify-content:center;padding:0 64px}
+.login-r{background:var(--bg);border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;padding:48px}
+.lfield{display:flex;flex-direction:column;gap:6px}
+.lfield label{font-size:12px;color:var(--muted)}
+.linput{border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font:inherit;font-size:14px;background:var(--surface);width:100%}
+.linput:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+.role-opt.is-on{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+@media (max-width:820px){
+  .login{grid-template-columns:1fr}
+  .login-l{padding:40px 24px}
+  .login-r{display:none}
+}
+
+.doc{background:var(--surface);margin:0 auto;width:100%;padding:34px 38px;height:100%;overflow:hidden;display:flex;flex-direction:column;gap:18px}
+.doc-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--fg);padding-bottom:14px}
+.doc-t{font-family:var(--font-display);font-size:26px;letter-spacing:-.02em}
+.pilllg{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:12px;font-family:var(--font-mono)}
+
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+  border-radius:var(--radius);
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}
+}
+
+/* ============================================================================
+   Preview shell — NOT part of handoff/raseed.css.
+   Three jobs only: chrome for this page, stage containment for screens that
+   would otherwise be viewport-fixed, and two gaps in the component layer that
+   only surface on a dark canvas.
+   ========================================================================= */
+body{min-height:100vh}
+.pv-top{position:sticky;top:0;z-index:70;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:12px 24px;
+  background:color-mix(in oklch, var(--surface) 76%, transparent);backdrop-filter:saturate(1.3) blur(12px);border-bottom:1px solid var(--border)}
+.pv-top .rbrand{padding:0}
+.pv-topx{display:flex;flex-direction:column;line-height:1.35;min-width:0}
+.pv-topx b{font-size:13px;font-weight:600}
+.pv-topx span{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.pv-spacer{flex:1;min-width:8px}
+.pv-wrap{max-width:1200px;margin:0 auto;padding:32px 24px 88px;display:flex;flex-direction:column;gap:44px}
+.pv-lede{display:flex;flex-direction:column;gap:10px;max-width:820px}
+.pv-h1{font-family:var(--font-display);font-size:clamp(30px,4.2vw,46px);line-height:1.06;letter-spacing:-.028em;font-weight:600}
+.pv-p{font-size:15px;color:var(--muted);max-width:74ch}
+.pv-sec{display:flex;flex-direction:column;gap:16px}
+.pv-sech{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:11px}
+.pv-sech h2{font-family:var(--font-display);font-size:19px;font-weight:600;letter-spacing:-.012em}
+.pv-sech p{font-size:12px;color:var(--muted);max-width:64ch;text-align:right}
+.pv-grid{display:grid;gap:12px}
+.pv-sw-grid{grid-template-columns:repeat(auto-fill,minmax(158px,1fr))}
+.pv-sw{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.pv-chip{display:block;height:58px;border-bottom:1px solid var(--border)}
+.pv-sw-meta{padding:9px 11px 12px}
+.pv-sw-meta b{display:block;font-family:var(--font-mono);font-size:11.5px;font-weight:600}
+.pv-sw-meta i{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-top:1px}
+.pv-sw-meta span{display:block;font-family:var(--font-mono);font-size:10.5px;color:var(--muted);margin-top:5px;overflow-wrap:anywhere}
+.pv-pill-grid{grid-template-columns:repeat(auto-fill,minmax(228px,1fr))}
+.pv-pill{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:11px}
+.pv-pill .status{align-self:flex-start}
+.pv-pill-meta b{display:block;font-family:var(--font-mono);font-size:11.5px}
+.pv-pill-meta span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.pv-deskwrap{overflow-x:auto;border-radius:14px}
+.stage{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:14px;background:var(--bg)}
+.stage-desk{display:flex;width:1120px;min-width:1120px;height:720px}
+.stage-doc{height:auto;min-height:0}
+.stage-doc .doc{height:auto}
+.stage-pwa{display:flex;justify-content:center;padding:22px}
+.pv-pwa{width:390px;height:780px;flex:none;display:flex;box-shadow:0 22px 48px -28px color-mix(in oklch, var(--fg) 60%, transparent)}
+.stage .pwa{flex:1;min-height:0;border-radius:2px}
+/* the app anchors overlays to the viewport; the preview anchors them to a stage
+   so several screens can share one page. Position is the only change. */
+.stage .scrim,.stage .sheet,.stage .drawer,.stage .toast{position:absolute}
+.stage .sheet-d{width:560px}
+.pv-hit{font-family:var(--font-mono);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pv-k{border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:1px 6px;font-family:var(--font-mono);font-size:11px;color:var(--fg)}
+/* gaps in raseed.css, both invisible on light: .linput never sets `color`, and
+   no placeholder colour is declared. On dark, color-scheme:dark covers inputs
+   but not every engine's placeholder. */
+.linput{color:var(--fg)}
+.search::placeholder,.linput::placeholder{color:var(--muted)}
+@media (max-width:640px){
+  .pv-wrap{padding:24px 16px 64px;gap:34px}
+  .pv-sech p{text-align:left}
+  .pv-top{padding:11px 16px}
+}
+@media print{
+  .pv-top,.pv-lede,.pv-sech p,.pv-hit{display:none}
+  .pv-wrap{padding:0;max-width:none;gap:0}
+  .pv-sec{display:none}
+  #sec-print{display:block;gap:0}
+  .pv-deskwrap{overflow:visible}
+  .stage-desk{width:auto;min-width:0;height:auto;border:0;border-radius:0}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-grid"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></g>
+<g id="i-chart"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></g>
+<g id="i-cart"><path d="M3 4h2l2.4 10.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L20.5 7H6"/><circle cx="10" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/></g>
+<g id="i-doc"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></g>
+<g id="i-box"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></g>
+<g id="i-users"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M17 11a2.6 2.6 0 0 0 0-5M18 20a5 5 0 0 0-2-4"/></g>
+<g id="i-truck"><path d="M3 6h11v9H3zM14 9h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/></g>
+<g id="i-gear"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></g>
+<g id="i-search"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></g>
+<g id="i-plus"><path d="M12 5v14M5 12h14"/></g>
+<g id="i-bell"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6M10.5 20a2 2 0 0 0 3 0"/></g>
+<g id="i-back"><path d="M15 5l-7 7 7 7"/></g>
+<g id="i-check"><path d="m5 13 4.5 4.5L19 7"/></g>
+<g id="i-x"><path d="M6 6l12 12M18 6 6 18"/></g>
+<g id="i-print"><path d="M7 9V3h10v6M7 19H5a2 2 0 0 1-2-2v-5h18v5a2 2 0 0 1-2 2h-2M7 15h10v6H7z"/></g>
+<g id="i-home"><path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></g>
+<g id="i-user"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></g>
+<g id="i-phone"><rect x="7" y="2" width="10" height="20" rx="2.4"/><path d="M11 18.5h2"/></g>
+<g id="i-warn"><path d="M12 3 2 20h20zM12 10v4M12 17.5v.5"/></g>
+<g id="i-money"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12a2 2 0 1 0 0-.01M6 12h.01M18 12h.01"/></g>
+<g id="i-return"><path d="M3 10h12a5 5 0 0 1 0 10h-6M3 10l4-4M3 10l4 4"/></g>
+</defs></svg>
+
+<header class="pv-top" data-od-id="pv-top">
+  <span class="rbrand"><span class="rmark">R</span>Raseed</span>
+  <div class="pv-topx"><b>Dark theme preview</b><span>handoff/raseed.css · [data-theme="dark"]</span></div>
+  <span class="pv-spacer"></span>
+  <div class="seg" role="group" aria-label="Theme">
+    <button class="seg-item is-on" data-theme-set="dark" aria-pressed="true">Dark</button>
+    <button class="seg-item" data-theme-set="light" aria-pressed="false">Light</button>
+  </div>
+</header>
+
+<main class="pv-wrap">
+
+  <div class="pv-lede" data-od-id="pv-intro">
+    <p class="eyebrow">PR #8 · dark A/B, resolved at the token layer</p>
+    <h1 class="pv-h1">Dark theme preview</h1>
+    <p class="pv-p">Every screen below is the approved component layer from <span class="pv-k">handoff/raseed.css</span>, re-themed by tokens alone — no component rule changes between light and dark. Toggle the theme in the bar above; both resolve from the same stylesheet, and the print section renders light either way.</p>
+  </div>
+
+  <section class="pv-sec" id="sec-tokens" data-od-id="sec-tokens">
+    <div class="pv-sech"><h2>Dark token set</h2><p>Values exactly as written in the <span class="pv-k">[data-theme="dark"]</span> block. Derived in OKLch from the light anchors, so it is the same brand, not a second one.</p></div>
+    <div class="pv-grid pv-sw-grid">
+      <div class="pv-sw"><span class="pv-chip" style="background:oklch(0.190 0.012 248)"></span><div class="pv-sw-meta"><b>--bg</b><i>canvas</i><span>oklch(0.190 0.012 248)</span></div></div>
+      <div class="pv-sw"><span class="pv-chip" style="background:oklch(0.243 0.011 248)"></span><div class="pv-sw-meta"><b>--surface</b><i>chrome, cards</i><span>oklch(0.243 0.011 248)</span></div></div>
+      <div class="pv-sw"><span class="pv-chip" style="background:oklch(0.375 0.013 248)"></span><div class="pv-sw-meta"><b>--border</b><i>hairlines</i><span>oklch(0.375 0.013 248)</span></div></div>
+      <div class="pv-sw"><span class="pv-chip" style="background:oklch(0.725 0.016 248)"></span><div class="pv-sw-meta"><b>--muted</b><i>labels, meta</i><span>oklch(0.725 0.016 248)</span></div></div>
+      <div class="pv-sw"><span class="pv-chip" style="background:oklch(0.955 0.004 248)"></span><div class="pv-sw-meta"><b>--fg</b><i>ink, active nav</i><span>oklch(0.955 0.004 248)</span></div></div>
+      <div class="pv-sw"><span class="pv-chip" style="background:oklch(0.780 0.130 165)"></span><div class="pv-sw-meta"><b>--accent</b><i>one primary action</i><span>oklch(0.780 0.130 165)</span></div></div>
+      <div class="pv-sw"><span class="pv-chip" style="background:oklch(0.215 0.030 165)"></span><div class="pv-sw-meta"><b>--on-accent</b><i>ink on the accent</i><span>oklch(0.215 0.030 165)</span></div></div>
+      <div class="pv-sw"><span class="pv-chip" style="background:oklch(0.720 0.140 45)"></span><div class="pv-sw-meta"><b>--warm</b><i>graphic fill only</i><span>oklch(0.720 0.140 45)</span></div></div>
+    </div>
+  </section>
+
+  <section class="pv-sec" id="sec-components" data-od-id="sec-components">
+    <div class="pv-sech"><h2>Status and controls</h2><p>Five pill tones, still a matched set. One label maps to one tone on both surfaces — <span class="pv-k">To collect</span> is the only wording for outstanding money.</p></div>
+    <div class="pv-grid pv-pill-grid">
+      <div class="pv-pill"><span class="status s-ok">Confirmed</span><div class="pv-pill-meta"><b>ok</b><span>Paid · Confirmed · In stock · On track</span></div></div>
+      <div class="pv-pill"><span class="status s-info">Scheduled</span><div class="pv-pill-meta"><b>info</b><span>Scheduled · Invoiced</span></div></div>
+      <div class="pv-pill"><span class="status s-warn">To collect</span><div class="pv-pill-meta"><b>warn</b><span>To collect · Awaiting confirm · Low</span></div></div>
+      <div class="pv-pill"><span class="status s-bad">Cancelled</span><div class="pv-pill-meta"><b>bad</b><span>Cancelled · Out of stock</span></div></div>
+      <div class="pv-pill"><span class="status s-neu">Draft</span><div class="pv-pill-meta"><b>neu</b><span>Draft · Inactive</span></div></div>
+    </div>
+    <div class="card2 stack" style="gap:18px">
+      <div class="row" style="flex-wrap:wrap;gap:10px">
+        <button class="btn-primary"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-money"/></svg>Record payment</button>
+        <button class="btn-sec"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-print"/></svg>Print</button>
+        <button class="btn-ghost">Cancel</button>
+      </div>
+      <div class="row" style="flex-wrap:wrap;gap:10px">
+        <span class="meta" style="min-width:58px">disabled</span>
+        <button class="btn-primary" disabled>Record payment</button>
+        <span class="meta">only <span class="pv-k">.btn-primary</span> declares <span class="pv-k">:disabled</span> — <span class="pv-k">.btn-sec</span> and <span class="pv-k">.btn-ghost</span> have no disabled treatment</span>
+      </div>
+      <div class="row" style="flex-wrap:wrap;gap:10px">
+        <button class="chip is-on">To collect</button>
+        <button class="chip">Paid</button>
+        <button class="chip">Draft</button>
+        <span class="seg"><button class="seg-item is-on">Day</button><button class="seg-item">Week</button><button class="seg-item">Month</button></span>
+        <span class="switch is-on" role="img" aria-label="Toggle on"></span>
+        <span class="switch" role="img" aria-label="Toggle off"></span>
+      </div>
+      <div class="row" style="flex-wrap:wrap;gap:10px">
+        <label class="search row" style="gap:8px;width:260px"><svg class="ic ic-sm muted" viewBox="0 0 24 24"><use href="#i-search"/></svg><input placeholder="Invoice or customer" style="border:0;background:none;outline:none;font:inherit;font-size:13px;width:100%" /></label>
+        <input class="linput num" style="max-width:220px" value="20,000" aria-label="Amount collected" />
+      </div>
+    </div>
+  </section>
+
+  <section class="pv-sec" id="sec-office" data-od-id="sec-office">
+    <div class="pv-sech"><h2>Office — Dashboard</h2><p>Rail and top bar on <span class="pv-k">--surface</span>, working area on <span class="pv-k">--bg</span>. Two accents only: the brand mark and <span class="pv-k">New order</span>.</p></div>
+    <div class="pv-deskwrap">
+      <div class="stage stage-desk" data-od-id="stage-office-dashboard">
+        <div class="rail">
+          <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+          <nav class="rnav">
+            <p class="rgroup">Overview</p>
+            <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+            <p class="rgroup">Store</p>
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+          </nav>
+          <div class="rfoot">
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+            <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+          </div>
+        </div>
+        <div class="main">
+          <header class="appbar">
+            <div><h3 class="ptitle">Dashboard</h3><p class="psub">Tuesday, 15 Sep 2026 · office hours 09:00–19:00</p></div>
+            <div class="acts">
+              <label class="search row" style="gap:8px;width:280px"><svg class="ic ic-sm muted" viewBox="0 0 24 24"><use href="#i-search"/></svg><input placeholder="Search orders, customers, SKUs" style="border:0;background:none;outline:none;font:inherit;font-size:13px;width:100%" /></label>
+              <button class="btn-ghost"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-bell"/></svg>Bell</button>
+              <button class="btn-primary"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New order</button>
+            </div>
+          </header>
+          <div class="content">
+            <div class="kpis">
+              <div class="kpi"><p class="klab">Booked today</p><p class="kval num">Rs 512,300</p><p class="kdelta">38 orders · +6 vs yesterday</p></div>
+              <div class="kpi"><p class="klab">Outstanding</p><p class="kval num">Rs 1,240,500</p><p class="kdelta">14 invoices open</p></div>
+              <div class="kpi"><p class="klab">Awaiting confirmation</p><p class="kval num">6</p><p class="kdelta">Oldest 42 min</p></div>
+              <div class="kpi"><p class="klab">Low stock SKUs</p><p class="kval num">7</p><p class="kdelta">1 out of stock</p></div>
+            </div>
+            <div class="card2 grow" style="display:flex;flex-direction:column;min-height:0">
+              <div class="card2-h"><h4 class="h3s">Orders awaiting confirmation</h4><button class="btn-ghost btn-sm">View all</button></div>
+              <table class="tbl">
+                <thead><tr><th>Order</th><th>Customer</th><th>Booker</th><th class="r">Items</th><th class="r">Value</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td class="num">RS-4821</td><td>Al-Madina Store</td><td>Ahmed Raza</td><td class="r num">6</td><td class="money">Rs 42,800</td><td><span class="status s-info">Scheduled</span></td></tr>
+                  <tr><td class="num">RS-4819</td><td>Shaheen Traders</td><td>Sana Iqbal</td><td class="r num">11</td><td class="money">Rs 96,200</td><td><span class="status s-warn">Awaiting confirm</span></td></tr>
+                  <tr><td class="num">RS-4818</td><td>Bismillah Mart</td><td>Ahmed Raza</td><td class="r num">4</td><td class="money">Rs 27,600</td><td><span class="status s-ok">Confirmed</span></td></tr>
+                  <tr><td class="num">RS-4816</td><td>Gulshan Superstore</td><td>Hina Shah</td><td class="r num">5</td><td class="money">Rs 38,900</td><td><span class="status s-neu">Draft</span></td></tr>
+                  <tr><td class="num">RS-4813</td><td>Noor Cash &amp; Carry</td><td>Usman Ali</td><td class="r num">8</td><td class="money">Rs 61,050</td><td><span class="status s-bad">Cancelled</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pv-sec" id="sec-invoice" data-od-id="sec-invoice">
+    <div class="pv-sech"><h2>Office — Invoice detail with the payment sheet open</h2><p>In the app the scrim and sheet are viewport-fixed; here they are contained in the stage. Note the dark scrim: <span class="pv-k">--fg 42%</span> becomes a white wash on a dark canvas, so the dark set swaps it for <span class="pv-k">black 62%</span>.</p></div>
+    <div class="pv-deskwrap">
+      <div class="stage stage-desk" data-od-id="stage-office-invoice-payment">
+        <div class="rail">
+          <div class="rbrand"><span class="rmark">R</span>Raseed</div>
+          <nav class="rnav">
+            <p class="rgroup">Overview</p>
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-grid"/></svg>Dashboard</button>
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-chart"/></svg>Reports</button>
+            <p class="rgroup">Store</p>
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+            <button class="ritem is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>Invoices</button>
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Products</button>
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-users"/></svg>Customers</button>
+          </nav>
+          <div class="rfoot">
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-truck"/></svg>Bookers</button>
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-box"/></svg>Stock</button>
+            <button class="ritem"><svg class="ic" viewBox="0 0 24 24"><use href="#i-gear"/></svg>Settings</button>
+            <div class="row" style="gap:9px;padding:10px 9px 0"><span class="avatar">AK</span><span><span class="pname">Adnan Karim</span><br><span class="pmeta">Owner</span></span></div>
+          </div>
+        </div>
+        <div class="main">
+          <header class="appbar" style="opacity:.35">
+            <div><p class="meta">Invoices / INV-2291</p><div class="row" style="gap:10px;margin-top:2px"><h3 class="ptitle">INV-2291</h3><span class="status s-warn">To collect</span></div></div>
+            <div class="acts"><button class="btn-sec"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-print"/></svg>Print</button><button class="btn-sec"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-return"/></svg>Log return</button><button class="btn-primary"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-money"/></svg>Record payment</button></div>
+          </header>
+          <div class="content" style="opacity:.35">
+            <div class="row" style="gap:16px;align-items:stretch">
+              <div class="card2" style="flex:1">
+                <p class="ptitle-s" style="margin-bottom:10px">Billed to</p>
+                <div class="person"><span class="avatar">AM</span><span><span class="pname">Al-Madina Store</span><br><span class="pmeta">Saddar · Route 3 · NTN 3309182-1</span></span></div>
+                <dl class="dl" style="margin-top:14px">
+                  <div><dt>Issued</dt><dd class="num">04 Sep 2026</dd></div>
+                  <div><dt>Collects</dt><dd>Ahmed Raza · Route 3</dd></div>
+                  <div><dt>Collection</dt><dd>Cash on delivery</dd></div>
+                  <div><dt>To collect</dt><dd class="num">Rs 42,800</dd></div>
+                </dl>
+              </div>
+              <div class="card2" style="width:340px">
+                <p class="ptitle-s" style="margin-bottom:10px">Summary</p>
+                <div class="prow"><span>Subtotal</span><span class="num">Rs 42,100</span></div>
+                <div class="prow"><span>Freight</span><span class="num">Rs 700</span></div>
+                <div class="prow"><span class="pname">To collect</span><span class="num" style="font-weight:600">Rs 42,800</span></div>
+              </div>
+            </div>
+            <div class="card2 grow">
+              <div class="card2-h"><h4 class="h3s">Charges</h4><span class="meta">from order RS-4821</span></div>
+              <table class="tbl">
+                <thead><tr><th>SKU</th><th>Product</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
+                <tbody>
+                  <tr><td class="sku">RS-BR25</td><td>Basmati Rice 25kg</td><td class="r num">3</td><td class="money">Rs 11,900</td><td class="money">Rs 35,700</td></tr>
+                  <tr><td class="sku">RS-SU50</td><td>Sugar 50kg</td><td class="r num">1</td><td class="money">Rs 6,400</td><td class="money">Rs 6,400</td></tr>
+                  <tr><td class="sku">RS-FRT</td><td>Freight</td><td class="r num">1</td><td class="money">Rs 700</td><td class="money">Rs 700</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="scrim is-open"></div>
+        <div class="sheet sheet-d is-open">
+          <div class="grab"></div>
+          <div class="sheet-h"><h4 class="h3s">Record payment · INV-2291</h4><button class="btn-ghost btn-sm" aria-label="Close payment sheet"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-x"/></svg></button></div>
+          <div class="stack" style="gap:12px">
+            <div class="rowb"><span class="muted" style="font-size:13px">To collect</span><span class="money" style="font-size:15px;font-weight:600">Rs 42,800</span></div>
+            <div class="lfield"><label>Payment type</label><div class="chips"><button class="chip is-on">Part payment</button><button class="chip">Cash advance</button><button class="chip">Full settlement</button></div></div>
+            <div class="lfield"><label>Amount collected</label><input class="linput num" value="20,000" /></div>
+            <div class="lfield"><label>Method</label><div class="chips"><button class="chip is-on">Cash</button><button class="chip">Bank transfer</button><button class="chip">Cheque</button></div></div>
+            <div class="lfield"><label>Reference</label><input class="linput num" placeholder="Receipt or cheque number" /></div>
+            <div class="row" style="gap:10px;padding-top:4px"><button class="btn-sec grow" style="justify-content:center">Cancel</button><button class="btn-primary grow" style="justify-content:center"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-check"/></svg>Record payment</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pv-sec" id="sec-booker" data-od-id="sec-booker">
+    <div class="pv-sech"><h2>Booker — PWA home</h2><p>390 × 780. One accent in the content: the collection progress fill; the capture CTA is the second.</p></div>
+    <div class="stage stage-pwa" data-od-id="stage-booker-home">
+      <div class="pv-pwa">
+        <div class="pwa">
+          <div class="pstatus"><span>10:42</span><span>4G · 82%</span></div>
+          <div class="pbar"><span class="pbar-t">Salaam, Ahmed</span><span class="grow"></span><button class="btn-ghost btn-sm" aria-label="Notifications"><svg class="ic" viewBox="0 0 24 24"><use href="#i-bell"/></svg></button></div>
+          <div class="pbody">
+            <div class="pcard">
+              <p class="ptitle-s">Today's orders</p>
+              <div class="rowb" style="margin-top:6px;align-items:flex-end">
+                <span class="pbig num">9</span>
+                <span style="text-align:right"><span class="num" style="font-size:15px;display:block">Rs 128,400</span><span class="pmeta">Route 3 · 12 shops</span></span>
+              </div>
+            </div>
+            <div class="pcard">
+              <div class="rowb" style="margin-bottom:6px"><p class="ptitle-s">Collections</p><span class="pmeta">vs target</span></div>
+              <div class="rowb" style="margin-top:8px"><span class="pname">Rs 91,000 collected</span><span class="status s-ok">On track</span></div>
+              <div style="height:6px;background:var(--border);border-radius:999px;margin-top:10px"><div style="height:6px;width:71%;background:var(--accent);border-radius:999px"></div></div>
+              <p class="pmeta" style="margin-top:6px">71% of Rs 128,400</p>
+            </div>
+            <div class="row" style="gap:10px">
+              <button class="btn-primary grow" style="justify-content:center"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New order</button>
+              <button class="btn-sec"><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-money"/></svg>Collect</button>
+            </div>
+            <div class="pcard" style="flex:1 0 auto">
+              <p class="ptitle-s" style="margin-bottom:4px">Next stops</p>
+              <div class="prow"><span><span class="pname">Shahid Kirana</span><br><span class="pmeta">Saddar · 400 m</span></span><span class="status s-info">Scheduled</span></div>
+              <div class="prow"><span><span class="pname">Al-Madina Store</span><br><span class="pmeta">Saddar · 900 m</span></span><span class="status s-ok">Confirmed</span></div>
+              <div class="prow"><span><span class="pname">Bismillah Mart</span><br><span class="pmeta">Korangi · 2.1 km · Rs 17,500 to collect</span></span><span class="status s-warn">To collect</span></div>
+            </div>
+          </div>
+          <nav class="ptabs">
+            <button class="ptab is-on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-home"/></svg>Home</button>
+            <button class="ptab"><svg class="ic" viewBox="0 0 24 24"><use href="#i-cart"/></svg>Orders</button>
+            <button class="ptab"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg>New</button>
+            <button class="ptab"><svg class="ic" viewBox="0 0 24 24"><use href="#i-user"/></svg>Account</button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pv-sec" id="sec-print" data-od-id="sec-print">
+    <div class="pv-sech"><h2>Print stays light</h2><p>The dark block is scoped to <span class="pv-k">@media screen</span>, so nothing here reaches paper. Print this page and the whole document re-resolves to the light set.</p></div>
+    <div class="pv-hit">
+      <button class="btn-sec" data-preview-print><svg class="ic ic-sm" viewBox="0 0 24 24"><use href="#i-print"/></svg>Print this page</button>
+      <span>Screen renders dark · paper renders light — same stylesheet, no print overrides.</span>
+    </div>
+    <div class="pv-deskwrap">
+      <div class="stage stage-desk stage-doc" data-od-id="stage-print-doc">
+        <div class="doc">
+          <div class="doc-head">
+            <div>
+              <p class="doc-t">Raseed Traders</p>
+              <p class="meta" style="margin-top:6px">Plot 14, SITE Area, Karachi · 021 3456 7890<br>NTN 1129983-4 · Strn 0789-1123</p>
+            </div>
+            <div style="text-align:right">
+              <p class="pilllg" style="background:var(--neu-bg);color:var(--neu-fg)">TAX INVOICE</p>
+              <p class="num" style="font-size:20px;margin-top:8px">INV-2289</p>
+              <p class="meta">Issued 28 Aug 2026 · Delivered 29 Aug 2026</p>
+            </div>
+          </div>
+          <div class="row" style="gap:40px">
+            <div><p class="ptitle-s">Billed to</p><p class="pname" style="margin-top:6px">Shaheen Traders</p><p class="meta">Gulshan Block 6, Karachi<br>Route 5 · NTN 4218873-6</p></div>
+            <div><p class="ptitle-s">Booker</p><p class="pname" style="margin-top:6px">Sana Iqbal</p><p class="meta">0301 9988776</p></div>
+            <div><p class="ptitle-s">Collection</p><p class="pname" style="margin-top:6px">Cash on delivery</p><p class="meta">Advance or part payments accepted</p></div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>SKU</th><th>Description</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
+            <tbody>
+              <tr><td class="sku">RS-BR25</td><td>Basmati Rice 25kg · sack</td><td class="r num">5</td><td class="money">Rs 11,900</td><td class="money">Rs 59,500</td></tr>
+              <tr><td class="sku">RS-SU50</td><td>Sugar 50kg · sack</td><td class="r num">4</td><td class="money">Rs 6,400</td><td class="money">Rs 25,600</td></tr>
+              <tr><td class="sku">RS-LE5</td><td>Red Lentils 5kg · bag</td><td class="r num">6</td><td class="money">Rs 1,780</td><td class="money">Rs 10,680</td></tr>
+              <tr><td class="sku"></td><td>Freight</td><td class="r num">1</td><td class="money">Rs 420</td><td class="money">Rs 420</td></tr>
+            </tbody>
+          </table>
+          <div class="totals">
+            <div class="trow"><span class="muted">Subtotal</span><span class="num">Rs 96,200</span></div>
+            <div class="trow"><span class="muted">Received to date</span><span class="num">− Rs 50,000</span></div>
+            <div class="trow grand"><span>To collect</span><span class="num">Rs 46,200</span></div>
+          </div>
+          <p class="meta" style="margin-top:auto;border-top:1px solid var(--border);padding-top:12px">Goods remain the property of Raseed Traders until paid in full. Queries within 7 days of receipt. · Page 1 of 1</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  var btns=Array.prototype.slice.call(document.querySelectorAll('[data-theme-set]'));
+  function apply(v){
+    if(v==='dark'){root.setAttribute('data-theme','dark');}
+    else{root.removeAttribute('data-theme');}
+    btns.forEach(function(b){
+      var on=b.getAttribute('data-theme-set')===v;
+      b.classList.toggle('is-on',on);
+      b.setAttribute('aria-pressed',on?'true':'false');
+    });
+    try{localStorage.setItem('raseed-preview-theme',v);}catch(e){}
+  }
+  btns.forEach(function(b){
+    b.addEventListener('click',function(){apply(b.getAttribute('data-theme-set'));});
+  });
+  var saved=null;
+  try{saved=localStorage.getItem('raseed-preview-theme');}catch(e){}
+  apply(saved==='light'?'light':'dark');
+
+  var pr=document.querySelector('[data-preview-print]');
+  if(pr){pr.addEventListener('click',function(){window.print();});}
+})();
+</script>
+</body>
+</html>
