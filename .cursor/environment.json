@@ -1,0 +1,21 @@
+{
+  "name": "Wholesale Sales System",
+  "user": "ubuntu",
+  "install": "bash scripts/install.sh",
+  "start": "bash scripts/start.sh",
+  "terminals": [
+    {
+      "name": "api",
+      "command": "bash scripts/start.sh && pnpm --filter api dev"
+    },
+    {
+      "name": "admin",
+      "command": "pnpm --filter admin dev"
+    },
+    {
+      "name": "salesman",
+      "command": "pnpm --filter salesman dev"
+    }
+  ],
+  "ports": [3000, 3001, 5173]
+}
