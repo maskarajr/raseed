@@ -88,9 +88,15 @@ export default function NewOrderPage() {
         )}
       </div>
 
-      {/* Sticky bottom CTA (sits directly above the bottom nav) */}
+      {/* Sticky bottom CTA (sits directly above the bottom nav). Extra bottom
+          padding clears the iOS home indicator / safe area. */}
       <div className="fixed inset-x-0 bottom-[56px] z-30 border-t border-line bg-surface">
-        <div className="mx-auto flex max-w-md items-center gap-3 p-3">
+        <div
+          className="mx-auto flex max-w-md items-center gap-3 p-3"
+          style={{
+            paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))",
+          }}
+        >
           {step > 1 && (
             <button
               className="btn-secondary min-h-[48px] flex-1"
@@ -576,9 +582,9 @@ function ReviewStep({
         ))}
       </div>
       {notes && <p className="text-sm text-muted">Notes: {notes}</p>}
-      <div className="card flex items-center justify-between p-4">
-        <span className="text-base font-semibold">Total</span>
-        <Money value={subtotal} className="text-2xl font-bold text-primary" />
+      <div className="flex items-center justify-between rounded-lg border border-primary bg-primary-soft p-4">
+        <span className="text-lg font-semibold">Total</span>
+        <Money value={subtotal} className="text-3xl font-extrabold text-primary" />
       </div>
     </div>
   );

@@ -1,129 +1,294 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
+import { formatTodayKarachi } from "@/lib/day";
 
-type ReportsResponse = {
-  sales: {
-    invoiceCount: number;
-    totalSales: number;
-    totalCollected: number;
-    totalOutstanding: number;
+type HomeResponse = {
+  kpis: {
+    bookedToday: number;
+    outstanding: number;
+    awaitingConfirm: number;
+    lowStock: number;
   };
-  stock: { id: string; sku: string; name: string; stockQty: number; lowStock: boolean }[];
-  bookers: { id: string; name: string; orderCount: number; salesValue: number }[];
+  submitted: {
+    id: string;
+    code: string;
+    createdAt: string;
+    booker: string;
+    customer: string;
+    subtotal: number;
+  }[];
+  lowStock: {
+    sku: string;
+    name: string;
+    stockQty: number;
+    reorderLevel: number | null;
+  }[];
+  outstandingInvoices: {
+    id: string;
+    code: string;
+    customer: string;
+    balance: number;
+  }[];
 };
 
 export default function OfficeDashboard() {
-  const [data, setData] = useState<ReportsResponse | null>(null);
+  const [data, setData] = useState<HomeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [today, setToday] = useState("");
 
-  useEffect(() => {
-    api<ReportsResponse>("/api/reports")
-      .then(setData)
-      .catch((e) => setError(e.message));
+  const load = useCallback(async () => {
+    try {
+      const res = await api<HomeResponse>("/api/office/home");
+      setData(res);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load");
+    }
   }, []);
 
-  if (error) return <p className="text-danger">{error}</p>;
+  useEffect(() => {
+    // Render the date client-side so it reflects the viewer's "today" request
+    // without a server/client hydration mismatch on the formatted string.
+    setToday(formatTodayKarachi());
+    load();
+  }, [load]);
+
+  async function confirm(id: string) {
+    setBusyId(id);
+    setError(null);
+    try {
+      await api(`/api/orders/${id}/confirm`, { method: "POST" });
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Confirm failed");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  if (error && !data) return <p className="text-danger">{error}</p>;
   if (!data) return <p className="text-muted">Loading…</p>;
 
-  const lowStock = data.stock.filter((s) => s.lowStock);
+  const { kpis } = data;
+  const needsAttention = data.submitted.length > 0 || data.lowStock.length > 0;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Invoices" value={String(data.sales.invoiceCount)} />
-        <Stat label="Total Sales" money={data.sales.totalSales} />
-        <Stat label="Collected" money={data.sales.totalCollected} />
-        <Stat label="Outstanding" money={data.sales.totalOutstanding} />
+      <div>
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <p className="mt-0.5 text-sm text-muted">
+          Today · {today || "…"} <span className="text-muted">(Asia/Karachi)</span>
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="card">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-semibold">Low stock</h2>
-            <Link href="/office/products" className="text-sm text-primary">
-              Products →
-            </Link>
-          </div>
-          {lowStock.length === 0 ? (
-            <p className="text-sm text-muted">Nothing below reorder level.</p>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>SKU</th>
-                  <th>Name</th>
-                  <th className="text-right">Qty</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lowStock.map((s) => (
-                  <tr key={s.id}>
-                    <td className="font-mono text-xs">{s.sku}</td>
-                    <td>{s.name}</td>
-                    <td className="tnum text-right font-semibold text-danger">
-                      {s.stockQty}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+      {error && <p className="text-sm text-danger">{error}</p>}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Kpi label="Booked today">
+          <Money value={kpis.bookedToday} />
+        </Kpi>
+        <Kpi label="Outstanding">
+          <Money value={kpis.outstanding} />
+        </Kpi>
+        <Kpi label="Awaiting confirm">
+          <span className="tnum">{kpis.awaitingConfirm}</span>
+        </Kpi>
+        <Kpi label="Low stock">
+          <span className="tnum">{kpis.lowStock}</span>
+        </Kpi>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-6">
+          <section className="card p-0">
+            <div className="flex items-center justify-between border-b border-line px-4 py-3">
+              <h2 className="font-semibold">Needs attention</h2>
+              <Link href="/office/orders" className="text-sm text-primary">
+                All orders →
+              </Link>
+            </div>
+
+            {!needsAttention ? (
+              <div className="px-4 py-10 text-center">
+                <p className="text-sm font-medium">All clear</p>
+                <p className="mt-1 text-sm text-muted">
+                  Nothing to confirm and nothing below reorder level.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6 p-4">
+                <div>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+                    Orders awaiting confirmation ({data.submitted.length})
+                  </h3>
+                  {data.submitted.length === 0 ? (
+                    <p className="text-sm text-muted">
+                      No orders awaiting confirmation.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="table">
+                        <thead>
+                          <tr>
+                            <th>Time</th>
+                            <th>Order#</th>
+                            <th>Booker</th>
+                            <th>Customer</th>
+                            <th className="text-right">Total</th>
+                            <th className="text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.submitted.map((o) => (
+                            <tr key={o.id}>
+                              <td className="whitespace-nowrap text-xs text-muted">
+                                {new Date(o.createdAt).toLocaleString("en-GB", {
+                                  timeZone: "Asia/Karachi",
+                                  day: "2-digit",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </td>
+                              <td className="font-mono text-xs">{o.code}</td>
+                              <td>{o.booker}</td>
+                              <td>{o.customer}</td>
+                              <td className="text-right">
+                                <Money value={o.subtotal} />
+                              </td>
+                              <td className="whitespace-nowrap text-right">
+                                <button
+                                  className="btn-primary mr-2 h-8 px-2 py-0 text-xs"
+                                  disabled={busyId === o.id}
+                                  onClick={() => confirm(o.id)}
+                                >
+                                  {busyId === o.id ? "…" : "Confirm"}
+                                </button>
+                                <Link
+                                  href={`/office/orders/${o.id}`}
+                                  className="text-sm text-primary"
+                                >
+                                  Open
+                                </Link>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
+                      Low stock ({data.lowStock.length})
+                    </h3>
+                    <Link
+                      href="/office/products"
+                      className="text-sm text-primary"
+                    >
+                      Products →
+                    </Link>
+                  </div>
+                  {data.lowStock.length === 0 ? (
+                    <p className="text-sm text-muted">
+                      Nothing below reorder level.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="table">
+                        <thead>
+                          <tr>
+                            <th>SKU</th>
+                            <th>Name</th>
+                            <th className="text-right">Qty</th>
+                            <th className="text-right">Reorder</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.lowStock.map((s) => (
+                            <tr key={s.sku}>
+                              <td className="font-mono text-xs">{s.sku}</td>
+                              <td>{s.name}</td>
+                              <td className="tnum text-right font-semibold text-danger">
+                                {s.stockQty}
+                              </td>
+                              <td className="tnum text-right text-muted">
+                                {s.reorderLevel ?? "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
         </div>
 
-        <div className="card">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-semibold">Booker leaderboard</h2>
-            <Link href="/office/reports" className="text-sm text-primary">
-              Reports →
-            </Link>
-          </div>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Booker</th>
-                <th className="text-right">Orders</th>
-                <th className="text-right">Sales</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.bookers.map((b) => (
-                <tr key={b.id}>
-                  <td>{b.name}</td>
-                  <td className="tnum text-right">{b.orderCount}</td>
-                  <td className="text-right">
-                    <Money value={b.salesValue} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Billing-health rail: only on very wide screens (≥1280px). */}
+        <aside className="hidden xl:block">
+          <section className="card p-0">
+            <div className="flex items-center justify-between border-b border-line px-4 py-3">
+              <h2 className="font-semibold">Billing health</h2>
+              <Link href="/office/invoices" className="text-sm text-primary">
+                Invoices →
+              </Link>
+            </div>
+            {data.outstandingInvoices.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-muted">
+                No outstanding invoices.
+              </p>
+            ) : (
+              <ul className="divide-y divide-line">
+                {data.outstandingInvoices.map((inv) => (
+                  <li key={inv.id}>
+                    <Link
+                      href={`/office/invoices/${inv.id}`}
+                      className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-canvas"
+                    >
+                      <span className="min-w-0">
+                        <span className="block font-mono text-xs">
+                          {inv.code}
+                        </span>
+                        <span className="block truncate text-xs text-muted">
+                          {inv.customer}
+                        </span>
+                      </span>
+                      <Money
+                        value={inv.balance}
+                        className="shrink-0 font-semibold text-primary"
+                      />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </aside>
       </div>
     </div>
   );
 }
 
-function Stat({
+function Kpi({
   label,
-  value,
-  money,
+  children,
 }: {
   label: string;
-  value?: string;
-  money?: number;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="card">
+    <div className="rounded-md border border-line bg-surface p-4">
       <p className="text-sm text-muted">{label}</p>
-      <p className="mt-1 text-xl font-bold">
-        {money !== undefined ? <Money value={money} /> : value}
-      </p>
+      <p className="mt-1 text-xl font-bold">{children}</p>
     </div>
   );
 }

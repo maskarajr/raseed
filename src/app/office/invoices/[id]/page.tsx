@@ -109,21 +109,20 @@ export default function InvoiceDetailPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>Product</th>
+                <th>SKU</th>
+                <th>Desc</th>
                 <th className="text-right">Qty</th>
-                <th className="text-right">Unit price</th>
-                <th className="text-right">Line</th>
+                <th className="text-right">Unit Rs</th>
+                <th className="text-right">Line Rs</th>
               </tr>
             </thead>
             <tbody>
               {inv.order.items.map((i) => (
                 <tr key={i.id}>
-                  <td>
-                    <span className="font-mono text-xs text-muted">
-                      {i.product.sku}
-                    </span>{" "}
-                    {i.product.name}
+                  <td className="font-mono text-xs text-muted">
+                    {i.product.sku}
                   </td>
+                  <td>{i.product.name}</td>
                   <td className="tnum text-right">
                     {i.qty} {i.product.unit}
                   </td>
