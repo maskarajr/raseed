@@ -26,6 +26,12 @@ export default function ProductsPage() {
 
   useEffect(() => {
     load();
+    if (
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("new") === "1"
+    ) {
+      setShowCreate(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
