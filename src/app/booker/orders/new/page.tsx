@@ -582,9 +582,9 @@ function ReviewStep({
         ))}
       </div>
       {notes && <p className="text-sm text-muted">Notes: {notes}</p>}
-      <div className="flex items-center justify-between rounded-lg border border-primary bg-primary-soft p-4">
-        <span className="text-lg font-semibold">Total</span>
-        <Money value={subtotal} className="text-3xl font-extrabold text-primary" />
+      <div className="flex items-center justify-between rounded-lg border border-line bg-surface p-4">
+        <span className="font-serif text-lg">Total</span>
+        <Money value={subtotal} className="font-serif text-3xl font-semibold text-primary" />
       </div>
     </div>
   );

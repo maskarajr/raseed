@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
+import { KpiCard } from "@/components/KpiCard";
 import { startOfTodayKarachi, startOfWeekKarachi } from "@/lib/day";
 
 type OrderRow = {
@@ -48,7 +49,7 @@ export default function BookerHome() {
     <div className="space-y-4 px-4 pt-5">
       <div className="flex items-center justify-between">
         <div className="flex min-w-0 items-baseline gap-2">
-          <span className="text-2xl font-bold text-primary">Raseed</span>
+          <span className="font-serif text-2xl font-semibold text-primary">Raseed</span>
           {name && (
             <span className="truncate text-sm text-muted">{name}</span>
           )}
@@ -61,15 +62,15 @@ export default function BookerHome() {
       {error && <p className="text-sm text-danger">{error}</p>}
 
       <div className="grid grid-cols-3 gap-2">
-        <Metric label="Today's booked">
-          <Money value={todayBooked} className="text-base font-bold" />
-        </Metric>
-        <Metric label="Open orders">
-          <span className="tnum text-base font-bold">{openOrders}</span>
-        </Metric>
-        <Metric label="This week">
-          <Money value={weekBooked} className="text-base font-bold" />
-        </Metric>
+        <KpiCard label="Today's booked" compact>
+          <Money value={todayBooked} />
+        </KpiCard>
+        <KpiCard label="Open orders" compact>
+          <span className="tnum">{openOrders}</span>
+        </KpiCard>
+        <KpiCard label="This week" compact>
+          <Money value={weekBooked} />
+        </KpiCard>
       </div>
 
       <Link
@@ -114,17 +115,3 @@ export default function BookerHome() {
   );
 }
 
-function Metric({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-md border border-line bg-surface p-3">
-      <p className="text-[11px] leading-tight text-muted">{label}</p>
-      <div className="mt-1">{children}</div>
-    </div>
-  );
-}

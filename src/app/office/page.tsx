@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
+import { KpiCard } from "@/components/KpiCard";
 import { formatTodayKarachi } from "@/lib/day";
 
 type HomeResponse = {
@@ -79,7 +80,7 @@ export default function OfficeDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1 className="font-serif text-3xl font-semibold">Home</h1>
         <p className="mt-0.5 text-sm text-muted">
           Today · {today || "…"} <span className="text-muted">(Asia/Karachi)</span>
         </p>
@@ -87,26 +88,26 @@ export default function OfficeDashboard() {
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Booked today">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiCard label="Booked today">
           <Money value={kpis.bookedToday} />
-        </Kpi>
-        <Kpi label="Outstanding">
+        </KpiCard>
+        <KpiCard label="Outstanding">
           <Money value={kpis.outstanding} />
-        </Kpi>
-        <Kpi label="Awaiting confirm">
+        </KpiCard>
+        <KpiCard label="Awaiting confirm">
           <span className="tnum">{kpis.awaitingConfirm}</span>
-        </Kpi>
-        <Kpi label="Low stock">
+        </KpiCard>
+        <KpiCard label="Low stock">
           <span className="tnum">{kpis.lowStock}</span>
-        </Kpi>
+        </KpiCard>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
-          <section className="card p-0">
-            <div className="flex items-center justify-between border-b border-line px-4 py-3">
-              <h2 className="font-semibold">Needs attention</h2>
+          <section className="card p-0 shadow-none">
+            <div className="flex items-center justify-between border-b border-line px-5 py-4">
+              <h2 className="font-serif text-xl font-semibold">Needs attention</h2>
               <Link href="/office/orders" className="text-sm text-primary">
                 All orders →
               </Link>
@@ -278,17 +279,3 @@ export default function OfficeDashboard() {
   );
 }
 
-function Kpi({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-md border border-line bg-surface p-4">
-      <p className="text-sm text-muted">{label}</p>
-      <p className="mt-1 text-xl font-bold">{children}</p>
-    </div>
-  );
-}

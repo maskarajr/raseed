@@ -34,7 +34,7 @@ export default function SettingsPage() {
         </dl>
         <p className="mt-3 text-xs text-muted">
           Bookers are managed under Bookers; products, stock, customers and
-          reports each have their own section in the left nav.
+          reports each have their own section in the office icon rail.
         </p>
       </div>
     </div>
