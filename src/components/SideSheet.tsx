@@ -1,6 +1,6 @@
 "use client";
 
-// Right-hand slide-over panel used for office create/record actions.
+// Right-hand slide-over — the only surface allowed a soft elevation.
 export function SideSheet({
   title,
   onClose,
@@ -18,7 +18,7 @@ export function SideSheet({
         aria-hidden
       />
       <div
-        className="relative flex h-full w-full max-w-md flex-col bg-surface"
+        className="relative flex h-full w-full max-w-md flex-col border-l border-line bg-surface"
         style={{ boxShadow: "0 4px 16px rgba(26,29,35,0.08)" }}
       >
         <div className="flex items-center justify-between border-b border-line px-4 py-3">

@@ -15,7 +15,7 @@ export default async function OfficeLayout({
 
   return (
     <div className="flex min-h-screen">
-      <aside className="no-print flex w-[220px] shrink-0 flex-col border-r border-line bg-surface">
+      <aside className="no-print flex w-[200px] shrink-0 flex-col border-r border-line bg-surface">
         <div className="border-b border-line px-4 py-4">
           <Link href="/office" className="text-xl font-bold text-primary">
             Raseed

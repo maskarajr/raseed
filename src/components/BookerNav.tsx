@@ -23,7 +23,7 @@ export function BookerNav() {
             <Link
               key={l.href}
               href={l.href}
-              className={`flex min-h-[56px] flex-1 items-center justify-center text-sm font-medium ${
+              className={`flex min-h-[44px] flex-1 items-center justify-center py-3 text-sm font-medium ${
                 active ? "text-primary" : "text-muted"
               }`}
             >

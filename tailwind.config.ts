@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// Colors are driven by the locked design tokens declared as CSS variables in
+// Colors are driven by the VISUAL-v2 tokens declared as CSS variables in
 // globals.css. Referencing the variables here keeps a single source of truth.
 const config: Config = {
   content: [
@@ -27,6 +27,19 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['"Segoe UI"', "system-ui", "sans-serif"],
+        serif: ["Georgia", '"Times New Roman"', "Times", "serif"],
+        mono: [
+          '"Cascadia Mono"',
+          '"Segoe UI Mono"',
+          "ui-monospace",
+          "monospace",
+        ],
+      },
+      boxShadow: {
+        sheet: "0 4px 16px rgba(26, 29, 35, 0.08)",
+      },
+      borderRadius: {
+        DEFAULT: "4px",
       },
     },
   },
