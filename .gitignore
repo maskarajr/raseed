@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.next/
+.turbo/
+*.log
+.env
+.env.local
+apps/**/dist/
+packages/**/dist/
+.pnpm-store/
+*.tsbuildinfo
+dev-data/
