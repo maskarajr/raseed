@@ -6,7 +6,7 @@
   "terminals": [
     {
       "name": "api",
-      "command": "pnpm --filter api dev"
+      "command": "bash scripts/start.sh && pnpm --filter api dev"
     },
     {
       "name": "admin",
