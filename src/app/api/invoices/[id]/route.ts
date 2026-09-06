@@ -1,0 +1,35 @@
+import { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/server/auth/requireRole";
+import { json, ApiError } from "@/server/http";
+
+type Params = { id: string };
+
+export const GET = requireRole<Params>(
+  "owner",
+  "office",
+)(async (_req: NextRequest, { params }) => {
+  const invoice = await prisma.invoice.findUnique({
+    where: { id: params.id },
+    include: {
+      order: {
+        include: {
+          customer: true,
+          booker: { select: { name: true } },
+          items: {
+            include: {
+              product: { select: { sku: true, name: true, unit: true } },
+            },
+          },
+        },
+      },
+      payments: { orderBy: { createdAt: "desc" } },
+      returns: {
+        orderBy: { createdAt: "desc" },
+        include: { product: { select: { sku: true, name: true } } },
+      },
+    },
+  });
+  if (!invoice) throw new ApiError(404, "Invoice not found");
+  return json({ invoice });
+});
