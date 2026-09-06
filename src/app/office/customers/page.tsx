@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 import type { Customer } from "@prisma/client";
 import { api } from "@/lib/client";
+import { SideSheet } from "@/components/SideSheet";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<Customer | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
+  const [sheet, setSheet] = useState<{ mode: "create" | "edit"; customer?: Customer } | null>(
+    null,
+  );
 
   async function load() {
     try {
@@ -32,35 +34,11 @@ export default function CustomersPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Customers</h1>
-        <button
-          className="btn-primary"
-          onClick={() => {
-            setShowCreate((s) => !s);
-            setEditing(null);
-          }}
-        >
-          {showCreate ? "Close" : "Add customer"}
+        <button className="btn-primary" onClick={() => setSheet({ mode: "create" })}>
+          New customer
         </button>
       </div>
-      {error && <p className="text-red-600">{error}</p>}
-
-      {showCreate && (
-        <CustomerForm
-          onSaved={() => {
-            setShowCreate(false);
-            load();
-          }}
-        />
-      )}
-      {editing && (
-        <CustomerForm
-          customer={editing}
-          onSaved={() => {
-            setEditing(null);
-            load();
-          }}
-        />
-      )}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       <div className="card">
         <div className="mb-3 flex gap-2">
@@ -82,24 +60,19 @@ export default function CustomersPage() {
                 <th>Name</th>
                 <th>Phone</th>
                 <th>Area</th>
-                <th>Address</th>
-                <th></th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {customers.map((c) => (
                 <tr key={c.id}>
                   <td className="font-medium">{c.name}</td>
-                  <td>{c.phone}</td>
+                  <td>{c.phone || "—"}</td>
                   <td>{c.area ?? "—"}</td>
-                  <td className="text-slate-500">{c.address ?? "—"}</td>
                   <td className="text-right">
                     <button
-                      className="text-sm text-brand-600"
-                      onClick={() => {
-                        setEditing(c);
-                        setShowCreate(false);
-                      }}
+                      className="text-sm text-primary"
+                      onClick={() => setSheet({ mode: "edit", customer: c })}
                     >
                       Edit
                     </button>
@@ -108,7 +81,7 @@ export default function CustomersPage() {
               ))}
               {customers.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="text-center text-slate-500">
+                  <td colSpan={4} className="text-center text-muted">
                     No customers.
                   </td>
                 </tr>
@@ -117,35 +90,46 @@ export default function CustomersPage() {
           </table>
         </div>
       </div>
+
+      {sheet && (
+        <CustomerSheet
+          customer={sheet.mode === "edit" ? sheet.customer : undefined}
+          onClose={() => setSheet(null)}
+          onSaved={() => {
+            setSheet(null);
+            load();
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function CustomerForm({
+function CustomerSheet({
   customer,
+  onClose,
   onSaved,
 }: {
   customer?: Customer;
+  onClose: () => void;
   onSaved: () => void;
 }) {
   const isEdit = !!customer;
   const [name, setName] = useState(customer?.name ?? "");
   const [phone, setPhone] = useState(customer?.phone ?? "");
   const [area, setArea] = useState(customer?.area ?? "");
-  const [address, setAddress] = useState(customer?.address ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
     setSaving(true);
+    setError(null);
     try {
       const body = JSON.stringify({
         name,
         phone,
         area: area || (isEdit ? null : undefined),
-        address: address || (isEdit ? null : undefined),
       });
       if (isEdit) {
         await api(`/api/customers/${customer!.id}`, { method: "PATCH", body });
@@ -155,56 +139,49 @@ function CustomerForm({
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
-    } finally {
       setSaving(false);
     }
   }
 
   return (
-    <form onSubmit={save} className="card grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <h2 className="col-span-full font-semibold">
-        {isEdit ? `Edit ${customer!.name}` : "New customer"}
-      </h2>
-      <div>
-        <label className="label">Name</label>
-        <input
-          className="input"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-      </div>
-      <div>
-        <label className="label">Phone</label>
-        <input
-          className="input"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          required
-        />
-      </div>
-      <div>
-        <label className="label">Area</label>
-        <input
-          className="input"
-          value={area}
-          onChange={(e) => setArea(e.target.value)}
-        />
-      </div>
-      <div>
-        <label className="label">Address</label>
-        <input
-          className="input"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-        />
-      </div>
-      {error && <p className="col-span-full text-sm text-red-600">{error}</p>}
-      <div className="col-span-full">
-        <button className="btn-primary" disabled={saving}>
+    <SideSheet
+      title={isEdit ? "Edit customer" : "New customer"}
+      onClose={onClose}
+    >
+      <form onSubmit={save} className="space-y-4">
+        <div>
+          <label className="label">
+            Name <span className="text-danger">*</span>
+          </label>
+          <input
+            className="input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            autoFocus
+          />
+        </div>
+        <div>
+          <label className="label">Phone</label>
+          <input
+            className="input"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="label">Area</label>
+          <input
+            className="input"
+            value={area}
+            onChange={(e) => setArea(e.target.value)}
+          />
+        </div>
+        {error && <p className="text-sm text-danger">{error}</p>}
+        <button className="btn-primary w-full" disabled={saving}>
           {saving ? "Saving…" : "Save"}
         </button>
-      </div>
-    </form>
+      </form>
+    </SideSheet>
   );
 }

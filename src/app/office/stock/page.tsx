@@ -177,7 +177,7 @@ export default function StockPage() {
                   >
                     {l.delta > 0 ? `+${l.delta}` : l.delta}
                   </td>
-                  <td>{l.reason}</td>
+                  <td>{l.reason === "return" ? "Return restock" : l.reason}</td>
                   <td className="text-xs text-slate-500">{l.refType ?? "—"}</td>
                   <td>{l.balanceAfter}</td>
                 </tr>

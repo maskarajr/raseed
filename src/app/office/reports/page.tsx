@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
-import { formatPKR } from "@/lib/money";
+import { Money } from "@/components/Money";
 
 type ReportsResponse = {
   sales: {
@@ -87,12 +87,9 @@ export default function ReportsPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <Stat label="Invoices" value={String(data.sales.invoiceCount)} />
-        <Stat label="Sales" value={formatPKR(data.sales.totalSales)} />
-        <Stat label="Collected" value={formatPKR(data.sales.totalCollected)} />
-        <Stat
-          label="Outstanding"
-          value={formatPKR(data.sales.totalOutstanding)}
-        />
+        <Stat label="Sales" money={data.sales.totalSales} />
+        <Stat label="Collected" money={data.sales.totalCollected} />
+        <Stat label="Outstanding" money={data.sales.totalOutstanding} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -110,8 +107,8 @@ export default function ReportsPage() {
               {data.sales.byDay.map((d) => (
                 <tr key={d.day}>
                   <td>{d.day}</td>
-                  <td>{d.invoices}</td>
-                  <td>{formatPKR(d.sales)}</td>
+                  <td className="tnum">{d.invoices}</td>
+                  <td><Money value={d.sales} /></td>
                 </tr>
               ))}
               {data.sales.byDay.length === 0 && (
@@ -141,8 +138,8 @@ export default function ReportsPage() {
                 <tr key={s.sku}>
                   <td className="font-mono text-xs">{s.sku}</td>
                   <td>{s.name}</td>
-                  <td>{s.qty}</td>
-                  <td>{formatPKR(s.revenue)}</td>
+                  <td className="tnum">{s.qty}</td>
+                  <td><Money value={s.revenue} /></td>
                 </tr>
               ))}
               {data.topSkus.length === 0 && (
@@ -202,8 +199,8 @@ export default function ReportsPage() {
               {data.bookers.map((b) => (
                 <tr key={b.id}>
                   <td>{b.name}</td>
-                  <td>{b.orderCount}</td>
-                  <td>{formatPKR(b.salesValue)}</td>
+                  <td className="tnum">{b.orderCount}</td>
+                  <td><Money value={b.salesValue} /></td>
                 </tr>
               ))}
             </tbody>
@@ -214,11 +211,21 @@ export default function ReportsPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  money,
+}: {
+  label: string;
+  value?: string;
+  money?: number;
+}) {
   return (
     <div className="card">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-1 text-xl font-bold">{value}</p>
+      <p className="text-sm text-muted">{label}</p>
+      <p className="mt-1 text-xl font-bold">
+        {money !== undefined ? <Money value={money} /> : value}
+      </p>
     </div>
   );
 }

@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
-import { formatPKR } from "@/lib/money";
-import { PayBadge } from "@/components/badges";
+import { Money } from "@/components/Money";
+import { StatusPill } from "@/components/badges";
 
 type InvoiceRow = {
   id: string;
@@ -30,19 +30,19 @@ export default function InvoicesPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Invoices</h1>
-      {error && <p className="text-red-600">{error}</p>}
-      <div className="card overflow-x-auto">
+      {error && <p className="text-sm text-danger">{error}</p>}
+      <div className="card overflow-x-auto p-0">
         <table className="table">
           <thead>
             <tr>
               <th>Invoice</th>
               <th>Order</th>
               <th>Customer</th>
-              <th>Total</th>
-              <th>Paid</th>
-              <th>Balance</th>
+              <th className="text-right">Total</th>
+              <th className="text-right">Paid</th>
+              <th className="text-right">Balance due</th>
               <th>Status</th>
-              <th></th>
+              <th className="text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -51,16 +51,22 @@ export default function InvoicesPage() {
                 <td className="font-mono text-xs">{i.code}</td>
                 <td className="font-mono text-xs">{i.order.code}</td>
                 <td>{i.order.customer.name}</td>
-                <td>{formatPKR(i.total)}</td>
-                <td>{formatPKR(i.amountPaid)}</td>
-                <td>{formatPKR(i.balance)}</td>
+                <td className="text-right">
+                  <Money value={i.total} />
+                </td>
+                <td className="text-right">
+                  <Money value={i.amountPaid} />
+                </td>
+                <td className="text-right font-semibold">
+                  <Money value={i.balance} />
+                </td>
                 <td>
-                  <PayBadge status={i.paymentStatus} />
+                  <StatusPill status={i.paymentStatus} />
                 </td>
                 <td className="text-right">
                   <Link
                     href={`/office/invoices/${i.id}`}
-                    className="text-sm text-brand-600"
+                    className="text-sm text-primary"
                   >
                     Open
                   </Link>
@@ -69,7 +75,7 @@ export default function InvoicesPage() {
             ))}
             {invoices.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center text-slate-500">
+                <td colSpan={8} className="text-center text-muted">
                   No invoices.
                 </td>
               </tr>

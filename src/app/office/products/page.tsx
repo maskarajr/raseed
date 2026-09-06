@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Product } from "@prisma/client";
 import { api } from "@/lib/client";
-import { formatPKR } from "@/lib/money";
+import { Money } from "@/components/Money";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -105,8 +105,10 @@ export default function ProductsPage() {
                   <td className="font-mono text-xs">{p.sku}</td>
                   <td>{p.name}</td>
                   <td>{p.category ?? "—"}</td>
-                  <td>{formatPKR(p.price)}</td>
                   <td>
+                    <Money value={p.price} />
+                  </td>
+                  <td className="tnum">
                     {p.stockQty} {p.unit}
                   </td>
                   <td>{p.reorderLevel ?? "—"}</td>
@@ -123,7 +125,7 @@ export default function ProductsPage() {
                   </td>
                   <td className="whitespace-nowrap text-right">
                     <button
-                      className="mr-2 text-sm text-brand-600"
+                      className="mr-2 text-sm text-primary"
                       onClick={() => {
                         setEditing(p);
                         setShowCreate(false);

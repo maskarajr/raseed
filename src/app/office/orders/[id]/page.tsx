@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/client";
-import { formatPKR } from "@/lib/money";
-import { StatusBadge } from "@/components/badges";
+import { Money } from "@/components/Money";
+import { StatusPill } from "@/components/badges";
 
 type OrderDetail = {
   id: string;
@@ -66,23 +66,21 @@ export default function OrderDetailPage() {
     }
   }
 
-  if (error && !order) return <p className="text-red-600">{error}</p>;
-  if (!order) return <p className="text-slate-500">Loading…</p>;
+  if (error && !order) return <p className="text-danger">{error}</p>;
+  if (!order) return <p className="text-muted">Loading…</p>;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <Link href="/office/orders" className="text-sm text-brand-600">
-            ← Orders
-          </Link>
-          <h1 className="mt-1 text-2xl font-bold">
-            {order.code} <StatusBadge status={order.status} />
-          </h1>
-        </div>
+      <div>
+        <Link href="/office/orders" className="text-sm text-primary">
+          ← Orders
+        </Link>
+        <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold">
+          {order.code} <StatusPill status={order.status} />
+        </h1>
       </div>
 
-      {error && <p className="text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="card lg:col-span-2">
@@ -92,9 +90,9 @@ export default function OrderDetailPage() {
               <tr>
                 <th>SKU</th>
                 <th>Product</th>
-                <th>Qty</th>
-                <th>Unit price</th>
-                <th>Line</th>
+                <th className="text-right">Qty</th>
+                <th className="text-right">Unit price</th>
+                <th className="text-right">Line</th>
               </tr>
             </thead>
             <tbody>
@@ -102,11 +100,15 @@ export default function OrderDetailPage() {
                 <tr key={i.id}>
                   <td className="font-mono text-xs">{i.product.sku}</td>
                   <td>{i.product.name}</td>
-                  <td>
+                  <td className="tnum text-right">
                     {i.qty} {i.product.unit}
                   </td>
-                  <td>{formatPKR(i.unitPrice)}</td>
-                  <td>{formatPKR(i.qty * i.unitPrice)}</td>
+                  <td className="text-right">
+                    <Money value={i.unitPrice} />
+                  </td>
+                  <td className="text-right">
+                    <Money value={i.qty * i.unitPrice} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -115,12 +117,14 @@ export default function OrderDetailPage() {
                 <td colSpan={4} className="text-right font-semibold">
                   Subtotal
                 </td>
-                <td className="font-semibold">{formatPKR(order.subtotal)}</td>
+                <td className="text-right font-semibold">
+                  <Money value={order.subtotal} />
+                </td>
               </tr>
             </tfoot>
           </table>
           {order.notes && (
-            <p className="mt-3 text-sm text-slate-500">Notes: {order.notes}</p>
+            <p className="mt-3 text-sm text-muted">Notes: {order.notes}</p>
           )}
         </div>
 
@@ -128,13 +132,11 @@ export default function OrderDetailPage() {
           <div className="card">
             <h2 className="mb-2 font-semibold">Customer</h2>
             <p className="font-medium">{order.customer.name}</p>
-            <p className="text-sm text-slate-500">{order.customer.phone}</p>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted">{order.customer.phone}</p>
+            <p className="text-sm text-muted">
               {order.customer.area ?? ""} {order.customer.address ?? ""}
             </p>
-            <p className="mt-2 text-sm text-slate-500">
-              Booker: {order.booker.name}
-            </p>
+            <p className="mt-2 text-sm text-muted">Booker: {order.booker.name}</p>
           </div>
 
           <div className="card space-y-2">
@@ -159,7 +161,7 @@ export default function OrderDetailPage() {
             )}
             {order.status === "invoiced" && (
               <button
-                className="btn-primary w-full"
+                className="btn-secondary w-full"
                 disabled={busy}
                 onClick={() =>
                   act(`/api/orders/${order.id}/status`, {
@@ -172,7 +174,7 @@ export default function OrderDetailPage() {
             )}
             {order.status === "out_for_delivery" && (
               <button
-                className="btn-primary w-full"
+                className="btn-secondary w-full"
                 disabled={busy}
                 onClick={() =>
                   act(`/api/orders/${order.id}/status`, { status: "delivered" })
@@ -181,28 +183,21 @@ export default function OrderDetailPage() {
                 Mark delivered
               </button>
             )}
-            {order.status === "delivered" && (
-              <button
-                className="btn-primary w-full"
-                disabled={busy}
-                onClick={() =>
-                  act(`/api/orders/${order.id}/status`, { status: "settled" })
-                }
-              >
-                Mark settled
-              </button>
-            )}
             {order.invoice && (
               <Link
                 href={`/office/invoices/${order.invoice.id}`}
                 className="btn-secondary w-full"
               >
-                View invoice {order.invoice.code}
+                Open invoice {order.invoice.code}
               </Link>
             )}
-            {!["settled", "cancelled", "invoiced", "out_for_delivery", "delivered"].includes(
-              order.status,
-            ) && (
+            {order.invoice && order.status !== "settled" && (
+              <p className="text-xs text-muted">
+                Order settles automatically once the invoice balance reaches
+                Rs 0.
+              </p>
+            )}
+            {["draft", "submitted", "confirmed"].includes(order.status) && (
               <button
                 className="btn-danger w-full"
                 disabled={busy}
