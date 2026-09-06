@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/client";
-import { formatPKR } from "@/lib/money";
-import { StatusBadge } from "@/components/badges";
+import { Money } from "@/components/Money";
+import { StatusPill } from "@/components/badges";
 
 type OrderRow = {
   id: string;
@@ -26,25 +27,30 @@ export default function BookerOrdersPage() {
   }, []);
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold">My orders</h1>
-      {error && <p className="text-red-600">{error}</p>}
+    <div className="space-y-4 px-4 pt-5">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold">My orders</h1>
+        <Link href="/booker/orders/new" className="text-sm font-medium text-primary">
+          + New
+        </Link>
+      </div>
+      {error && <p className="text-sm text-danger">{error}</p>}
       <div className="space-y-2">
         {orders.map((o) => (
-          <div key={o.id} className="card flex items-center justify-between">
-            <div>
-              <p className="font-mono text-xs text-slate-400">{o.code}</p>
-              <p className="font-medium">{o.customer.name}</p>
-              <p className="text-xs text-slate-500">
-                {o._count.items} items · {formatPKR(o.subtotal)}
+          <div key={o.id} className="card flex items-center justify-between p-3">
+            <div className="min-w-0">
+              <p className="font-mono text-xs text-muted">{o.code}</p>
+              <p className="truncate font-medium">{o.customer.name}</p>
+              <p className="text-xs text-muted">
+                {o._count.items} items · <Money value={o.subtotal} />
               </p>
             </div>
-            <StatusBadge status={o.status} />
+            <StatusPill status={o.status} />
           </div>
         ))}
         {orders.length === 0 && (
-          <p className="text-center text-sm text-slate-500">
-            No orders yet. Tap “New” to start.
+          <p className="py-8 text-center text-sm text-muted">
+            No orders yet. Tap “New”.
           </p>
         )}
       </div>

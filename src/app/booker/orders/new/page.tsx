@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Customer, Product } from "@prisma/client";
 import { api } from "@/lib/client";
-import { formatPKR } from "@/lib/money";
+import { Money } from "@/components/Money";
 
 type CartLine = {
   product: Product;
@@ -14,60 +14,18 @@ type CartLine = {
 
 export default function NewOrderPage() {
   const router = useRouter();
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [customerId, setCustomerId] = useState("");
-  const [productQuery, setProductQuery] = useState("");
-  const [products, setProducts] = useState<Product[]>([]);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    api<{ customers: Customer[] }>("/api/customers").then((d) =>
-      setCustomers(d.customers),
-    );
-    searchProducts("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function searchProducts(q: string) {
-    const query = q ? `?active=true&search=${encodeURIComponent(q)}` : "?active=true";
-    const { products } = await api<{ products: Product[] }>(
-      `/api/products${query}`,
-    );
-    setProducts(products);
-  }
-
-  function addToCart(p: Product) {
-    setCart((prev) => {
-      if (prev.some((l) => l.product.id === p.id)) return prev;
-      return [...prev, { product: p, qty: 1, unitPrice: p.price }];
-    });
-  }
-
-  function updateLine(id: string, patch: Partial<CartLine>) {
-    setCart((prev) =>
-      prev.map((l) => (l.product.id === id ? { ...l, ...patch } : l)),
-    );
-  }
-
-  function removeLine(id: string) {
-    setCart((prev) => prev.filter((l) => l.product.id !== id));
-  }
-
   const subtotal = cart.reduce((s, l) => s + l.qty * l.unitPrice, 0);
 
   async function submit() {
     setError(null);
-    if (!customerId) {
-      setError("Pick a shop first");
-      return;
-    }
-    if (cart.length === 0) {
-      setError("Add at least one product");
-      return;
-    }
     setSubmitting(true);
     try {
       const result = await api<{
@@ -76,7 +34,7 @@ export default function NewOrderPage() {
       }>("/api/orders", {
         method: "POST",
         body: JSON.stringify({
-          customerId,
+          customerId: customer!.id,
           submit: true,
           notes: notes || undefined,
           items: cart.map((l) => ({
@@ -88,154 +46,501 @@ export default function NewOrderPage() {
       });
       const warn =
         result.warnings.length > 0
-          ? `\nNote (non-blocking): low stock on ${result.warnings
-              .map((w) => `${w.sku} (req ${w.requested}/avail ${w.available})`)
+          ? `\n\nNote (non-blocking): low stock on ${result.warnings
+              .map((w) => `${w.sku} (need ${w.requested}, have ${w.available})`)
               .join(", ")}`
           : "";
       alert(`Order ${result.order.code} submitted!${warn}`);
       router.push("/booker/orders");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Submit failed");
-    } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold">New order</h1>
+    <div className="px-4 pt-5">
+      <Steps step={step} />
 
-      <div className="card space-y-2">
-        <label className="label">Shop</label>
-        <select
-          className="input"
-          value={customerId}
-          onChange={(e) => setCustomerId(e.target.value)}
-        >
-          <option value="">— select a shop —</option>
-          {customers.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name} {c.area ? `(${c.area})` : ""}
-            </option>
-          ))}
-        </select>
+      {error && <p className="mb-3 text-sm text-danger">{error}</p>}
+
+      <div className="pb-40">
+        {step === 1 && (
+          <CustomerStep
+            selected={customer}
+            onSelect={(c) => setCustomer(c)}
+          />
+        )}
+        {step === 2 && (
+          <LinesStep cart={cart} setCart={setCart} notes={notes} setNotes={setNotes} />
+        )}
+        {step === 3 && (
+          <ReviewStep customer={customer!} cart={cart} notes={notes} subtotal={subtotal} />
+        )}
       </div>
 
-      <div className="card space-y-2">
-        <label className="label">Add products (search SKU / name)</label>
-        <input
-          className="input"
-          placeholder="e.g. sugar, oil, SKU-…"
-          value={productQuery}
-          onChange={(e) => {
-            setProductQuery(e.target.value);
-            searchProducts(e.target.value);
-          }}
-        />
-        <div className="max-h-48 space-y-1 overflow-y-auto">
-          {products.map((p) => (
+      {/* Sticky bottom CTA (sits directly above the bottom nav) */}
+      <div className="fixed inset-x-0 bottom-[56px] z-30 border-t border-line bg-surface">
+        <div className="mx-auto flex max-w-md items-center gap-3 p-3">
+          {step > 1 && (
             <button
-              key={p.id}
-              onClick={() => addToCart(p)}
-              className="flex w-full items-center justify-between rounded border border-slate-200 px-2 py-1.5 text-left text-sm hover:bg-slate-50"
+              className="btn-secondary min-h-[48px] flex-1"
+              onClick={() => setStep((s) => (s === 3 ? 2 : 1))}
             >
-              <span>
-                <span className="font-mono text-xs text-slate-400">{p.sku}</span>{" "}
-                {p.name}
-                <span className="ml-1 text-xs text-slate-400">
-                  (stock {p.stockQty})
-                </span>
-              </span>
-              <span className="font-medium">{formatPKR(p.price)}</span>
+              Back
             </button>
-          ))}
+          )}
+          {step === 1 && (
+            <button
+              className="btn-primary min-h-[48px] flex-1 text-base"
+              disabled={!customer}
+              onClick={() => setStep(2)}
+            >
+              Continue
+            </button>
+          )}
+          {step === 2 && (
+            <button
+              className="btn-primary min-h-[48px] flex-1 text-base"
+              disabled={cart.length === 0}
+              onClick={() => setStep(3)}
+            >
+              Review ({cart.length})
+            </button>
+          )}
+          {step === 3 && (
+            <button
+              className="btn-primary min-h-[48px] flex-1 text-base"
+              disabled={submitting}
+              onClick={submit}
+            >
+              {submitting ? "Submitting…" : "Submit order"}
+            </button>
+          )}
         </div>
       </div>
+    </div>
+  );
+}
 
-      <div className="card space-y-3">
-        <h2 className="font-semibold">Order items</h2>
+function Steps({ step }: { step: 1 | 2 | 3 }) {
+  const items = ["Customer", "Items", "Review"];
+  return (
+    <div className="mb-4 flex items-center gap-2">
+      {items.map((label, i) => {
+        const n = (i + 1) as 1 | 2 | 3;
+        const active = n === step;
+        const done = n < step;
+        return (
+          <div key={label} className="flex flex-1 items-center gap-2">
+            <div
+              className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                active
+                  ? "bg-primary text-white"
+                  : done
+                    ? "bg-primary-soft text-primary"
+                    : "bg-canvas text-muted"
+              }`}
+            >
+              {n}
+            </div>
+            <span
+              className={`text-xs ${active ? "font-semibold text-ink" : "text-muted"}`}
+            >
+              {label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- Step 1
+function CustomerStep({
+  selected,
+  onSelect,
+}: {
+  selected: Customer | null;
+  onSelect: (c: Customer) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [showCreate, setShowCreate] = useState(false);
+
+  async function load(q: string) {
+    const query = q ? `?search=${encodeURIComponent(q)}` : "";
+    const { customers } = await api<{ customers: Customer[] }>(
+      `/api/customers${query}`,
+    );
+    setCustomers(customers);
+  }
+
+  useEffect(() => {
+    load("");
+  }, []);
+
+  return (
+    <div className="space-y-3">
+      <h2 className="font-semibold">Which shop?</h2>
+      {selected && (
+        <div className="card border-primary bg-primary-soft p-3">
+          <p className="text-xs text-primary">Selected</p>
+          <p className="font-medium">{selected.name}</p>
+          <p className="text-xs text-muted">
+            {selected.phone} · {selected.area ?? "—"}
+          </p>
+        </div>
+      )}
+      <input
+        className="input min-h-[44px]"
+        placeholder="Search shop name, phone, area…"
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          load(e.target.value);
+        }}
+      />
+      <button
+        className="btn-secondary min-h-[44px] w-full"
+        onClick={() => setShowCreate(true)}
+      >
+        Can’t find? Add a new shop
+      </button>
+      <div className="space-y-2">
+        {customers.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => onSelect(c)}
+            className={`w-full rounded-lg border p-3 text-left ${
+              selected?.id === c.id
+                ? "border-primary bg-primary-soft"
+                : "border-line bg-surface"
+            }`}
+          >
+            <p className="font-medium">{c.name}</p>
+            <p className="text-xs text-muted">
+              {c.phone} · {c.area ?? "—"}
+            </p>
+          </button>
+        ))}
+      </div>
+
+      {showCreate && (
+        <FullScreenCustomerCreate
+          onClose={() => setShowCreate(false)}
+          onCreated={(c) => {
+            setShowCreate(false);
+            onSelect(c);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function FullScreenCustomerCreate({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: (c: Customer) => void;
+}) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [area, setArea] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      const { customer } = await api<{ customer: Customer }>("/api/customers", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          phone: phone || undefined,
+          area: area || undefined,
+        }),
+      });
+      onCreated(customer);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-40 flex flex-col bg-surface">
+      <div className="flex items-center justify-between border-b border-line px-4 py-3">
+        <h2 className="text-lg font-bold">New shop</h2>
+        <button className="text-sm text-muted" onClick={onClose}>
+          Cancel
+        </button>
+      </div>
+      <form onSubmit={save} className="flex flex-1 flex-col gap-4 p-4">
+        <div>
+          <label className="label">
+            Name <span className="text-danger">*</span>
+          </label>
+          <input
+            className="input min-h-[44px]"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            autoFocus
+          />
+        </div>
+        <div>
+          <label className="label">Phone</label>
+          <input
+            className="input min-h-[44px]"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="label">Area</label>
+          <input
+            className="input min-h-[44px]"
+            value={area}
+            onChange={(e) => setArea(e.target.value)}
+          />
+        </div>
+        {error && <p className="text-sm text-danger">{error}</p>}
+        <div className="mt-auto">
+          <button
+            className="btn-primary min-h-[52px] w-full text-base"
+            disabled={saving}
+          >
+            {saving ? "Saving…" : "Save & continue"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- Step 2
+function LinesStep({
+  cart,
+  setCart,
+  notes,
+  setNotes,
+}: {
+  cart: CartLine[];
+  setCart: React.Dispatch<React.SetStateAction<CartLine[]>>;
+  notes: string;
+  setNotes: (v: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [products, setProducts] = useState<Product[]>([]);
+
+  async function search(q: string) {
+    const query = q
+      ? `?active=true&search=${encodeURIComponent(q)}`
+      : "?active=true";
+    const { products } = await api<{ products: Product[] }>(
+      `/api/products${query}`,
+    );
+    setProducts(products);
+  }
+
+  useEffect(() => {
+    search("");
+  }, []);
+
+  function add(p: Product) {
+    setCart((prev) =>
+      prev.some((l) => l.product.id === p.id)
+        ? prev
+        : [...prev, { product: p, qty: 1, unitPrice: p.price }],
+    );
+  }
+  function update(id: string, patch: Partial<CartLine>) {
+    setCart((prev) =>
+      prev.map((l) => (l.product.id === id ? { ...l, ...patch } : l)),
+    );
+  }
+  function remove(id: string) {
+    setCart((prev) => prev.filter((l) => l.product.id !== id));
+  }
+
+  return (
+    <div className="space-y-3">
+      <h2 className="font-semibold">Add products</h2>
+      <input
+        className="input min-h-[44px]"
+        placeholder="Search SKU or name…"
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          search(e.target.value);
+        }}
+      />
+      <div className="max-h-44 space-y-1 overflow-y-auto">
+        {products.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => add(p)}
+            className="flex w-full items-center justify-between rounded border border-line px-2 py-2 text-left text-sm"
+          >
+            <span className="min-w-0">
+              <span className="font-mono text-xs text-muted">{p.sku}</span>{" "}
+              {p.name}
+              <span className="ml-1 text-xs text-muted">
+                (stock {p.stockQty})
+              </span>
+            </span>
+            <Money value={p.price} className="font-medium" />
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-2">
         {cart.length === 0 && (
-          <p className="text-sm text-slate-500">No items yet.</p>
+          <p className="text-sm text-muted">No items yet — search above.</p>
         )}
         {cart.map((l) => {
-          const overStock = l.qty > l.product.stockQty;
+          const over = l.qty > l.product.stockQty;
           return (
-            <div key={l.product.id} className="rounded border border-slate-200 p-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">{l.product.name}</p>
+            <div key={l.product.id} className="card p-3">
+              <div className="flex items-start justify-between">
+                <p className="pr-2 text-sm font-medium">{l.product.name}</p>
                 <button
-                  className="text-xs text-red-600"
-                  onClick={() => removeLine(l.product.id)}
+                  className="text-xs text-danger"
+                  onClick={() => remove(l.product.id)}
                 >
                   Remove
                 </button>
               </div>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-slate-500">Qty</label>
+              <div className="mt-2 flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Stepper
+                    onClick={() =>
+                      update(l.product.id, { qty: Math.max(1, l.qty - 1) })
+                    }
+                    label="−"
+                  />
                   <input
-                    className="input"
+                    className="input h-11 w-14 text-center"
                     type="number"
                     min={1}
                     value={l.qty}
                     onChange={(e) =>
-                      updateLine(l.product.id, {
-                        qty: Math.max(1, Number(e.target.value)),
+                      update(l.product.id, {
+                        qty: Math.max(1, Number(e.target.value) || 1),
                       })
                     }
                   />
+                  <Stepper
+                    onClick={() => update(l.product.id, { qty: l.qty + 1 })}
+                    label="+"
+                  />
                 </div>
-                <div>
-                  <label className="text-xs text-slate-500">Unit price</label>
+                <div className="flex-1">
+                  <label className="text-[11px] text-muted">Unit price</label>
                   <input
-                    className="input"
+                    className="input h-11"
                     type="number"
                     min={0}
                     value={l.unitPrice}
                     onChange={(e) =>
-                      updateLine(l.product.id, {
-                        unitPrice: Math.max(0, Number(e.target.value)),
+                      update(l.product.id, {
+                        unitPrice: Math.max(0, Number(e.target.value) || 0),
                       })
                     }
                   />
                 </div>
               </div>
-              {overStock && (
-                <p className="mt-1 text-xs text-amber-600">
-                  ⚠ Only {l.product.stockQty} in stock (order can still be
-                  submitted).
+              {over && (
+                <p
+                  className="mt-2 rounded px-2 py-1 text-xs"
+                  style={{ backgroundColor: "#FDF0E6", color: "var(--warning)" }}
+                >
+                  ⚠ Only {l.product.stockQty} in stock — you can still submit.
                 </p>
               )}
-              <p className="mt-1 text-right text-sm font-semibold">
-                {formatPKR(l.qty * l.unitPrice)}
+              <p className="mt-2 text-right text-sm font-semibold">
+                <Money value={l.qty * l.unitPrice} />
               </p>
             </div>
           );
         })}
-        <div className="flex items-center justify-between border-t border-slate-200 pt-2">
-          <span className="font-semibold">Subtotal</span>
-          <span className="text-lg font-bold">{formatPKR(subtotal)}</span>
-        </div>
       </div>
 
-      <div className="card space-y-2">
+      <div>
         <label className="label">Notes (optional)</label>
         <input
-          className="input"
+          className="input min-h-[44px]"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
       </div>
+    </div>
+  );
+}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+function Stepper({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-11 w-11 items-center justify-center rounded-md border border-line bg-surface text-xl font-semibold text-ink"
+      aria-label={label === "+" ? "increase" : "decrease"}
+    >
+      {label}
+    </button>
+  );
+}
 
-      <button
-        className="btn-primary w-full"
-        onClick={submit}
-        disabled={submitting}
-      >
-        {submitting ? "Submitting…" : "Submit order"}
-      </button>
+// ---------------------------------------------------------------- Step 3
+function ReviewStep({
+  customer,
+  cart,
+  notes,
+  subtotal,
+}: {
+  customer: Customer;
+  cart: CartLine[];
+  notes: string;
+  subtotal: number;
+}) {
+  return (
+    <div className="space-y-3">
+      <h2 className="font-semibold">Review order</h2>
+      <div className="card p-3">
+        <p className="text-xs text-muted">Shop</p>
+        <p className="font-medium">{customer.name}</p>
+        <p className="text-xs text-muted">
+          {customer.phone} · {customer.area ?? "—"}
+        </p>
+      </div>
+      <div className="card p-0">
+        {cart.map((l) => (
+          <div
+            key={l.product.id}
+            className="flex items-center justify-between border-b border-line px-3 py-2 last:border-0"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">{l.product.name}</p>
+              <p className="text-xs text-muted">
+                {l.qty} × <Money value={l.unitPrice} />
+              </p>
+            </div>
+            <Money value={l.qty * l.unitPrice} className="text-sm font-medium" />
+          </div>
+        ))}
+      </div>
+      {notes && (
+        <p className="text-sm text-muted">Notes: {notes}</p>
+      )}
+      <div className="card flex items-center justify-between p-4">
+        <span className="text-base font-semibold">Total</span>
+        <Money value={subtotal} className="text-2xl font-bold text-primary" />
+      </div>
     </div>
   );
 }
