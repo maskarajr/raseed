@@ -283,9 +283,8 @@ function PaymentSheet({
   onClose: () => void;
   onDone: () => void;
 }) {
-  // Amount defaults to the current outstanding balance.
+  // Amount defaults to the current outstanding balance. v1 is cash-only.
   const [amount, setAmount] = useState(String(balance));
-  const [mode, setMode] = useState("cash");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -296,7 +295,7 @@ function PaymentSheet({
     try {
       await api("/api/payments", {
         method: "POST",
-        body: JSON.stringify({ invoiceId, amount: Number(amount), mode }),
+        body: JSON.stringify({ invoiceId, amount: Number(amount), mode: "cash" }),
       });
       onDone();
     } catch (err) {
@@ -328,14 +327,7 @@ function PaymentSheet({
         </div>
         <div>
           <label className="label">Method</label>
-          <select
-            className="input"
-            value={mode}
-            onChange={(e) => setMode(e.target.value)}
-          >
-            <option value="cash">Cash</option>
-            <option value="credit">Credit</option>
-          </select>
+          <p className="input flex items-center bg-canvas text-muted">Cash</p>
         </div>
         {error && <p className="text-sm text-danger">{error}</p>}
         <button className="btn-primary w-full" disabled={saving || balance <= 0}>
@@ -355,7 +347,8 @@ function ReturnSheet({
   onClose: () => void;
   onDone: () => void;
 }) {
-  // Compute returnable qty per product = ordered − already returned.
+  // Returnable qty per product = invoiced qty − already returned (clamped so
+  // we never post more than the returns service will allow).
   const returnedByProduct = new Map<string, number>();
   for (const r of invoice.returns) {
     returnedByProduct.set(
@@ -363,33 +356,47 @@ function ReturnSheet({
       (returnedByProduct.get(r.productId) ?? 0) + r.qty,
     );
   }
-  const options = invoice.order.items
-    .map((i) => ({
-      productId: i.productId,
-      sku: i.product.sku,
-      name: i.product.name,
-      unitPrice: i.unitPrice,
-      returnable: i.qty - (returnedByProduct.get(i.productId) ?? 0),
-    }))
-    .filter((o) => o.returnable > 0);
+  const lines = invoice.order.items.map((i) => ({
+    productId: i.productId,
+    sku: i.product.sku,
+    name: i.product.name,
+    unitPrice: i.unitPrice,
+    invoicedQty: i.qty,
+    max: Math.max(0, i.qty - (returnedByProduct.get(i.productId) ?? 0)),
+  }));
 
-  const [productId, setProductId] = useState(options[0]?.productId ?? "");
-  const [qty, setQty] = useState(1);
+  // Per-line return qty + optional reason (reason is UI-only in v1).
+  const [qtys, setQtys] = useState<Record<string, number>>({});
+  const [reasons, setReasons] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const selected = options.find((o) => o.productId === productId);
-  const max = selected?.returnable ?? 0;
-  const previewAmount = (selected?.unitPrice ?? 0) * qty;
+  function setQty(productId: string, value: number, max: number) {
+    const clamped = Math.min(max, Math.max(0, value || 0));
+    setQtys((prev) => ({ ...prev, [productId]: clamped }));
+  }
+
+  const totalQty = lines.reduce((s, l) => s + (qtys[l.productId] ?? 0), 0);
+  const totalAmount = lines.reduce(
+    (s, l) => s + (qtys[l.productId] ?? 0) * l.unitPrice,
+    0,
+  );
 
   async function save() {
     setSaving(true);
     setError(null);
     try {
-      await api("/api/returns", {
-        method: "POST",
-        body: JSON.stringify({ invoiceId: invoice.id, productId, qty }),
-      });
+      const toPost = lines.filter((l) => (qtys[l.productId] ?? 0) > 0);
+      for (const l of toPost) {
+        await api("/api/returns", {
+          method: "POST",
+          body: JSON.stringify({
+            invoiceId: invoice.id,
+            productId: l.productId,
+            qty: qtys[l.productId],
+          }),
+        });
+      }
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Return failed");
@@ -397,80 +404,89 @@ function ReturnSheet({
     }
   }
 
-  if (options.length === 0) {
-    return (
-      <SideSheet title="Log return" onClose={onClose}>
-        <p className="text-sm text-muted">
-          Nothing left to return on this invoice.
-        </p>
-      </SideSheet>
-    );
-  }
-
   return (
-    <SideSheet title="Log return" onClose={onClose}>
+    <SideSheet title={`Log returns — Invoice #${invoice.code}`} onClose={onClose}>
       <div className="space-y-4">
-        <div>
-          <label className="label">Product</label>
-          <select
-            className="input"
-            value={productId}
-            onChange={(e) => {
-              setProductId(e.target.value);
-              setQty(1);
-            }}
-          >
-            {options.map((o) => (
-              <option key={o.productId} value={o.productId}>
-                {o.sku} — {o.name} (up to {o.returnable})
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="label">Return qty</label>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-md border border-line text-xl font-semibold"
-              onClick={() => setQty((q) => Math.max(1, q - 1))}
-            >
-              −
-            </button>
-            <input
-              className="input h-11 w-16 text-center"
-              type="number"
-              min={1}
-              max={max}
-              value={qty}
-              onChange={(e) =>
-                setQty(Math.min(max, Math.max(1, Number(e.target.value) || 1)))
-              }
-            />
-            <button
-              type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-md border border-line text-xl font-semibold"
-              onClick={() => setQty((q) => Math.min(max, q + 1))}
-            >
-              +
-            </button>
-          </div>
+        <div className="space-y-3">
+          {lines.map((l) => {
+            const qty = qtys[l.productId] ?? 0;
+            const disabled = l.max === 0;
+            return (
+              <div key={l.productId} className="rounded-md border border-line p-3">
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs text-muted">{l.sku}</p>
+                    <p className="truncate text-sm font-medium">{l.name}</p>
+                    <p className="text-xs text-muted">
+                      Invoiced qty: <span className="tnum">{l.invoicedQty}</span>
+                      {l.max < l.invoicedQty && (
+                        <span> · returnable {l.max}</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="flex h-9 w-9 items-center justify-center rounded-md border border-line text-lg font-semibold disabled:opacity-40"
+                      disabled={disabled || qty <= 0}
+                      onClick={() => setQty(l.productId, qty - 1, l.max)}
+                      aria-label={`decrease ${l.sku}`}
+                    >
+                      −
+                    </button>
+                    <input
+                      className="input h-9 w-14 text-center"
+                      type="number"
+                      min={0}
+                      max={l.max}
+                      value={qty}
+                      disabled={disabled}
+                      onChange={(e) =>
+                        setQty(l.productId, Number(e.target.value), l.max)
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="flex h-9 w-9 items-center justify-center rounded-md border border-line text-lg font-semibold disabled:opacity-40"
+                      disabled={disabled || qty >= l.max}
+                      onClick={() => setQty(l.productId, qty + 1, l.max)}
+                      aria-label={`increase ${l.sku}`}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+                <input
+                  className="input mt-2 h-9 text-sm"
+                  placeholder="Reason (optional)"
+                  value={reasons[l.productId] ?? ""}
+                  disabled={disabled}
+                  onChange={(e) =>
+                    setReasons((prev) => ({
+                      ...prev,
+                      [l.productId]: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            );
+          })}
         </div>
 
         <div className="rounded-md bg-primary-soft p-3 text-sm">
           <p className="font-medium text-primary">Preview</p>
           <p className="tnum mt-1">
-            Restock +{qty} · Invoice −<Money value={previewAmount} />
+            Restock +{totalQty} · Invoice −<Money value={totalAmount} />
           </p>
         </div>
 
         {error && <p className="text-sm text-danger">{error}</p>}
         <button
           className="btn-primary w-full"
-          disabled={saving || max === 0}
+          disabled={saving || totalQty === 0}
           onClick={save}
         >
-          {saving ? "Posting…" : "Confirm return"}
+          {saving ? "Posting…" : "Confirm returns"}
         </button>
       </div>
     </SideSheet>
