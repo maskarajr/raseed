@@ -72,7 +72,7 @@ This logs in as booker and office, drives the entire happy path against the real
 
 ## Business rules enforced
 
-- **Order lifecycle** (server-validated transitions): `draft → submitted → confirmed → invoiced → out_for_delivery → delivered → settled`, or `cancelled`.
+- **Order lifecycle** (server-validated transitions): `draft → submitted → confirmed → invoiced → out_for_delivery → delivered → settled`, or `cancelled`. `settled` is **balance-driven**: an order settles automatically the moment its invoice balance reaches Rs 0 (via payment, or a return that clears the balance) — it is never a manual button.
 - **Stock isolation**: every `stockQty` change and `StockLedger` write goes through the single module `src/server/services/stock.ts` (`applyStockMovement`).
 - **Transactions**: every write touching orders/invoices/products/stock/returns/payments runs in a Prisma `$transaction`.
 - **Zod everywhere**: request body and query are validated by colocated schemas in `src/server/schemas/` before any logic.
@@ -81,7 +81,7 @@ This logs in as booker and office, drives the entire happy path against the real
 - **Soft stock warning**: ordering more than available returns a non-blocking warning; submission is never blocked.
 - **Invoicing**: confirming an order lets office generate an invoice — creates the invoice, sets the order `invoiced`, and deducts stock (`sale` ledger reason) in one transaction.
 - **Returns**: office logs product + qty against an invoice → restock (`return` reason) + invoice total/balance/status adjust down + ledger row, all in one transaction.
-- **Payments**: cash/credit payments update `amountPaid`/`balance`/`paymentStatus`; credit sales (unpaid balance) are allowed.
+- **Payments**: cash/credit payments update `amountPaid`/`balance`/`paymentStatus`; the record-payment sheet defaults to the outstanding balance, partial payments are allowed, and a single payment cannot exceed the remaining balance. Leaving a balance unpaid is valid — the **Balance due** figure is itself the credit signal (no separate credit badge). Invoice totals show **Subtotal · Returns (−) · Paid · Balance due**, where `Balance due = line totals − returns − payments`.
 
 ## Making it reachable to bookers (remote access)
 
