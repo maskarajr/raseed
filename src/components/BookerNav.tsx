@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LINKS = [
-  { href: "/booker", label: "Home", icon: "🏠" },
-  { href: "/booker/orders", label: "Orders", icon: "📦" },
-  { href: "/booker/account", label: "Account", icon: "👤" },
+  { href: "/booker", label: "Home" },
+  { href: "/booker/orders", label: "Orders" },
+  { href: "/booker/account", label: "Account" },
 ];
 
 export function BookerNav() {
@@ -23,11 +23,10 @@ export function BookerNav() {
             <Link
               key={l.href}
               href={l.href}
-              className={`flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs ${
+              className={`flex min-h-[56px] flex-1 items-center justify-center text-sm font-medium ${
                 active ? "text-primary" : "text-muted"
               }`}
             >
-              <span className="text-lg">{l.icon}</span>
               {l.label}
             </Link>
           );

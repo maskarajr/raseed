@@ -17,7 +17,10 @@ export function SideSheet({
         onClick={onClose}
         aria-hidden
       />
-      <div className="relative flex h-full w-full max-w-md flex-col bg-surface shadow-xl">
+      <div
+        className="relative flex h-full w-full max-w-md flex-col bg-surface"
+        style={{ boxShadow: "0 4px 16px rgba(26,29,35,0.08)" }}
+      >
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <h2 className="text-lg font-semibold">{title}</h2>
           <button className="text-sm text-muted" onClick={onClose}>
