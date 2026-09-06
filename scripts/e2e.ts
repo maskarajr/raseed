@@ -248,77 +248,120 @@ async function main() {
   }
 
   // ---------------------------------------------------------------
-  section("8. Office logs a return (restock + invoice adjust + ledger row)");
+  section("8. Office logs a return (restock + invoice adjust + 'Return restock' ledger)");
   {
-    const beforeA = (await getProduct(office, prodA)).stockQty;
+    const beforeB = (await getProduct(office, prodB)).stockQty;
     const ledgerBefore = await office.req<{ entries: unknown[] }>(
       "GET",
-      `/api/stock/ledger?productId=${prodA}`,
+      `/api/stock/ledger?productId=${prodB}`,
     );
 
+    // Return 1 of B (before any payment).
     const { status, data } = await office.req<{
-      invoice: { total: number; balance: number };
+      invoice: { total: number; balance: number; paymentStatus: string };
       return: { amount: number };
-    }>("POST", "/api/returns", {
-      invoiceId,
-      productId: prodA,
-      qty: 1,
-    });
+    }>("POST", "/api/returns", { invoiceId, productId: prodB, qty: 1 });
     check(status === 201, `return logged (got ${status})`);
 
-    const afterA = (await getProduct(office, prodA)).stockQty;
-    check(afterA === beforeA + 1, `product A restocked by 1 (${beforeA} -> ${afterA})`);
+    const afterB = (await getProduct(office, prodB)).stockQty;
+    check(afterB === beforeB + 1, `product B restocked by 1 (${beforeB} -> ${afterB})`);
     check(
-      data.invoice.total === invoiceTotal - priceA,
-      `invoice total reduced by ${priceA} (${invoiceTotal} -> ${data.invoice.total})`,
+      data.invoice.total === invoiceTotal - priceB,
+      `invoice total reduced by ${priceB} (${invoiceTotal} -> ${data.invoice.total})`,
     );
-    check(data.return.amount === priceA, `return amount = ${priceA}`);
+    check(data.return.amount === priceB, `return amount = ${priceB}`);
+    check(
+      data.invoice.balance === invoiceTotal - priceB,
+      `balance follows total with no payment yet (got ${data.invoice.balance})`,
+    );
 
     const ledgerAfter = await office.req<{
-      entries: { reason: string }[];
-    }>("GET", `/api/stock/ledger?productId=${prodA}`);
+      entries: { reason: string; refId: string | null }[];
+    }>("GET", `/api/stock/ledger?productId=${prodB}`);
     check(
       ledgerAfter.data.entries.length === ledgerBefore.data.entries.length + 1,
       "one new ledger row recorded for the return",
     );
     check(
-      ledgerAfter.data.entries.some((e) => e.reason === "return"),
-      "ledger has a 'return' reason entry",
+      ledgerAfter.data.entries.some(
+        (e) => e.reason === "return" && e.refId === invoiceId,
+      ),
+      "'Return restock' ledger row (reason 'return') linked to the invoice",
     );
 
-    invoiceTotal = data.invoice.total; // now 450
+    invoiceTotal = data.invoice.total; // now 500
   }
 
   // ---------------------------------------------------------------
-  section("9. Office records payments (partial then full)");
+  section("9. Payments + return-after-payment + balance-driven settle");
   {
-    const partial = Math.floor(invoiceTotal / 3);
-    const p1 = await office.req<{ invoice: { balance: number; paymentStatus: string } }>(
-      "POST",
-      "/api/payments",
-      { invoiceId, amount: partial, mode: "cash" },
-    );
+    // 9a. Partial payment -> status 'partial', balance > 0, order NOT settled.
+    const partialAmt = 200;
+    const p1 = await office.req<{
+      invoice: { balance: number; paymentStatus: string; amountPaid: number };
+      order: { status: string };
+    }>("POST", "/api/payments", { invoiceId, amount: partialAmt, mode: "cash" });
     check(p1.status === 201, `partial payment accepted (got ${p1.status})`);
     check(
       p1.data.invoice.paymentStatus === "partial",
-      `payment status 'partial' after partial pay (got ${p1.data.invoice.paymentStatus})`,
+      `status 'partial' after partial pay (got ${p1.data.invoice.paymentStatus})`,
     );
     check(
-      p1.data.invoice.balance === invoiceTotal - partial,
-      `balance = ${invoiceTotal - partial} (got ${p1.data.invoice.balance})`,
+      p1.data.invoice.balance === invoiceTotal - partialAmt,
+      `balance > 0 = ${invoiceTotal - partialAmt} (got ${p1.data.invoice.balance})`,
+    );
+    check(
+      p1.data.order.status === "invoiced",
+      `order NOT yet settled while balance > 0 (got ${p1.data.order.status})`,
     );
 
-    const remaining = p1.data.invoice.balance;
-    const p2 = await office.req<{ invoice: { balance: number; paymentStatus: string } }>(
-      "POST",
-      "/api/payments",
-      { invoiceId, amount: remaining, mode: "cash" },
+    // 9b. Return AFTER a payment must recalc balance = (total - returns) - paid.
+    const beforeA = (await getProduct(office, prodA)).stockQty;
+    const r2 = await office.req<{
+      invoice: { total: number; balance: number; amountPaid: number };
+    }>("POST", "/api/returns", { invoiceId, productId: prodA, qty: 1 });
+    check(r2.status === 201, `return-after-payment accepted (got ${r2.status})`);
+    const afterA = (await getProduct(office, prodA)).stockQty;
+    check(afterA === beforeA + 1, `product A restocked by 1 (${beforeA} -> ${afterA})`);
+    const expectedTotal = invoiceTotal - priceA; // 500 - 100 = 400
+    check(
+      r2.data.invoice.total === expectedTotal,
+      `invoice total now ${expectedTotal} (got ${r2.data.invoice.total})`,
     );
+    check(
+      r2.data.invoice.amountPaid === partialAmt,
+      `payments preserved through return (paid ${partialAmt}, got ${r2.data.invoice.amountPaid})`,
+    );
+    check(
+      r2.data.invoice.balance === expectedTotal - partialAmt,
+      `balance recalculated after return-with-payment = ${expectedTotal - partialAmt} (got ${r2.data.invoice.balance})`,
+    );
+
+    // 9c. Final payment clears balance -> 'paid' -> order auto-settled.
+    const remaining = r2.data.invoice.balance;
+    const p2 = await office.req<{
+      invoice: { balance: number; paymentStatus: string };
+      order: { status: string };
+    }>("POST", "/api/payments", { invoiceId, amount: remaining, mode: "cash" });
     check(p2.status === 201, `final payment accepted (got ${p2.status})`);
     check(p2.data.invoice.balance === 0, "balance is 0 after full payment");
     check(
       p2.data.invoice.paymentStatus === "paid",
-      `payment status 'paid' (got ${p2.data.invoice.paymentStatus})`,
+      `invoice 'paid' (got ${p2.data.invoice.paymentStatus})`,
+    );
+    check(
+      p2.data.order.status === "settled",
+      `order auto-settled when balance hit 0 (got ${p2.data.order.status})`,
+    );
+
+    // Confirm settle persisted on the order record itself.
+    const ord = await office.req<{ order: { status: string } }>(
+      "GET",
+      `/api/orders/${orderId}`,
+    );
+    check(
+      ord.data.order.status === "settled",
+      `order record persists 'settled' (got ${ord.data.order.status})`,
     );
 
     // Overpayment must be rejected.
