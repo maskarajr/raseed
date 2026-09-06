@@ -37,7 +37,13 @@ export const POST = requireRole(
 )(async (req: NextRequest, { session }) => {
   const input = await parseBody(req, createCustomerSchema);
   const customer = await prisma.customer.create({
-    data: { ...input, createdBy: session.id },
+    data: {
+      name: input.name,
+      phone: input.phone ?? "",
+      address: input.address,
+      area: input.area,
+      createdBy: session.id,
+    },
   });
   return json({ customer }, 201);
 });

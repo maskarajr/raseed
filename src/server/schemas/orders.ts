@@ -17,10 +17,12 @@ export const createOrderSchema = z.object({
 });
 
 // Statuses reachable via the generic status endpoint (office advancing an
-// invoiced order forward). Excludes draft/submitted/confirmed/invoiced/cancelled
-// which have dedicated endpoints or are set implicitly.
+// invoiced order through delivery). `settled` is intentionally excluded — it is
+// balance-driven (reached only when the invoice balance hits 0 via payment),
+// not a manual transition. draft/submitted/confirmed/invoiced/cancelled have
+// dedicated endpoints or are set implicitly.
 export const advanceStatusSchema = z.object({
-  status: z.enum(["out_for_delivery", "delivered", "settled"]),
+  status: z.enum(["out_for_delivery", "delivered"]),
 });
 
 export const listOrdersQuerySchema = z.object({

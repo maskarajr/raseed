@@ -3,6 +3,7 @@ import type { SessionUser } from "@/server/auth/session";
 import { ApiError } from "@/server/http";
 import { applyStockMovement } from "./stock";
 import { deriveInvoiceState } from "./invoiceMath";
+import { settleOrderIfPaid } from "./settle";
 
 export type LogReturnInput = {
   invoiceId: string;
@@ -43,7 +44,8 @@ export async function logReturn(session: SessionUser, input: LogReturnInput) {
 
     const amount = input.qty * orderItem.unitPrice;
 
-    // Restock via the stock service.
+    // Restock via the stock service. refType/refId link the ledger row to the
+    // invoice; the UI labels reason `return` as "Return restock".
     await applyStockMovement(tx, {
       productId: input.productId,
       delta: input.qty,
@@ -53,6 +55,8 @@ export async function logReturn(session: SessionUser, input: LogReturnInput) {
       refId: invoice.id,
     });
 
+    // Balance recalculates against any payments already applied:
+    //   balance = (subtotal - returns) - payments
     const newTotal = invoice.total - amount;
     const { balance, paymentStatus } = deriveInvoiceState(
       newTotal,
@@ -73,6 +77,9 @@ export async function logReturn(session: SessionUser, input: LogReturnInput) {
         createdBy: session.id,
       },
     });
+
+    // A return can bring an already-part-paid invoice to a zero balance.
+    await settleOrderIfPaid(tx, invoice.orderId, balance);
 
     return { invoice: updatedInvoice, return: returnRow };
   });

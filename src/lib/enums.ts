@@ -35,16 +35,28 @@ export type PaymentMode = (typeof PAYMENT_MODES)[number];
 // Allowed order status transitions (server-enforced lifecycle).
 // draft -> submitted -> confirmed -> invoiced -> out_for_delivery ->
 // delivered -> settled ; almost any active state -> cancelled.
+//
+// `settled` is NOT reached via a manual transition — it is driven off the
+// invoice balance hitting 0 (see payments/returns services). It is listed as a
+// valid target from every post-invoice state so the single status machine
+// stays consistent when the balance-triggered settle fires.
 export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   draft: ["submitted", "cancelled"],
   submitted: ["confirmed", "cancelled"],
   confirmed: ["invoiced", "cancelled"],
-  invoiced: ["out_for_delivery", "cancelled"],
-  out_for_delivery: ["delivered", "cancelled"],
+  invoiced: ["out_for_delivery", "settled", "cancelled"],
+  out_for_delivery: ["delivered", "settled", "cancelled"],
   delivered: ["settled", "cancelled"],
   settled: [],
   cancelled: [],
 };
+
+// Post-invoice states from which a zero balance may auto-settle the order.
+export const SETTLEABLE_STATUSES: OrderStatus[] = [
+  "invoiced",
+  "out_for_delivery",
+  "delivered",
+];
 
 export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
   return ORDER_TRANSITIONS[from]?.includes(to) ?? false;
