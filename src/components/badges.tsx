@@ -7,7 +7,7 @@ type PillStyle = { bg: string; fg: string; label: string };
 const STYLES: Record<string, PillStyle> = {
   // Order lifecycle
   draft: { bg: "#EEF0F3", fg: "#5C6570", label: "Draft" },
-  submitted: { bg: "#E6F4EF", fg: "#067647", label: "Submitted" },
+  submitted: { bg: "#E6F4EF", fg: "#0B6E4F", label: "Submitted" },
   confirmed: { bg: "#E7EEFB", fg: "#1D4ED8", label: "Confirmed" },
   invoiced: { bg: "#ECEBFB", fg: "#4338CA", label: "Invoiced" },
   out_for_delivery: { bg: "#FDF0E6", fg: "#B54708", label: "Out for delivery" },
