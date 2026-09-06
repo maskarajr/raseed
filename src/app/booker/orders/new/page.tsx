@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { Customer, Product } from "@prisma/client";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
@@ -12,8 +12,12 @@ type CartLine = {
   unitPrice: number;
 };
 
+type SubmitResult = {
+  code: string;
+  warnings: { sku: string; requested: number; available: number }[];
+};
+
 export default function NewOrderPage() {
-  const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -21,6 +25,7 @@ export default function NewOrderPage() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<SubmitResult | null>(null);
 
   const subtotal = cart.reduce((s, l) => s + l.qty * l.unitPrice, 0);
 
@@ -28,34 +33,32 @@ export default function NewOrderPage() {
     setError(null);
     setSubmitting(true);
     try {
-      const result = await api<{
-        order: { code: string };
-        warnings: { sku: string; requested: number; available: number }[];
-      }>("/api/orders", {
-        method: "POST",
-        body: JSON.stringify({
-          customerId: customer!.id,
-          submit: true,
-          notes: notes || undefined,
-          items: cart.map((l) => ({
-            productId: l.product.id,
-            qty: l.qty,
-            unitPrice: l.unitPrice,
-          })),
-        }),
-      });
-      const warn =
-        result.warnings.length > 0
-          ? `\n\nNote (non-blocking): low stock on ${result.warnings
-              .map((w) => `${w.sku} (need ${w.requested}, have ${w.available})`)
-              .join(", ")}`
-          : "";
-      alert(`Order ${result.order.code} submitted!${warn}`);
-      router.push("/booker/orders");
+      const res = await api<{ order: { code: string }; warnings: SubmitResult["warnings"] }>(
+        "/api/orders",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            customerId: customer!.id,
+            submit: true,
+            notes: notes || undefined,
+            items: cart.map((l) => ({
+              productId: l.product.id,
+              qty: l.qty,
+              unitPrice: l.unitPrice,
+            })),
+          }),
+        },
+      );
+      setResult({ code: res.order.code, warnings: res.warnings });
+      setSubmitting(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Submit failed");
       setSubmitting(false);
     }
+  }
+
+  if (result) {
+    return <SuccessScreen result={result} />;
   }
 
   return (
@@ -75,7 +78,13 @@ export default function NewOrderPage() {
           <LinesStep cart={cart} setCart={setCart} notes={notes} setNotes={setNotes} />
         )}
         {step === 3 && (
-          <ReviewStep customer={customer!} cart={cart} notes={notes} subtotal={subtotal} />
+          <ReviewStep
+            customer={customer!}
+            cart={cart}
+            setCart={setCart}
+            notes={notes}
+            subtotal={subtotal}
+          />
         )}
       </div>
 
@@ -500,14 +509,24 @@ function Stepper({ onClick, label }: { onClick: () => void; label: string }) {
 function ReviewStep({
   customer,
   cart,
+  setCart,
   notes,
   subtotal,
 }: {
   customer: Customer;
   cart: CartLine[];
+  setCart: React.Dispatch<React.SetStateAction<CartLine[]>>;
   notes: string;
   subtotal: number;
 }) {
+  function setQty(id: string, qty: number) {
+    setCart((prev) =>
+      prev.map((l) =>
+        l.product.id === id ? { ...l, qty: Math.max(1, qty) } : l,
+      ),
+    );
+  }
+
   return (
     <div className="space-y-3">
       <h2 className="font-semibold">Review order</h2>
@@ -522,25 +541,77 @@ function ReviewStep({
         {cart.map((l) => (
           <div
             key={l.product.id}
-            className="flex items-center justify-between border-b border-line px-3 py-2 last:border-0"
+            className="flex items-center justify-between gap-3 border-b border-line px-3 py-2 last:border-0"
           >
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{l.product.name}</p>
               <p className="text-xs text-muted">
-                {l.qty} × <Money value={l.unitPrice} />
+                <Money value={l.unitPrice} /> each
               </p>
             </div>
-            <Money value={l.qty * l.unitPrice} className="text-sm font-medium" />
+            <div className="flex items-center gap-2">
+              <Stepper
+                onClick={() => setQty(l.product.id, l.qty - 1)}
+                label="−"
+              />
+              <input
+                className="input h-11 w-12 text-center"
+                type="number"
+                min={1}
+                value={l.qty}
+                onChange={(e) =>
+                  setQty(l.product.id, Number(e.target.value) || 1)
+                }
+              />
+              <Stepper
+                onClick={() => setQty(l.product.id, l.qty + 1)}
+                label="+"
+              />
+            </div>
+            <Money
+              value={l.qty * l.unitPrice}
+              className="w-20 text-right text-sm font-medium"
+            />
           </div>
         ))}
       </div>
-      {notes && (
-        <p className="text-sm text-muted">Notes: {notes}</p>
-      )}
+      {notes && <p className="text-sm text-muted">Notes: {notes}</p>}
       <div className="card flex items-center justify-between p-4">
         <span className="text-base font-semibold">Total</span>
         <Money value={subtotal} className="text-2xl font-bold text-primary" />
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- Success
+function SuccessScreen({ result }: { result: SubmitResult }) {
+  return (
+    <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft text-3xl text-primary">
+        ✓
+      </div>
+      <h1 className="mt-4 text-xl font-bold">Order {result.code} submitted</h1>
+      <p className="mt-1 text-sm text-muted">
+        The office will confirm and invoice it.
+      </p>
+      {result.warnings.length > 0 && (
+        <div
+          className="mt-4 w-full rounded-md p-3 text-left text-xs"
+          style={{ backgroundColor: "#FDF0E6", color: "var(--warning)" }}
+        >
+          Low stock noted (non-blocking):{" "}
+          {result.warnings
+            .map((w) => `${w.sku} (need ${w.requested}, have ${w.available})`)
+            .join(", ")}
+        </div>
+      )}
+      <Link
+        href="/booker"
+        className="btn-primary mt-6 min-h-[48px] w-full max-w-xs text-base"
+      >
+        Back to home
+      </Link>
     </div>
   );
 }
