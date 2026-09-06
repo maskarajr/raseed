@@ -1,0 +1,160 @@
+// Raseed - Prisma schema (SQLite)
+//
+// NOTE: SQLite does not support Prisma native enums, so enum-like fields are
+// stored as String and their allowed values are enforced centrally via Zod +
+// TypeScript unions in src/lib/enums.ts. Model shapes below are the single
+// source of truth for row types (imported via @prisma/client), never hand
+// duplicated.
+//
+// Money: all monetary values are stored as integers representing whole PKR
+// (Pakistani Rupees). FMCG wholesale prices are whole-rupee in practice, and
+// integer math avoids floating point / Decimal-serialization issues.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String // owner | office | booker
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  orders Order[] @relation("BookerOrders")
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  sku          String   @unique
+  name         String
+  category     String?
+  unit         String   @default("pcs")
+  price        Int // whole PKR
+  stockQty     Int      @default(0)
+  reorderLevel Int?
+  active        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orderItems   OrderItem[]
+  stockLedger  StockLedger[]
+  returns      Return[]
+}
+
+model StockLedger {
+  id           String   @id @default(cuid())
+  productId    String
+  delta        Int
+  reason       String // purchase | adjustment | sale | return | correction
+  refType      String?
+  refId        String?
+  balanceAfter Int
+  createdBy    String
+  createdAt    DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  address   String?
+  area      String?
+  createdBy String
+  createdAt DateTime @default(now())
+
+  orders Order[]
+}
+
+model Order {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  bookerId   String
+  customerId String
+  status     String   @default("draft") // draft|submitted|confirmed|invoiced|out_for_delivery|delivered|settled|cancelled
+  notes      String?
+  subtotal   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  booker   User     @relation("BookerOrders", fields: [bookerId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+  items    OrderItem[]
+  invoice  Invoice?
+
+  @@index([bookerId])
+  @@index([customerId])
+  @@index([status])
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  qty       Int
+  unitPrice Int
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  orderId       String   @unique
+  customerId    String
+  total         Int
+  amountPaid    Int      @default(0)
+  balance       Int
+  paymentStatus String   @default("unpaid") // unpaid | partial | paid
+  createdAt     DateTime @default(now())
+
+  order    Order     @relation(fields: [orderId], references: [id])
+  payments Payment[]
+  returns  Return[]
+
+  @@index([customerId])
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  invoiceId String
+  amount    Int
+  mode      String // cash | credit
+  createdAt DateTime @default(now())
+  createdBy String
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@index([invoiceId])
+}
+
+model Return {
+  id        String   @id @default(cuid())
+  invoiceId String
+  productId String
+  qty       Int
+  amount    Int
+  createdAt DateTime @default(now())
+  createdBy String
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([invoiceId])
+  @@index([productId])
+}
