@@ -8,13 +8,13 @@ const STYLES: Record<string, PillStyle> = {
   // Order lifecycle
   draft: { bg: "#EEF0F3", fg: "#5C6570", label: "Draft" },
   submitted: { bg: "#E6F4EF", fg: "#0B6E4F", label: "Submitted" },
-  confirmed: { bg: "#E7EEFB", fg: "#1D4ED8", label: "Confirmed" },
-  invoiced: { bg: "#ECEBFB", fg: "#4338CA", label: "Invoiced" },
-  out_for_delivery: { bg: "#FDF0E6", fg: "#B54708", label: "Out for delivery" },
+  confirmed: { bg: "#E8F1FB", fg: "#175CD3", label: "Confirmed" },
+  invoiced: { bg: "#EEF4FF", fg: "#3538CD", label: "Invoiced" },
+  out_for_delivery: { bg: "#FFFAEB", fg: "#B54708", label: "Out for delivery" },
   delivered: { bg: "#E6F4EF", fg: "#067647", label: "Delivered" },
   settled: { bg: "#E6F4EF", fg: "#067647", label: "Settled" },
-  cancelled: { bg: "#FBEAE8", fg: "#B42318", label: "Cancelled" },
-  return_logged: { bg: "#FBEDE3", fg: "#C45C26", label: "Return logged" },
+  cancelled: { bg: "#FEE4E2", fg: "#B42318", label: "Cancelled" },
+  return_logged: { bg: "#FEF6EE", fg: "#C45C26", label: "Return logged" },
   // Invoice payment status
   unpaid: { bg: "#EEF0F3", fg: "#5C6570", label: "Unpaid" },
   partial: { bg: "#FDF0E6", fg: "#B54708", label: "Partial" },
