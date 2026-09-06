@@ -1,32 +1,53 @@
-export function StatusBadge({ status }: { status: string }) {
-  const color: Record<string, string> = {
-    draft: "bg-slate-200 text-slate-600",
-    submitted: "bg-amber-100 text-amber-700",
-    confirmed: "bg-blue-100 text-blue-700",
-    invoiced: "bg-indigo-100 text-indigo-700",
-    out_for_delivery: "bg-purple-100 text-purple-700",
-    delivered: "bg-teal-100 text-teal-700",
-    settled: "bg-green-100 text-green-700",
-    cancelled: "bg-red-100 text-red-700",
+// Single reusable status pill: colored chip + text label (never color-only).
+// Handles order-lifecycle statuses, invoice payment statuses, and the
+// "Return logged" state.
+
+type PillStyle = { bg: string; fg: string; label: string };
+
+const STYLES: Record<string, PillStyle> = {
+  // Order lifecycle
+  draft: { bg: "#EEF0F3", fg: "#5C6570", label: "Draft" },
+  submitted: { bg: "#E6F4EF", fg: "#067647", label: "Submitted" },
+  confirmed: { bg: "#E7EEFB", fg: "#1D4ED8", label: "Confirmed" },
+  invoiced: { bg: "#ECEBFB", fg: "#4338CA", label: "Invoiced" },
+  out_for_delivery: { bg: "#FDF0E6", fg: "#B54708", label: "Out for delivery" },
+  delivered: { bg: "#E6F4EF", fg: "#067647", label: "Delivered" },
+  settled: { bg: "#E6F4EF", fg: "#067647", label: "Settled" },
+  cancelled: { bg: "#FBEAE8", fg: "#B42318", label: "Cancelled" },
+  return_logged: { bg: "#FBEDE3", fg: "#C45C26", label: "Return logged" },
+  // Invoice payment status
+  unpaid: { bg: "#EEF0F3", fg: "#5C6570", label: "Unpaid" },
+  partial: { bg: "#FDF0E6", fg: "#B54708", label: "Partial" },
+  paid: { bg: "#E6F4EF", fg: "#067647", label: "Paid" },
+};
+
+export function StatusPill({
+  status,
+  label,
+}: {
+  status: string;
+  label?: string;
+}) {
+  const s = STYLES[status] ?? {
+    bg: "#EEF0F3",
+    fg: "#5C6570",
+    label: status,
   };
   return (
     <span
-      className={`rounded px-2 py-0.5 text-xs ${color[status] ?? "bg-slate-100"}`}
+      className="inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium"
+      style={{ backgroundColor: s.bg, color: s.fg }}
     >
-      {status}
+      <span
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ backgroundColor: s.fg }}
+        aria-hidden
+      />
+      {label ?? s.label}
     </span>
   );
 }
 
-export function PayBadge({ status }: { status: string }) {
-  const color: Record<string, string> = {
-    unpaid: "bg-red-100 text-red-700",
-    partial: "bg-amber-100 text-amber-700",
-    paid: "bg-green-100 text-green-700",
-  };
-  return (
-    <span className={`rounded px-2 py-0.5 text-xs ${color[status] ?? ""}`}>
-      {status}
-    </span>
-  );
-}
+// Backwards-compatible aliases (all render the same pill).
+export const PayBadge = StatusPill;
+export const StatusBadge = StatusPill;
