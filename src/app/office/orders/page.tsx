@@ -81,13 +81,15 @@ function OrdersPageInner() {
   const kpis = useMemo(() => {
     const submitted = orders.filter((o) => o.status === "submitted");
     const confirmed = orders.filter((o) => o.status === "confirmed");
-    const invoiced = orders.filter((o) => o.status === "invoiced");
+    const billed = orders.filter((o) =>
+      ["invoiced", "out_for_delivery", "delivered", "settled"].includes(o.status),
+    );
     const today = orders.filter((o) => isInTodayKarachi(o.createdAt));
     const todayRs = today.reduce((s, o) => s + o.subtotal, 0);
     return {
       submitted: submitted.length,
       confirmed: confirmed.length,
-      invoiced: invoiced.length,
+      billed: billed.length,
       today: today.length,
       todayRs,
     };
@@ -127,8 +129,8 @@ function OrdersPageInner() {
         <KpiCard label="Confirmed" hint="Ready to invoice">
           <span className="tnum">{kpis.confirmed}</span>
         </KpiCard>
-        <KpiCard label="Invoiced" hint="In this list">
-          <span className="tnum">{kpis.invoiced}</span>
+        <KpiCard label="Billed" hint="Invoiced or later">
+          <span className="tnum">{kpis.billed}</span>
         </KpiCard>
         <KpiCard label="Today" hint={`${kpis.today} orders`}>
           <Money value={kpis.todayRs} />
