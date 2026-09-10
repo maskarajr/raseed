@@ -38,3 +38,16 @@ export function formatTodayKarachi(now: Date = new Date()): string {
     year: "numeric",
   }).format(now);
 }
+
+/** Calendar date in Asia/Karachi as YYYY-MM-DD. */
+export function karachiDateKey(d: Date): string {
+  const shifted = new Date(d.getTime() + KARACHI_OFFSET_MS);
+  const y = shifted.getUTCFullYear();
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(shifted.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function startDaysAgoKarachi(days: number, now: Date = new Date()): Date {
+  return new Date(startOfTodayKarachi(now).getTime() - days * 24 * 60 * 60 * 1000);
+}
