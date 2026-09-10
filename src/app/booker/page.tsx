@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
+import { startOfTodayKarachi, startOfWeekKarachi } from "@/lib/day";
 
 type OrderRow = {
   id: string;
@@ -17,27 +18,22 @@ type OrderRow = {
 
 const CLOSED = ["settled", "cancelled"];
 
-function startOfToday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-}
-function sevenDaysAgo() {
-  return Date.now() - 7 * 24 * 60 * 60 * 1000;
-}
-
 export default function BookerHome() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [name, setName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api<{ orders: OrderRow[] }>("/api/orders")
       .then((d) => setOrders(d.orders))
       .catch((e) => setError(e.message));
+    api<{ user: { name: string } | null }>("/api/auth/me")
+      .then((d) => setName(d.user?.name ?? null))
+      .catch(() => setName(null));
   }, []);
 
-  const todayStart = startOfToday();
-  const weekStart = sevenDaysAgo();
+  const todayStart = startOfTodayKarachi().getTime();
+  const weekStart = startOfWeekKarachi().getTime();
   const todayBooked = orders
     .filter((o) => new Date(o.createdAt).getTime() >= todayStart)
     .reduce((s, o) => s + o.subtotal, 0);
@@ -51,7 +47,12 @@ export default function BookerHome() {
   return (
     <div className="space-y-4 px-4 pt-5">
       <div className="flex items-center justify-between">
-        <span className="text-2xl font-bold text-primary">Raseed</span>
+        <div className="flex min-w-0 items-baseline gap-2">
+          <span className="text-2xl font-bold text-primary">Raseed</span>
+          {name && (
+            <span className="truncate text-sm text-muted">{name}</span>
+          )}
+        </div>
         <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary">
           Booker
         </span>
@@ -60,7 +61,7 @@ export default function BookerHome() {
       {error && <p className="text-sm text-danger">{error}</p>}
 
       <div className="grid grid-cols-3 gap-2">
-        <Metric label="Today booked">
+        <Metric label="Today's booked">
           <Money value={todayBooked} className="text-base font-bold" />
         </Metric>
         <Metric label="Open orders">
@@ -121,7 +122,7 @@ function Metric({
   children: React.ReactNode;
 }) {
   return (
-    <div className="card p-3">
+    <div className="rounded-md border border-line bg-surface p-3">
       <p className="text-[11px] leading-tight text-muted">{label}</p>
       <div className="mt-1">{children}</div>
     </div>
