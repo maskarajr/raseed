@@ -9,6 +9,7 @@ import {
   FileText,
   Home,
   LineChart,
+  LogOut,
   Package,
   Settings,
   ShoppingBag,
@@ -50,6 +51,7 @@ export function OfficeNav({ expanded }: { expanded: boolean }) {
         const link = (
           <Link
             href={l.href}
+            prefetch={false}
             className={cn(
               "flex h-10 items-center gap-3 rounded-md px-2.5 text-sm font-medium",
               active
@@ -127,12 +129,10 @@ export function OfficeShell({
           </div>
           <OfficeNav expanded={expanded} />
           <div className="mt-auto border-t border-line p-2">
-            <p className="mb-2 truncate px-1 text-[10px] text-muted opacity-0 group-hover/rail:opacity-100 group-focus-within/rail:opacity-100">
+            <p className="mb-1 truncate px-1 text-[10px] text-muted opacity-0 group-hover/rail:opacity-100 group-focus-within/rail:opacity-100">
               {userLabel}
             </p>
-            <div className="opacity-0 group-hover/rail:opacity-100 group-focus-within/rail:opacity-100">
-              <LogoutButton />
-            </div>
+            <LogoutButton compact />
           </div>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
