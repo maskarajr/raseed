@@ -79,26 +79,26 @@ export default function OfficeDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="mt-0.5 text-sm text-muted">
-          Today · {today || "…"} <span className="text-muted">(Asia/Karachi)</span>
-        </p>
+        <h1 className="font-serif text-3xl font-normal text-ink">
+          {today || "…"}
+        </h1>
+        <p className="mt-0.5 text-sm text-muted">Today · Asia/Karachi</p>
       </div>
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Booked today">
-          <Money value={kpis.bookedToday} />
+          <Money value={kpis.bookedToday} variant="hero" />
         </Kpi>
         <Kpi label="Outstanding">
-          <Money value={kpis.outstanding} />
+          <Money value={kpis.outstanding} variant="hero" />
         </Kpi>
         <Kpi label="Awaiting confirm">
-          <span className="tnum">{kpis.awaitingConfirm}</span>
+          <span className="money-hero">{kpis.awaitingConfirm}</span>
         </Kpi>
         <Kpi label="Low stock">
-          <span className="tnum">{kpis.lowStock}</span>
+          <span className="money-hero">{kpis.lowStock}</span>
         </Kpi>
       </div>
 
@@ -113,9 +113,9 @@ export default function OfficeDashboard() {
             </div>
 
             {!needsAttention ? (
-              <div className="px-4 py-10 text-center">
-                <p className="text-sm font-medium">All clear</p>
-                <p className="mt-1 text-sm text-muted">
+              <div className="empty">
+                <p className="empty-title">All clear</p>
+                <p className="empty-copy">
                   Nothing to confirm and nothing below reorder level.
                 </p>
               </div>
@@ -264,7 +264,7 @@ export default function OfficeDashboard() {
                       </span>
                       <Money
                         value={inv.balance}
-                        className="shrink-0 font-semibold text-primary"
+                        className="shrink-0 font-medium"
                       />
                     </Link>
                   </li>
@@ -286,9 +286,9 @@ function Kpi({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-md border border-line bg-surface p-4">
+    <div className="rounded border border-line bg-surface p-4 shadow-none">
       <p className="text-sm text-muted">{label}</p>
-      <p className="mt-1 text-xl font-bold">{children}</p>
+      <p className="mt-1 text-2xl leading-tight">{children}</p>
     </div>
   );
 }

@@ -159,8 +159,8 @@ export default function InvoiceDetailPage() {
             </TotalRow>
             <div className="mt-2 flex items-center justify-between border-t border-line pt-3">
               <dt className="text-base font-semibold">Balance due</dt>
-              <dd className="text-2xl font-bold text-primary">
-                <Money value={inv.balance} />
+              <dd className="text-3xl leading-none text-ink">
+                <Money value={inv.balance} variant="hero" />
               </dd>
             </div>
           </dl>
@@ -472,8 +472,8 @@ function ReturnSheet({
           })}
         </div>
 
-        <div className="rounded-md bg-primary-soft p-3 text-sm">
-          <p className="font-medium text-primary">Preview</p>
+        <div className="rounded border border-line bg-canvas p-3 text-sm">
+          <p className="font-medium text-ink">Preview</p>
           <p className="tnum mt-1">
             Restock +{totalQty} · Invoice −<Money value={totalAmount} />
           </p>

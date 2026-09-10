@@ -89,10 +89,8 @@ export default function OrdersPage() {
           <button
             type="button"
             onClick={() => setTodayOnly((v) => !v)}
-            className={`btn h-9 px-3 text-sm ${
-              todayOnly
-                ? "bg-primary text-white hover:bg-primary-hover"
-                : "border border-line bg-surface text-ink hover:bg-canvas"
+            className={`chip h-9 rounded px-3 text-sm ${
+              todayOnly ? "chip-active" : ""
             }`}
             aria-pressed={todayOnly}
           >
@@ -108,11 +106,7 @@ export default function OrdersPage() {
                 key={s}
                 type="button"
                 onClick={() => setStatus(s)}
-                className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition ${
-                  active
-                    ? "bg-primary text-white"
-                    : "border border-line bg-surface text-muted hover:text-ink"
-                }`}
+                className={`chip capitalize ${active ? "chip-active" : ""}`}
               >
                 {s === "all" ? "All" : s.replace(/_/g, " ")}
               </button>
@@ -145,8 +139,8 @@ export default function OrdersPage() {
                   key={o.id}
                   className={
                     isSubmitted
-                      ? "border-l-2 border-l-primary bg-primary-soft"
-                      : "odd:bg-canvas"
+                      ? "border-l-2 border-l-primary bg-[#F7F7F7]"
+                      : "odd:bg-[#FCFCFC]"
                   }
                 >
                   <td className="whitespace-nowrap text-xs text-muted">

@@ -227,7 +227,7 @@ function CustomerStep({
           <button
             key={c.id}
             onClick={() => onSelect(c)}
-            className={`w-full rounded-lg border p-3 text-left ${
+            className={`w-full rounded border p-3 text-left ${
               selected?.id === c.id
                 ? "border-primary bg-primary-soft"
                 : "border-line bg-surface"
@@ -582,9 +582,13 @@ function ReviewStep({
         ))}
       </div>
       {notes && <p className="text-sm text-muted">Notes: {notes}</p>}
-      <div className="flex items-center justify-between rounded-lg border border-primary bg-primary-soft p-4">
+      <div className="flex items-center justify-between rounded border border-line bg-surface p-4">
         <span className="text-lg font-semibold">Total</span>
-        <Money value={subtotal} className="text-3xl font-extrabold text-primary" />
+        <Money
+          value={subtotal}
+          variant="hero"
+          className="text-4xl font-normal text-ink"
+        />
       </div>
     </div>
   );

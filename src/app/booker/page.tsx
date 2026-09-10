@@ -53,7 +53,7 @@ export default function BookerHome() {
             <span className="truncate text-sm text-muted">{name}</span>
           )}
         </div>
-        <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary">
+        <span className="rounded-full border border-line bg-[#F5F5F5] px-2 py-0.5 text-xs font-medium text-muted">
           Booker
         </span>
       </div>
@@ -81,7 +81,7 @@ export default function BookerHome() {
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-semibold">Recent orders</h2>
+          <h2 className="font-semibold">My recent orders</h2>
           <Link href="/booker/orders" className="text-sm text-primary">
             See all
           </Link>
@@ -104,9 +104,10 @@ export default function BookerHome() {
             </Link>
           ))}
           {recent.length === 0 && (
-            <p className="py-6 text-center text-sm text-muted">
-              No orders yet. Tap “New order”.
-            </p>
+            <div className="empty">
+              <p className="empty-title">No orders yet</p>
+              <p className="empty-copy">Tap “New order”.</p>
+            </div>
           )}
         </div>
       </div>
@@ -122,7 +123,7 @@ function Metric({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-md border border-line bg-surface p-3">
+    <div className="rounded border border-line bg-surface p-3 shadow-none">
       <p className="text-[11px] leading-tight text-muted">{label}</p>
       <div className="mt-1">{children}</div>
     </div>
