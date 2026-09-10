@@ -195,10 +195,12 @@ async function main() {
   // Booker scoping: second booker cannot see this order.
   {
     const other = makeClient();
-    await other.req("POST", "/api/auth/login", {
+    const login = await other.req("POST", "/api/auth/login", {
       email: "sana@raseed.local",
       password: "booker123",
     });
+    check(login.status === 200, `sana login returns 200 (got ${login.status})`);
+    check(login.data?.user?.role === "booker", "sana session role is 'booker'");
     const { status } = await other.req("GET", `/api/orders/${orderId}`);
     check(status === 403, `other booker cannot read this order (got ${status})`);
   }

@@ -33,7 +33,12 @@ async function main() {
   const ownerHash = await bcrypt.hash(OWNER.password, 10);
   const owner = await prisma.user.upsert({
     where: { email: OWNER.email },
-    update: {},
+    update: {
+      name: OWNER.name,
+      role: "owner",
+      passwordHash: ownerHash,
+      active: true,
+    },
     create: {
       name: OWNER.name,
       email: OWNER.email,
@@ -47,7 +52,12 @@ async function main() {
     const hash = await bcrypt.hash(b.password, 10);
     const booker = await prisma.user.upsert({
       where: { email: b.email },
-      update: {},
+      update: {
+        name: b.name,
+        role: "booker",
+        passwordHash: hash,
+        active: true,
+      },
       create: {
         name: b.name,
         email: b.email,
