@@ -38,3 +38,17 @@ export function formatTodayKarachi(now: Date = new Date()): string {
     year: "numeric",
   }).format(now);
 }
+
+export function formatKarachiDate(iso: string | Date): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Karachi",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(typeof iso === "string" ? new Date(iso) : iso);
+}
+
+export function isInTodayKarachi(iso: string | Date, now: Date = new Date()): boolean {
+  const t = (typeof iso === "string" ? new Date(iso) : iso).getTime();
+  return t >= startOfTodayKarachi(now).getTime() && t < endOfTodayKarachi(now).getTime();
+}

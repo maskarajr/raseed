@@ -4,10 +4,12 @@ import { cn } from "@/lib/utils";
 export function KpiCard({
   label,
   children,
+  hint,
   compact = false,
 }: {
   label: string;
   children: ReactNode;
+  hint?: ReactNode;
   compact?: boolean;
 }) {
   return (
@@ -28,6 +30,9 @@ export function KpiCard({
       >
         {children}
       </div>
+      {hint != null && hint !== "" ? (
+        <p className="mt-1 text-xs text-muted">{hint}</p>
+      ) : null}
     </div>
   );
 }

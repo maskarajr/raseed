@@ -6,8 +6,13 @@ import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { OrderDocument } from "@/components/OrderDocument";
+import { KpiCard } from "@/components/KpiCard";
 import { ORDER_STATUSES } from "@/lib/enums";
-import { startOfTodayKarachi, endOfTodayKarachi } from "@/lib/day";
+import {
+  startOfTodayKarachi,
+  endOfTodayKarachi,
+  isInTodayKarachi,
+} from "@/lib/day";
 import { Input } from "@/components/ui/input";
 
 type OrderRow = {
@@ -73,6 +78,21 @@ function OrdersPageInner() {
     }
   }
 
+  const kpis = useMemo(() => {
+    const submitted = orders.filter((o) => o.status === "submitted");
+    const confirmed = orders.filter((o) => o.status === "confirmed");
+    const invoiced = orders.filter((o) => o.status === "invoiced");
+    const today = orders.filter((o) => isInTodayKarachi(o.createdAt));
+    const todayRs = today.reduce((s, o) => s + o.subtotal, 0);
+    return {
+      submitted: submitted.length,
+      confirmed: confirmed.length,
+      invoiced: invoiced.length,
+      today: today.length,
+      todayRs,
+    };
+  }, [orders]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const dayStart = todayOnly ? startOfTodayKarachi().getTime() : 0;
@@ -93,7 +113,27 @@ function OrdersPageInner() {
 
   return (
     <div className="space-y-5">
-      <h1 className="font-serif text-3xl font-semibold">Orders</h1>
+      <div>
+        <h1 className="font-serif text-3xl font-semibold">Orders</h1>
+        <p className="mt-0.5 text-sm text-muted">
+          Booker orders · row opens the order document
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <KpiCard label="Submitted" hint="Awaiting confirm">
+          <span className="tnum">{kpis.submitted}</span>
+        </KpiCard>
+        <KpiCard label="Confirmed" hint="Ready to invoice">
+          <span className="tnum">{kpis.confirmed}</span>
+        </KpiCard>
+        <KpiCard label="Invoiced" hint="In this list">
+          <span className="tnum">{kpis.invoiced}</span>
+        </KpiCard>
+        <KpiCard label="Today" hint={`${kpis.today} orders`}>
+          <Money value={kpis.todayRs} />
+        </KpiCard>
+      </div>
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -222,7 +262,10 @@ function OrdersPageInner() {
                     <button
                       type="button"
                       className="text-sm text-primary"
-                      onClick={() => setOpenId(o.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenId(o.id);
+                      }}
                     >
                       Open
                     </button>

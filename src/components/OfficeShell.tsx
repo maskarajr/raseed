@@ -149,7 +149,7 @@ export function OfficeShell({
               {userLabel}
             </p>
           </header>
-          <main className="mx-auto w-full max-w-6xl flex-1 px-8 py-8">
+          <main className="w-full min-w-0 flex-1 px-6 py-5">
             {children}
           </main>
         </div>

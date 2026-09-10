@@ -30,6 +30,7 @@ describe("VISUAL-v3 office chrome", () => {
     assert.match(shell, /group-hover|focus-within|hover:/);
     assert.doesNotMatch(shell, /w-\[220px\]/);
     assert.match(shell, /Find/i);
+    assert.doesNotMatch(shell, /max-w-6xl/);
   });
 
   it("office layout mounts the icon-rail shell, not a labeled 200px aside", () => {
@@ -50,11 +51,24 @@ describe("VISUAL-v3 office chrome", () => {
     assert.doesNotMatch(kpi, /shadow-(sm|md|lg|xl)/);
   });
 
+  it("office invoices uses KPI strip, search, full-width table, document slide-over", () => {
+    const invoices = read("src/app/office/invoices/page.tsx");
+    assert.match(invoices, /Search invoices/);
+    assert.match(invoices, /KpiCard/);
+    assert.match(invoices, /label="Open"/);
+    assert.match(invoices, /Outstanding/);
+    assert.match(invoices, /InvoiceDocument/);
+    assert.match(invoices, /StatusPill/);
+    assert.doesNotMatch(invoices, /create.?invoice/i);
+    assert.doesNotMatch(invoices, /New invoice/);
+  });
+
   it("office orders search like invoices and open a document slide-over", () => {
     const orders = read("src/app/office/orders/page.tsx");
     assert.match(orders, /Search Orders/);
     assert.match(orders, /Today/);
     assert.match(orders, /DocumentSheet|OrderDocument/);
+    assert.match(orders, /KpiCard/);
   });
 
   it("invoice document chrome uses paper slide-over with SKU line headers", () => {
