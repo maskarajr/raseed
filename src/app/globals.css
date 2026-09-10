@@ -2,16 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Locked design tokens */
+/* VISUAL-v2 tokens — Midday near-mono + deep green accent */
 :root {
-  --bg: #f4f5f7;
+  --bg: #fafafa;
   --surface: #ffffff;
-  --border: #e2e5ea;
-  --text: #1a1d23;
-  --text-muted: #5c6570;
+  --border: #e6e6e6;
+  --line: #e6e6e6;
+  --text: #0a0a0a;
+  --ink: #0a0a0a;
+  --text-muted: #737373;
+  --muted: #737373;
   --primary: #0b6e4f;
   --primary-hover: #095a41;
-  --primary-soft: #e6f4ef;
+  --primary-soft: #f3f7f5;
   --accent: #c45c26;
   --danger: #b42318;
   --warning: #b54708;
@@ -32,14 +35,21 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* All money uses tabular figures for aligned columns. */
+/* Table / column money: mono + tabular. Never serif in tables. */
 .tnum {
+  font-family: "Cascadia Mono", "Segoe UI Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hero money only: Office KPI values, invoice Balance due, Booker Review Total. */
+.money-hero {
+  font-family: Georgia, "Times New Roman", Times, serif;
   font-variant-numeric: tabular-nums;
 }
 
 @layer components {
   .btn {
-    @apply inline-flex min-h-[40px] items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-[40px] items-center justify-center gap-2 rounded px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
     @apply btn bg-primary text-white hover:bg-primary-hover;
@@ -52,25 +62,37 @@ body {
     background-color: var(--danger);
   }
   .input {
-    @apply w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary focus:ring-2;
-  }
-  .input:focus {
-    --tw-ring-color: var(--primary-soft);
+    @apply w-full rounded border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary;
   }
   .label {
     @apply mb-1 block text-sm font-medium text-ink;
   }
   .card {
-    @apply rounded-lg border border-line bg-surface p-4;
+    @apply rounded border border-line bg-surface p-4 shadow-none;
   }
   .table {
     @apply w-full border-collapse text-sm;
   }
   .table th {
-    @apply border-b border-line px-3 py-2 text-left font-semibold text-muted;
+    @apply border-b border-line px-3 py-2.5 text-left font-semibold text-muted;
   }
   .table td {
-    @apply border-b border-line px-3 py-2;
+    @apply border-b border-line px-3 py-2.5;
+  }
+  .chip {
+    @apply rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-muted transition hover:text-ink;
+  }
+  .chip-active {
+    @apply border-ink bg-[#f5f5f5] text-ink;
+  }
+  .empty {
+    @apply px-4 py-10 text-center;
+  }
+  .empty-title {
+    @apply text-sm font-medium text-ink;
+  }
+  .empty-copy {
+    @apply mt-1 text-sm text-muted;
   }
 }
 
