@@ -63,7 +63,7 @@ export function QuickActions() {
             <Item
               key={a.title}
               render={<Link href={a.href} />}
-              size="sm"
+              size="default"
             >
               <ItemMedia variant="icon">{a.icon}</ItemMedia>
               <ItemContent>

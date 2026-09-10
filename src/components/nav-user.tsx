@@ -2,10 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  Avatar,
-  AvatarFallback,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,20 +31,19 @@ export function NavUser({ name, role }: { name: string; role: string }) {
         <AvatarFallback>{initial}</AvatarFallback>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuItem className="flex items-center justify-start gap-2">
-          <DropdownMenuLabel className="flex items-center gap-3">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="flex items-center gap-3 p-2 font-normal text-foreground">
             <Avatar className="size-10">
               <AvatarFallback>{initial}</AvatarFallback>
             </Avatar>
-            <div>
-              <span className="font-medium text-foreground">{name}</span>
-              <br />
-              <div className="max-w-full overflow-hidden overflow-ellipsis whitespace-nowrap text-muted-foreground text-xs">
+            <div className="min-w-0">
+              <span className="block font-medium text-foreground">{name}</span>
+              <span className="block truncate text-muted-foreground text-xs">
                 {role}
-              </div>
+              </span>
             </div>
           </DropdownMenuLabel>
-        </DropdownMenuItem>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem render={<Link href="/office/settings" />}>

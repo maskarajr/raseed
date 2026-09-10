@@ -6,6 +6,7 @@ import {
   BarChart3Icon,
   ShoppingBagIcon,
   FileTextIcon,
+  PackageIcon,
   UsersIcon,
   SettingsIcon,
 } from "lucide-react";
@@ -13,53 +14,95 @@ import {
 export type SidebarNavItem = {
   title: string;
   path: string;
-  icon: ReactNode;
-  match: "exact" | "prefix";
+  icon?: ReactNode;
+  match?: "exact" | "prefix";
 };
 
-export const officeNavItems: SidebarNavItem[] = [
+export type SidebarNavGroup = {
+  label: string;
+  items: SidebarNavItem[];
+};
+
+export const officeNavGroups: SidebarNavGroup[] = [
   {
-    title: "Dashboard",
-    path: "/office",
-    match: "exact",
-    icon: <LayoutGridIcon />,
+    label: "Overview",
+    items: [
+      {
+        title: "Dashboard",
+        path: "/office",
+        match: "exact",
+        icon: <LayoutGridIcon />,
+      },
+      {
+        title: "Reports",
+        path: "/office/reports",
+        match: "prefix",
+        icon: <BarChart3Icon />,
+      },
+    ],
   },
   {
-    title: "Reports",
-    path: "/office/reports",
-    match: "prefix",
-    icon: <BarChart3Icon />,
+    label: "Store",
+    items: [
+      {
+        title: "Orders",
+        path: "/office/orders",
+        match: "prefix",
+        icon: <ShoppingBagIcon />,
+      },
+      {
+        title: "Invoices",
+        path: "/office/invoices",
+        match: "prefix",
+        icon: <FileTextIcon />,
+      },
+      {
+        title: "Products",
+        path: "/office/products",
+        match: "prefix",
+        icon: <PackageIcon />,
+      },
+      {
+        title: "Customers",
+        path: "/office/customers",
+        match: "prefix",
+        icon: <UsersIcon />,
+      },
+    ],
   },
   {
-    title: "Orders",
-    path: "/office/orders",
-    match: "prefix",
-    icon: <ShoppingBagIcon />,
-  },
-  {
-    title: "Invoices",
-    path: "/office/invoices",
-    match: "prefix",
-    icon: <FileTextIcon />,
-  },
-  {
-    title: "Customers",
-    path: "/office/customers",
-    match: "prefix",
-    icon: <UsersIcon />,
-  },
-  {
-    title: "Settings",
-    path: "/office/settings",
-    match: "prefix",
-    icon: <SettingsIcon />,
+    label: "Settings",
+    items: [
+      {
+        title: "Settings",
+        path: "/office/settings",
+        match: "prefix",
+        icon: <SettingsIcon />,
+      },
+    ],
   },
 ];
 
+const allNavItems: SidebarNavItem[] = officeNavGroups.flatMap((g) => g.items);
+
 export function navTitleForPath(pathname: string): SidebarNavItem {
-  const prefixHit = officeNavItems.find(
-    (item) => item.match === "prefix" && pathname.startsWith(item.path),
+  const prefixHit = allNavItems.find(
+    (item) =>
+      item.match === "prefix" &&
+      item.path !== "/office" &&
+      pathname.startsWith(item.path),
   );
   if (prefixHit) return prefixHit;
-  return officeNavItems[0]!;
+  if (pathname.startsWith("/office/bookers")) {
+    return { title: "Bookers", path: "/office/bookers", icon: <UsersIcon /> };
+  }
+  if (pathname.startsWith("/office/stock")) {
+    return { title: "Stock", path: "/office/stock", icon: <PackageIcon /> };
+  }
+  return allNavItems[0]!;
+}
+
+export function isNavActive(pathname: string, item: SidebarNavItem): boolean {
+  if (item.match === "exact") return pathname === item.path;
+  return pathname.startsWith(item.path);
 }

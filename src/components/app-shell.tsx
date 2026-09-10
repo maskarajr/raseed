@@ -16,11 +16,11 @@ export function AppShell({
 }) {
   return (
     <TooltipProvider>
-      <SidebarProvider defaultOpen={false}>
+      <SidebarProvider defaultOpen>
         <AppSidebar />
-        <SidebarInset className="p-4 md:p-6">
+        <SidebarInset className="gap-6 p-6 md:px-8 md:py-8">
           <AppHeader userName={userName} userRole={userRole} />
-          <div className="flex flex-1 flex-col gap-4">{children}</div>
+          <div className="flex flex-1 flex-col gap-6">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

@@ -47,7 +47,7 @@ export default function OfficeDashboard() {
   const needsAttention = data.submitted.length > 0 || data.lowStock.length > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <p className="text-sm text-muted-foreground">
         Today · {today || "…"} <span>(Asia/Karachi)</span>
       </p>
@@ -58,7 +58,7 @@ export default function OfficeDashboard() {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="card p-0">
-          <div className="flex items-center justify-between border-b border-line px-4 py-3">
+          <div className="flex items-center justify-between border-b border-line px-6 py-4">
             <h2 className="font-semibold">Needs attention</h2>
             <Link href="/office/orders" className="text-sm text-primary">
               All orders →
@@ -66,14 +66,14 @@ export default function OfficeDashboard() {
           </div>
 
           {!needsAttention ? (
-            <div className="px-4 py-10 text-center">
+            <div className="px-6 py-10 text-center">
               <p className="text-sm font-medium">All clear</p>
               <p className="mt-1 text-sm text-muted">
                 Nothing to confirm and nothing below reorder level.
               </p>
             </div>
           ) : (
-            <div className="space-y-6 p-4">
+            <div className="space-y-6 p-6">
               <div>
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
                   Orders awaiting confirmation ({data.submitted.length})
@@ -184,14 +184,14 @@ export default function OfficeDashboard() {
 
         <aside className="hidden xl:block">
           <section className="card p-0">
-            <div className="flex items-center justify-between border-b border-line px-4 py-3">
+            <div className="flex items-center justify-between border-b border-line px-6 py-4">
               <h2 className="font-semibold">Billing health</h2>
               <Link href="/office/invoices" className="text-sm text-primary">
                 Invoices →
               </Link>
             </div>
             {data.outstandingInvoices.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-muted">
+              <p className="px-6 py-8 text-center text-sm text-muted">
                 No outstanding invoices.
               </p>
             ) : (
@@ -200,7 +200,7 @@ export default function OfficeDashboard() {
                   <li key={inv.id}>
                     <Link
                       href={`/office/invoices/${inv.id}`}
-                      className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-canvas"
+                      className="flex items-center justify-between gap-3 px-6 py-3.5 hover:bg-canvas"
                     >
                       <span className="min-w-0">
                         <span className="block font-mono text-xs">
