@@ -1,24 +1,20 @@
-// Single reusable status pill: colored chip + text label (never color-only).
-// Handles order-lifecycle statuses, invoice payment statuses, and the
-// "Return logged" state.
+// Quiet StatusPill: faint/near-mono bg + semantic dot + text label (never color-only).
 
 type PillStyle = { bg: string; fg: string; label: string };
 
 const STYLES: Record<string, PillStyle> = {
-  // Order lifecycle
-  draft: { bg: "#EEF0F3", fg: "#5C6570", label: "Draft" },
-  submitted: { bg: "#E6F4EF", fg: "#0B6E4F", label: "Submitted" },
-  confirmed: { bg: "#E8F1FB", fg: "#175CD3", label: "Confirmed" },
-  invoiced: { bg: "#EEF4FF", fg: "#3538CD", label: "Invoiced" },
-  out_for_delivery: { bg: "#FFFAEB", fg: "#B54708", label: "Out for delivery" },
-  delivered: { bg: "#E6F4EF", fg: "#067647", label: "Delivered" },
-  settled: { bg: "#E6F4EF", fg: "#067647", label: "Settled" },
-  cancelled: { bg: "#FEE4E2", fg: "#B42318", label: "Cancelled" },
-  return_logged: { bg: "#FEF6EE", fg: "#C45C26", label: "Return logged" },
-  // Invoice payment status
-  unpaid: { bg: "#EEF0F3", fg: "#5C6570", label: "Unpaid" },
-  partial: { bg: "#FDF0E6", fg: "#B54708", label: "Partial" },
-  paid: { bg: "#E6F4EF", fg: "#067647", label: "Paid" },
+  draft: { bg: "#F5F5F5", fg: "#737373", label: "Draft" },
+  submitted: { bg: "#F3F7F5", fg: "#0B6E4F", label: "Submitted" },
+  confirmed: { bg: "#F5F7FA", fg: "#175CD3", label: "Confirmed" },
+  invoiced: { bg: "#F5F6FA", fg: "#3538CD", label: "Invoiced" },
+  out_for_delivery: { bg: "#FAF8F4", fg: "#B54708", label: "Out for delivery" },
+  delivered: { bg: "#F3F7F5", fg: "#067647", label: "Delivered" },
+  settled: { bg: "#F3F7F5", fg: "#067647", label: "Settled" },
+  cancelled: { bg: "#F7F5F5", fg: "#B42318", label: "Cancelled" },
+  return_logged: { bg: "#F7F5F3", fg: "#C45C26", label: "Return logged" },
+  unpaid: { bg: "#F5F5F5", fg: "#737373", label: "Unpaid" },
+  partial: { bg: "#FAF8F4", fg: "#B54708", label: "Partial" },
+  paid: { bg: "#F3F7F5", fg: "#067647", label: "Paid" },
 };
 
 export function StatusPill({
@@ -29,8 +25,8 @@ export function StatusPill({
   label?: string;
 }) {
   const s = STYLES[status] ?? {
-    bg: "#EEF0F3",
-    fg: "#5C6570",
+    bg: "#F5F5F5",
+    fg: "#737373",
     label: status,
   };
   return (
@@ -48,6 +44,5 @@ export function StatusPill({
   );
 }
 
-// Backwards-compatible aliases (all render the same pill).
 export const PayBadge = StatusPill;
 export const StatusBadge = StatusPill;

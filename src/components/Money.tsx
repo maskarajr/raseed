@@ -1,13 +1,18 @@
 import { formatPKR } from "@/lib/money";
 
-// Single money renderer used everywhere money appears. Always shows grouped
-// thousands (e.g. `Rs 12,450`) with tabular figures so columns align.
+// Default: mono + tabular (tables). Hero: Georgia serif (KPI / Balance due / Review Total).
 export function Money({
   value,
   className = "",
+  variant = "default",
 }: {
   value: number;
   className?: string;
+  variant?: "default" | "hero";
 }) {
-  return <span className={`tnum ${className}`}>{formatPKR(value)}</span>;
+  return (
+    <span className={`${variant === "hero" ? "money-hero" : "tnum"} ${className}`}>
+      {formatPKR(value)}
+    </span>
+  );
 }
