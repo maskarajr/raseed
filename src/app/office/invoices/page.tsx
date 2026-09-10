@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
+import { InvoiceDocument } from "@/components/InvoiceDocument";
 
 type InvoiceRow = {
   id: string;
@@ -20,18 +20,23 @@ type InvoiceRow = {
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
 
-  useEffect(() => {
+  function load() {
     api<{ invoices: InvoiceRow[] }>("/api/invoices")
       .then((d) => setInvoices(d.invoices))
       .catch((e) => setError(e.message));
+  }
+
+  useEffect(() => {
+    load();
   }, []);
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Invoices</h1>
+    <div className="space-y-5">
+      <h1 className="font-serif text-3xl font-semibold">Invoices</h1>
       {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="card overflow-x-auto p-0">
+      <div className="overflow-x-auto border border-line bg-surface">
         <table className="table">
           <thead>
             <tr>
@@ -47,29 +52,37 @@ export default function InvoicesPage() {
           </thead>
           <tbody>
             {invoices.map((i) => (
-              <tr key={i.id}>
+              <tr
+                key={i.id}
+                className="cursor-pointer hover:bg-canvas"
+                onClick={() => setOpenId(i.id)}
+              >
                 <td className="font-mono text-xs">{i.code}</td>
                 <td className="font-mono text-xs">{i.order.code}</td>
                 <td>{i.order.customer.name}</td>
-                <td className="text-right">
+                <td className="text-right font-mono">
                   <Money value={i.total} />
                 </td>
-                <td className="text-right">
+                <td className="text-right font-mono">
                   <Money value={i.amountPaid} />
                 </td>
-                <td className="text-right font-semibold">
+                <td className="text-right font-mono font-semibold">
                   <Money value={i.balance} />
                 </td>
                 <td>
                   <StatusPill status={i.paymentStatus} />
                 </td>
                 <td className="text-right">
-                  <Link
-                    href={`/office/invoices/${i.id}`}
+                  <button
+                    type="button"
                     className="text-sm text-primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenId(i.id);
+                    }}
                   >
                     Open
-                  </Link>
+                  </button>
                 </td>
               </tr>
             ))}
@@ -83,6 +96,15 @@ export default function InvoicesPage() {
           </tbody>
         </table>
       </div>
+      {openId && (
+        <InvoiceDocument
+          invoiceId={openId}
+          onClose={() => {
+            setOpenId(null);
+            load();
+          }}
+        />
+      )}
     </div>
   );
 }

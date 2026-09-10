@@ -75,7 +75,7 @@ export default function OrderDetailPage() {
         <Link href="/office/orders" className="text-sm text-primary">
           ← Orders
         </Link>
-        <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold">
+        <h1 className="mt-1 flex items-center gap-2 font-serif text-3xl font-semibold">
           {order.code} <StatusPill status={order.status} />
         </h1>
       </div>
@@ -89,10 +89,10 @@ export default function OrderDetailPage() {
             <thead>
               <tr>
                 <th>SKU</th>
-                <th>Product</th>
+                <th>Desc</th>
                 <th className="text-right">Qty</th>
-                <th className="text-right">Unit price</th>
-                <th className="text-right">Line</th>
+                <th className="text-right">Unit Rs</th>
+                <th className="text-right">Line Rs</th>
               </tr>
             </thead>
             <tbody>
