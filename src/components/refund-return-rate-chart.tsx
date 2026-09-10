@@ -60,9 +60,6 @@ export function RefundReturnRateChart({
           </CardTitle>
           <CardDescription>
             {todayCount} return{todayCount === 1 ? "" : "s"} today
-            {todayRatePct != null
-              ? ` · ${todayRatePct.toFixed(1)}% of invoices`
-              : ""}
           </CardDescription>
         </div>
       </CardHeader>

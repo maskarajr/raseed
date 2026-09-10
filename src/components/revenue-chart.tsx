@@ -97,7 +97,9 @@ export function RevenueChart({ series }: { series: RevenueRow[] }) {
             className="w-full min-w-36 sm:w-fit"
             size="sm"
           >
-            <SelectValue placeholder="Range" />
+            <SelectValue>
+              Last {periodDays} days
+            </SelectValue>
           </SelectTrigger>
           <SelectContent align="end">
             <SelectItem value="7">Last 7 days</SelectItem>
