@@ -49,10 +49,18 @@ export default function InvoiceDetailPage() {
           >
             Print / PDF
           </Link>
-          <button className="btn-primary" onClick={() => setSheet("payment")}>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => setSheet("payment")}
+          >
             Record payment
           </button>
-          <button className="btn-secondary" onClick={() => setSheet("return")}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setSheet("return")}
+          >
             Log return
           </button>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
@@ -145,41 +145,12 @@ export function InvoiceDocument({
     );
   }
 
-  return (
-    <>
-      <DocumentSheet
-        title={inv.code}
-        subtitle={
-          <>
-            Order {inv.order.code} · {inv.order.customer.name}
-          </>
-        }
-        onClose={onClose}
-        footer={
-          <>
-            <Link
-              href={`/office/invoices/${inv.id}/print`}
-              className="btn-secondary"
-            >
-              Print / PDF
-            </Link>
-            <button className="btn-primary" onClick={() => setSheet("payment")}>
-              Record payment
-            </button>
-            <button
-              className="btn-secondary"
-              onClick={() => setSheet("return")}
-            >
-              Log return
-            </button>
-          </>
-        }
-      >
-        {error && <p className="mb-3 text-sm text-danger">{error}</p>}
-        <InvoicePaper inv={inv} />
-      </DocumentSheet>
-      {sheet === "payment" && (
+  let action: ReactNode = null;
+  switch (sheet) {
+    case "payment":
+      action = (
         <PaymentSheet
+          contained
           invoiceId={inv.id}
           balance={inv.balance}
           onClose={() => setSheet(null)}
@@ -188,9 +159,12 @@ export function InvoiceDocument({
             load();
           }}
         />
-      )}
-      {sheet === "return" && (
+      );
+      break;
+    case "return":
+      action = (
         <ReturnSheet
+          contained
           invoice={inv}
           onClose={() => setSheet(null)}
           onDone={() => {
@@ -198,7 +172,54 @@ export function InvoiceDocument({
             load();
           }}
         />
-      )}
-    </>
+      );
+      break;
+    case null:
+      action = null;
+      break;
+    default: {
+      const _exhaustive: never = sheet;
+      return _exhaustive;
+    }
+  }
+
+  return (
+    <DocumentSheet
+      title={inv.code}
+      subtitle={
+        <>
+          Order {inv.order.code} · {inv.order.customer.name}
+        </>
+      }
+      onClose={onClose}
+      overlay={action}
+      footer={
+        <>
+          <Link
+            href={`/office/invoices/${inv.id}/print`}
+            className="btn-secondary"
+          >
+            Print / PDF
+          </Link>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => setSheet("payment")}
+          >
+            Record payment
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setSheet("return")}
+          >
+            Log return
+          </button>
+        </>
+      }
+    >
+      {error && <p className="mb-3 text-sm text-danger">{error}</p>}
+      <InvoicePaper inv={inv} />
+    </DocumentSheet>
   );
 }

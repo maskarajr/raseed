@@ -85,6 +85,24 @@ describe("VISUAL-v3 office chrome", () => {
     assert.match(actions, /\/api\/payments/);
     assert.match(actions, /\/api\/returns/);
   });
+
+  it("nests PaymentSheet inside DocumentSheet so Radix modal pointer-events reach the cash form", () => {
+    const doc = read("src/components/InvoiceDocument.tsx");
+    const pay = doc.indexOf("<PaymentSheet");
+    const ret = doc.indexOf("<ReturnSheet");
+    const lastSheetClose = doc.lastIndexOf("</DocumentSheet>");
+    assert.ok(pay > -1, "InvoiceDocument mounts PaymentSheet");
+    assert.ok(ret > -1, "InvoiceDocument mounts ReturnSheet");
+    assert.match(doc, /overlay=\{action\}/);
+    assert.ok(
+      pay < lastSheetClose && ret < lastSheetClose,
+      "Payment/Return sheets must be inside DocumentSheet, not siblings outside the Radix dialog",
+    );
+    assert.match(
+      doc,
+      /<button\s+type="button"\s+className="btn-primary"[\s\S]*Record payment/,
+    );
+  });
 });
 
 describe("VISUAL-v3 booker chrome", () => {

@@ -356,6 +356,22 @@ async function main() {
       `order auto-settled when balance hit 0 (got ${p2.data.order.status})`,
     );
 
+    const listed = await office.req<{
+      invoices: {
+        id: string;
+        balance: number;
+        paymentStatus: string;
+        amountPaid: number;
+      }[];
+    }>("GET", "/api/invoices");
+    check(listed.status === 200, `office invoice list returns 200 (got ${listed.status})`);
+    const row = listed.data.invoices.find((i) => i.id === invoiceId);
+    check(!!row, "paid invoice appears on office invoice list");
+    check(
+      row?.paymentStatus === "paid" && row.balance === 0,
+      `list row paid/balance updated (status ${row?.paymentStatus}, balance ${row?.balance})`,
+    );
+
     // Confirm settle persisted on the order record itself.
     const ord = await office.req<{ order: { status: string } }>(
       "GET",

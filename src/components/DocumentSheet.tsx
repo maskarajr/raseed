@@ -9,6 +9,7 @@ export function DocumentSheet({
   subtitle,
   onClose,
   footer,
+  overlay,
   children,
   wide = true,
 }: {
@@ -16,6 +17,7 @@ export function DocumentSheet({
   subtitle?: ReactNode;
   onClose: () => void;
   footer?: ReactNode;
+  overlay?: ReactNode;
   children: ReactNode;
   wide?: boolean;
 }) {
@@ -24,7 +26,7 @@ export function DocumentSheet({
       <SheetContent
         side="right"
         className={cn(
-          "flex h-full w-full flex-col border-l border-line bg-canvas",
+          "relative flex h-full w-full flex-col border-l border-line bg-canvas",
           wide ? "sm:max-w-xl" : "sm:max-w-md",
         )}
       >
@@ -42,6 +44,11 @@ export function DocumentSheet({
         {footer ? (
           <div className="flex flex-wrap gap-2 border-t border-line bg-surface px-5 py-3">
             {footer}
+          </div>
+        ) : null}
+        {overlay ? (
+          <div className="absolute inset-0 z-10 flex flex-col bg-surface">
+            {overlay}
           </div>
         ) : null}
       </SheetContent>

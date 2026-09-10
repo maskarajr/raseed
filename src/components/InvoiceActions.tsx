@@ -48,11 +48,13 @@ export function PaymentSheet({
   balance,
   onClose,
   onDone,
+  contained = false,
 }: {
   invoiceId: string;
   balance: number;
   onClose: () => void;
   onDone: () => void;
+  contained?: boolean;
 }) {
   const [amount, setAmount] = useState(String(balance));
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export function PaymentSheet({
   }
 
   return (
-    <SideSheet title="Record payment" onClose={onClose}>
+    <SideSheet title="Record payment" onClose={onClose} contained={contained}>
       <form onSubmit={save} className="space-y-4">
         <p className="text-sm text-muted">
           Outstanding balance:{" "}
@@ -106,6 +108,7 @@ export function PaymentSheet({
         </div>
         {error && <p className="text-sm text-danger">{error}</p>}
         <button
+          type="submit"
           className="btn-primary w-full"
           disabled={saving || balance <= 0}
         >
@@ -120,10 +123,12 @@ export function ReturnSheet({
   invoice,
   onClose,
   onDone,
+  contained = false,
 }: {
   invoice: InvoiceDetail;
   onClose: () => void;
   onDone: () => void;
+  contained?: boolean;
 }) {
   const returnedByProduct = new Map<string, number>();
   for (const r of invoice.returns) {
@@ -180,7 +185,11 @@ export function ReturnSheet({
   }
 
   return (
-    <SideSheet title={`Log returns — Invoice #${invoice.code}`} onClose={onClose}>
+    <SideSheet
+      title={`Log returns — Invoice #${invoice.code}`}
+      onClose={onClose}
+      contained={contained}
+    >
       <div className="space-y-4">
         <div className="space-y-3">
           {lines.map((l) => {
