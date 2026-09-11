@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Pie, PieChart } from "recharts";
+import { LabelList, Pie, PieChart } from "recharts";
 import {
   Card,
   CardContent,
@@ -99,53 +99,6 @@ function buildSlices(data: readonly CategoryMixDatum[]): {
   return { chartConfig, pieData };
 }
 
-function sliceInsideLabel(props: {
-  cx?: number;
-  cy?: number;
-  midAngle?: number;
-  middleRadius?: number;
-  innerRadius?: number | string;
-  outerRadius?: number | string;
-  percent?: number;
-  value?: number;
-  payload?: SliceRow;
-}) {
-  const share = Number(
-    props.payload?.share ??
-      props.value ??
-      (props.percent != null ? props.percent * 100 : NaN),
-  );
-  const text = shareLabelInsideSlice(share);
-  if (!text || props.cx == null || props.cy == null || props.midAngle == null) {
-    return null;
-  }
-  const inner = Number(props.innerRadius);
-  const outer = Number(props.outerRadius);
-  const radius = Number.isFinite(props.middleRadius)
-    ? props.middleRadius
-    : Number.isFinite(inner) && Number.isFinite(outer)
-      ? inner + (outer - inner) * 0.55
-      : null;
-  if (radius == null) return null;
-  const RADIAN = Math.PI / 180;
-  const x = props.cx + radius * Math.cos(-props.midAngle * RADIAN);
-  const y = props.cy + radius * Math.sin(-props.midAngle * RADIAN);
-  const fill = share >= 20 ? "#ffffff" : "#1a1d21";
-  return (
-    <text
-      dominantBaseline="central"
-      fill={fill}
-      fontSize={12}
-      fontWeight={500}
-      textAnchor="middle"
-      x={x}
-      y={y}
-    >
-      {text}
-    </text>
-  );
-}
-
 export function CategoryRankChart({ data }: { data: CategoryMixDatum[] }) {
   const { chartConfig, pieData } = React.useMemo(
     () => buildSlices(consolidateTopFourAndOthers(data)),
@@ -174,13 +127,22 @@ export function CategoryRankChart({ data }: { data: CategoryMixDatum[] }) {
                 data={pieData}
                 dataKey="share"
                 innerRadius={50}
-                label={sliceInsideLabel}
-                labelLine={false}
                 nameKey="key"
-                outerRadius="88%"
+                outerRadius={110}
                 stroke="var(--card)"
                 strokeWidth={4}
-              />
+              >
+                <LabelList
+                  dataKey="share"
+                  fill="#ffffff"
+                  fontSize={12}
+                  fontWeight={500}
+                  formatter={(label) => shareLabelInsideSlice(Number(label))}
+                  position="inside"
+                  stroke="none"
+                  zIndex={0}
+                />
+              </Pie>
               <ChartLegend
                 content={
                   <ChartLegendContent
