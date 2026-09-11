@@ -21,7 +21,7 @@ export function AppSidebar() {
       <SidebarHeader className="h-14 justify-center px-2">
         <SidebarMenuButton render={<Link href="/office" />} tooltip="Raseed">
           <LogoIcon className="size-5" />
-          <span className="font-medium">Raseed</span>
+          <span className="font-medium text-primary">Raseed</span>
         </SidebarMenuButton>
       </SidebarHeader>
       <SidebarContent>

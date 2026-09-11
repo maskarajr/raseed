@@ -47,7 +47,7 @@ export default function OfficeDashboard() {
   const needsAttention = data.submitted.length > 0 || data.lowStock.length > 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <p className="text-sm text-muted-foreground">
         Today · {today || "…"} <span>(Asia/Karachi)</span>
       </p>

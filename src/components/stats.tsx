@@ -67,12 +67,12 @@ function StatCard({ stat }: { stat: KpiStat }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-normal text-muted-foreground text-xs">
+        <CardTitle className="font-normal text-sm text-muted-foreground">
           {label}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-balance font-semibold text-2xl tabular-nums tracking-tight">
+        <p className="text-balance text-lg font-semibold tabular-nums tracking-tight">
           {value}
         </p>
       </CardContent>

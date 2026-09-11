@@ -18,9 +18,9 @@ export function AppShell({
     <TooltipProvider>
       <SidebarProvider defaultOpen>
         <AppSidebar />
-        <SidebarInset className="gap-6 p-6 md:px-8 md:py-8">
+        <SidebarInset className="gap-4 p-4 md:px-6 md:py-4">
           <AppHeader userName={userName} userRole={userRole} />
-          <div className="flex flex-1 flex-col gap-6">{children}</div>
+          <div className="flex flex-1 flex-col gap-4">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

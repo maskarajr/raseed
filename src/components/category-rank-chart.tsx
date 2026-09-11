@@ -15,6 +15,10 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from "@/components/ui/chart";
+import {
+  OTHERS_CATEGORY,
+  shareLabelInsideSlice,
+} from "@/lib/categoryShare";
 
 export type CategoryMixDatum = {
   category: string;
@@ -35,16 +39,29 @@ const periodDays = 7;
 function consolidateTopFourAndOthers(
   data: readonly CategoryMixDatum[],
 ): CategoryMixDatum[] {
-  if (data.length <= MAX_NAMED_SLICES) {
-    return [...data];
+  const merged = new Map<string, number>();
+  for (const row of data) {
+    const key = row.category.trim() || OTHERS_CATEGORY;
+    merged.set(key, (merged.get(key) ?? 0) + row.share);
+  }
+  const rows = Array.from(merged.entries())
+    .map(([category, share]) => ({ category, share }))
+    .sort((a, b) => b.share - a.share);
+
+  if (rows.length <= MAX_NAMED_SLICES) {
+    return rows;
   }
 
-  const sorted = [...data].sort((a, b) => b.share - a.share);
-  const head = sorted.slice(0, MAX_NAMED_SLICES);
-  const tail = sorted.slice(MAX_NAMED_SLICES);
-  const othersShare = tail.reduce((sum, row) => sum + row.share, 0);
+  const named = rows
+    .filter((row) => row.category !== OTHERS_CATEGORY)
+    .slice(0, MAX_NAMED_SLICES);
+  const namedSet = new Set(named.map((row) => row.category));
+  const othersShare = rows
+    .filter((row) => !namedSet.has(row.category))
+    .reduce((sum, row) => sum + row.share, 0);
 
-  return [...head, { category: "Others", share: othersShare }];
+  if (othersShare <= 0) return named;
+  return [...named, { category: OTHERS_CATEGORY, share: othersShare }];
 }
 
 type SliceRow = {
@@ -116,16 +133,28 @@ export function CategoryRankChart({ data }: { data: CategoryMixDatum[] }) {
                 strokeWidth={4}
               >
                 <LabelList
-                  className="fill-background font-medium"
                   dataKey="share"
-                  fill="currentColor"
-                  fontWeight={500}
-                  formatter={(label) => {
-                    const n = Number(label);
-                    return Number.isFinite(n) ? `${n}%` : String(label ?? "");
-                  }}
                   position="inside"
-                  stroke="none"
+                  content={(props) => {
+                    const { x, y, value, index } = props;
+                    const text = shareLabelInsideSlice(Number(value));
+                    if (!text || x == null || y == null) return null;
+                    const i = typeof index === "number" ? index : 0;
+                    const fill = i <= 1 ? "#ffffff" : "#1a1d21";
+                    return (
+                      <text
+                        dominantBaseline="central"
+                        fill={fill}
+                        fontSize={12}
+                        fontWeight={500}
+                        textAnchor="middle"
+                        x={x}
+                        y={y}
+                      >
+                        {text}
+                      </text>
+                    );
+                  }}
                 />
               </Pie>
               <ChartLegend

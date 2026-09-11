@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { aggregateCategoryRevenue } from "@/lib/categoryShare";
 import {
   startOfTodayKarachi,
   endOfTodayKarachi,
@@ -191,21 +192,12 @@ export async function officeHomeSummary() {
   const todayReturns = returnsByDay.get(todayKey) ?? { amount: 0, count: 0 };
   const todayInvoices = invoicesByDay.get(todayKey) ?? 0;
 
-  const catMap = new Map<string, number>();
-  for (const it of categoryItems) {
-    const label = it.product.category?.trim() || it.product.sku;
-    catMap.set(label, (catMap.get(label) ?? 0) + it.qty * it.unitPrice);
-  }
-  const catTotal = Array.from(catMap.values()).reduce((s, n) => s + n, 0);
-  const categoryShare =
-    catTotal === 0
-      ? []
-      : Array.from(catMap.entries())
-          .map(([category, revenue]) => ({
-            category,
-            share: Math.round((revenue / catTotal) * 1000) / 10,
-          }))
-          .sort((a, b) => b.share - a.share);
+  const categoryShare = aggregateCategoryRevenue(
+    categoryItems.map((it) => ({
+      label: it.product.category ?? "",
+      revenue: it.qty * it.unitPrice,
+    })),
+  );
 
   return {
     kpis: {
