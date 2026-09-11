@@ -134,27 +134,12 @@ export function CategoryRankChart({ data }: { data: CategoryMixDatum[] }) {
               >
                 <LabelList
                   dataKey="share"
+                  fill="#ffffff"
+                  fontSize={12}
+                  fontWeight={500}
+                  formatter={(label) => shareLabelInsideSlice(Number(label))}
                   position="inside"
-                  content={(props) => {
-                    const { x, y, value, index } = props;
-                    const text = shareLabelInsideSlice(Number(value));
-                    if (!text || x == null || y == null) return null;
-                    const i = typeof index === "number" ? index : 0;
-                    const fill = i <= 1 ? "#ffffff" : "#1a1d21";
-                    return (
-                      <text
-                        dominantBaseline="central"
-                        fill={fill}
-                        fontSize={12}
-                        fontWeight={500}
-                        textAnchor="middle"
-                        x={x}
-                        y={y}
-                      >
-                        {text}
-                      </text>
-                    );
-                  }}
+                  stroke="none"
                 />
               </Pie>
               <ChartLegend
