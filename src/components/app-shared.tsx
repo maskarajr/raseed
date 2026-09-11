@@ -70,17 +70,6 @@ export const officeNavGroups: SidebarNavGroup[] = [
       },
     ],
   },
-  {
-    label: "Settings",
-    items: [
-      {
-        title: "Settings",
-        path: "/office/settings",
-        match: "prefix",
-        icon: <SettingsIcon />,
-      },
-    ],
-  },
 ];
 
 const allNavItems: SidebarNavItem[] = officeNavGroups.flatMap((g) => g.items);
@@ -93,6 +82,13 @@ export function navTitleForPath(pathname: string): SidebarNavItem {
       pathname.startsWith(item.path),
   );
   if (prefixHit) return prefixHit;
+  if (pathname.startsWith("/office/settings")) {
+    return {
+      title: "Settings",
+      path: "/office/settings",
+      icon: <SettingsIcon />,
+    };
+  }
   if (pathname.startsWith("/office/bookers")) {
     return { title: "Bookers", path: "/office/bookers", icon: <UsersIcon /> };
   }
