@@ -51,8 +51,11 @@
   --color-danger: var(--rs-danger);
   --color-warning: var(--rs-warning);
   --color-success: var(--rs-success);
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, "Segoe UI",
-    sans-serif;
+  --font-sans: "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: Georgia, "Times New Roman", Times, serif;
+  --font-mono: "Cascadia Mono", "Cascadia Code", "Segoe UI Mono", Consolas,
+    "Liberation Mono", ui-monospace, monospace;
+  --font-heading: var(--font-sans);
   --text-xs: 0.75rem;
   --text-xs--line-height: 1rem;
   --text-sm: 0.875rem;
@@ -98,7 +101,14 @@ body {
 }
 
 .tnum {
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+.hero {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 24px;
+  line-height: 28px;
 }
 
 .text-muted {

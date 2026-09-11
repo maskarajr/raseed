@@ -72,7 +72,7 @@ function StatCard({ stat }: { stat: KpiStat }) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-balance text-lg font-semibold tabular-nums tracking-tight">
+        <p className="hero text-balance font-semibold tracking-tight">
           {value}
         </p>
       </CardContent>

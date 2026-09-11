@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { GeistSans } from "geist/font/sans";
-import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Raseed",
@@ -27,8 +25,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={cn("font-sans", GeistSans.variable)}>
-      <body className={GeistSans.className}>{children}</body>
+    <html lang="en" className="font-sans">
+      <body>{children}</body>
     </html>
   );
 }

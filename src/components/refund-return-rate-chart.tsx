@@ -55,7 +55,7 @@ export function RefundReturnRateChart({
           <CardDescription>Last 7 days</CardDescription>
         </div>
         <div className="space-y-1">
-          <CardTitle className="text-right tabular-nums">
+          <CardTitle className="text-right font-mono text-base tabular-nums">
             {formatPKR(todayAmount)}
           </CardTitle>
           <CardDescription>
