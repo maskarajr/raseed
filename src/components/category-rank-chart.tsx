@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { LabelList, Pie, PieChart } from "recharts";
+import { Pie, PieChart } from "recharts";
 import {
   Card,
   CardContent,
@@ -99,6 +99,48 @@ function buildSlices(data: readonly CategoryMixDatum[]): {
   return { chartConfig, pieData };
 }
 
+function sliceInsideLabel(props: {
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  innerRadius?: number | string;
+  outerRadius?: number | string;
+  payload?: SliceRow;
+}) {
+  const share = props.payload?.share ?? 0;
+  const text = shareLabelInsideSlice(share);
+  if (
+    !text ||
+    props.cx == null ||
+    props.cy == null ||
+    props.midAngle == null ||
+    props.innerRadius == null ||
+    props.outerRadius == null
+  ) {
+    return null;
+  }
+  const RADIAN = Math.PI / 180;
+  const inner = Number(props.innerRadius);
+  const outer = Number(props.outerRadius);
+  const radius = inner + (outer - inner) * 0.55;
+  const x = props.cx + radius * Math.cos(-props.midAngle * RADIAN);
+  const y = props.cy + radius * Math.sin(-props.midAngle * RADIAN);
+  const fill = share >= 20 ? "#ffffff" : "#1a1d21";
+  return (
+    <text
+      dominantBaseline="central"
+      fill={fill}
+      fontSize={12}
+      fontWeight={500}
+      textAnchor="middle"
+      x={x}
+      y={y}
+    >
+      {text}
+    </text>
+  );
+}
+
 export function CategoryRankChart({ data }: { data: CategoryMixDatum[] }) {
   const { chartConfig, pieData } = React.useMemo(
     () => buildSlices(consolidateTopFourAndOthers(data)),
@@ -127,21 +169,13 @@ export function CategoryRankChart({ data }: { data: CategoryMixDatum[] }) {
                 data={pieData}
                 dataKey="share"
                 innerRadius={50}
+                label={sliceInsideLabel}
+                labelLine={false}
                 nameKey="key"
                 outerRadius="88%"
                 stroke="var(--card)"
                 strokeWidth={4}
-              >
-                <LabelList
-                  dataKey="share"
-                  fill="#ffffff"
-                  fontSize={12}
-                  fontWeight={500}
-                  formatter={(label) => shareLabelInsideSlice(Number(label))}
-                  position="inside"
-                  stroke="none"
-                />
-              </Pie>
+              />
               <ChartLegend
                 content={
                   <ChartLegendContent
