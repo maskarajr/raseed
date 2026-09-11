@@ -103,26 +103,31 @@ function sliceInsideLabel(props: {
   cx?: number;
   cy?: number;
   midAngle?: number;
+  middleRadius?: number;
   innerRadius?: number | string;
   outerRadius?: number | string;
+  percent?: number;
+  value?: number;
   payload?: SliceRow;
 }) {
-  const share = props.payload?.share ?? 0;
+  const share = Number(
+    props.payload?.share ??
+      props.value ??
+      (props.percent != null ? props.percent * 100 : NaN),
+  );
   const text = shareLabelInsideSlice(share);
-  if (
-    !text ||
-    props.cx == null ||
-    props.cy == null ||
-    props.midAngle == null ||
-    props.innerRadius == null ||
-    props.outerRadius == null
-  ) {
+  if (!text || props.cx == null || props.cy == null || props.midAngle == null) {
     return null;
   }
-  const RADIAN = Math.PI / 180;
   const inner = Number(props.innerRadius);
   const outer = Number(props.outerRadius);
-  const radius = inner + (outer - inner) * 0.55;
+  const radius = Number.isFinite(props.middleRadius)
+    ? props.middleRadius
+    : Number.isFinite(inner) && Number.isFinite(outer)
+      ? inner + (outer - inner) * 0.55
+      : null;
+  if (radius == null) return null;
+  const RADIAN = Math.PI / 180;
   const x = props.cx + radius * Math.cos(-props.midAngle * RADIAN);
   const y = props.cy + radius * Math.sin(-props.midAngle * RADIAN);
   const fill = share >= 20 ? "#ffffff" : "#1a1d21";
