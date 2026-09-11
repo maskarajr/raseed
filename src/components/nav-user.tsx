@@ -48,7 +48,10 @@ export function NavUser({ name, role }: { name: string; role: string }) {
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-60">
+      <DropdownMenuContent
+        align="end"
+        className="z-[200] min-w-60 bg-popover"
+      >
         <DropdownMenuGroup>
           <DropdownMenuLabel className="flex items-center gap-3 p-2 font-normal text-foreground">
             <Avatar className="size-10">
