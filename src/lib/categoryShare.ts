@@ -1,6 +1,6 @@
 export const OTHERS_CATEGORY = "Others";
 
-const MIN_INSIDE_LABEL_SHARE = 7;
+const MIN_INSIDE_LABEL_SHARE = 6;
 
 /** SKU-like tokens must never appear in the donut legend. */
 export function isRawSkuLabel(label: string): boolean {
