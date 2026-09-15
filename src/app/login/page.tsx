@@ -23,6 +23,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       const dest = user.role === "booker" ? "/booker" : "/office";
+      router.push(dest);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
