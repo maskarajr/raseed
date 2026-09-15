@@ -6,6 +6,7 @@ import type { Customer, Product } from "@prisma/client";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { BookerChrome } from "@/components/BookerChrome";
+import { SideSheet } from "@/components/SideSheet";
 
 type CartLine = {
   product: Product;
@@ -204,7 +205,7 @@ function CustomerStep({
         }}
       />
       <button
-        className="btn-secondary min-h-[44px] w-full"
+        className="btn-sec"
         onClick={() => setShowCreate(true)}
       >
         Can’t find? Add a new shop
@@ -271,53 +272,39 @@ function FullScreenCustomerCreate({
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-surface">
-      <div className="flex items-center justify-between border-b border-line px-4 py-3">
-        <h2 className="text-lg font-bold">New shop</h2>
-        <button className="text-sm text-muted" onClick={onClose}>
-          Cancel
-        </button>
-      </div>
-      <form onSubmit={save} className="flex flex-1 flex-col gap-4 p-4">
-        <div>
-          <label className="label">
-            Name <span className="text-danger">*</span>
-          </label>
+    <SideSheet title="New shop" onClose={onClose} variant="sheet">
+      <form onSubmit={save} className="stack">
+        <div className="lfield">
+          <label>Name</label>
           <input
-            className="input min-h-[44px]"
+            className="linput"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            autoFocus
           />
         </div>
-        <div>
-          <label className="label">Phone</label>
+        <div className="lfield">
+          <label>Phone</label>
           <input
-            className="input min-h-[44px]"
+            className="linput"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
         </div>
-        <div>
-          <label className="label">Area</label>
+        <div className="lfield">
+          <label>Area</label>
           <input
-            className="input min-h-[44px]"
+            className="linput"
             value={area}
             onChange={(e) => setArea(e.target.value)}
           />
         </div>
-        {error && <p className="text-sm text-danger">{error}</p>}
-        <div className="mt-auto">
-          <button
-            className="btn-primary min-h-[52px] w-full text-base"
-            disabled={saving}
-          >
-            {saving ? "Saving…" : "Save & continue"}
-          </button>
-        </div>
+        {error && <p className="muted">{error}</p>}
+        <button className="btn-primary btn-block" disabled={saving}>
+          {saving ? "Saving…" : "Save & continue"}
+        </button>
       </form>
-    </div>
+    </SideSheet>
   );
 }
 
@@ -404,11 +391,11 @@ function LinesStep({
         {cart.map((l) => {
           const over = l.qty > l.product.stockQty;
           return (
-            <div key={l.product.id} className="card p-3">
+            <div key={l.product.id} className="pcard">
               <div className="flex items-start justify-between">
                 <p className="pr-2 text-sm font-medium">{l.product.name}</p>
                 <button
-                  className="text-xs text-danger"
+                  className="btn-ghost btn-sm"
                   onClick={() => remove(l.product.id)}
                 >
                   Remove
@@ -519,14 +506,14 @@ function ReviewStep({
   return (
     <div className="space-y-3">
       <h2 className="font-semibold">Review order</h2>
-      <div className="card p-3">
+      <div className="pcard">
         <p className="text-xs text-muted">Shop</p>
         <p className="font-medium">{customer.name}</p>
         <p className="text-xs text-muted">
           {customer.phone} · {customer.area ?? "—"}
         </p>
       </div>
-      <div className="card p-0">
+      <div className="pcard">
         {cart.map((l) => (
           <div
             key={l.product.id}

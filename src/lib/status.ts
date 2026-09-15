@@ -22,6 +22,7 @@ const BY_KEY: Record<string, StatusUi> = {
   out: { label: "Out", tone: "bad" },
   "in stock": { label: "In stock", tone: "ok" },
   "on track": { label: "On track", tone: "ok" },
+  "not shipped": { label: "Not shipped", tone: "neu" },
 };
 
 export function statusUi(status: string): StatusUi {

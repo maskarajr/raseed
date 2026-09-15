@@ -24,33 +24,34 @@ type ReportsResponse = {
 
 type Range = "today" | "7d" | "month";
 
+function ymdKarachi(d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Karachi",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
 function rangeDates(range: Range): { from: string; to: string; label: string } {
-  const to = new Date();
-  const from = new Date();
-  if (range === "today") {
-    /* same day */
-  } else if (range === "7d") {
-    from.setDate(from.getDate() - 6);
-  } else {
-    from.setDate(1);
-  }
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
-  const label =
-    range === "today"
-      ? iso(to)
-      : range === "7d"
-        ? `${iso(from)}–${iso(to)}`
-        : `${iso(from)}–${iso(to)}`;
-  return { from: iso(from), to: iso(to), label };
+  const now = new Date();
+  const to = ymdKarachi(now);
+  const fromD = new Date(now);
+  if (range === "7d") fromD.setDate(fromD.getDate() - 6);
+  if (range === "month") fromD.setDate(1);
+  const from = ymdKarachi(fromD);
+  return { from, to, label: from === to ? from : `${from}–${to}` };
 }
 
 export default function ReportsPage() {
   const [range, setRange] = useState<Range>("month");
   const [data, setData] = useState<ReportsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [label, setLabel] = useState("This month");
 
   async function load(next: Range) {
-    const { from, to } = rangeDates(next);
+    const { from, to, label: nextLabel } = rangeDates(next);
+    setLabel(nextLabel);
     try {
       const d = await api<ReportsResponse>(
         `/api/reports?from=${from}&to=${to}`,
@@ -67,7 +68,7 @@ export default function ReportsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const dates = rangeDates(range);
+  const dates = { label };
   const avg =
     data && data.sales.invoiceCount > 0
       ? Math.round(data.sales.totalSales / data.sales.invoiceCount)

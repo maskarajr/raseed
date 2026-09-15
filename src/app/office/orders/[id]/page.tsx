@@ -195,7 +195,7 @@ export default function OrderDetailPage() {
             )}
             {order.status === "invoiced" && (
               <button
-                className="btn-secondary w-full"
+                className="btn-sec btn-block"
                 disabled={busy}
                 onClick={() =>
                   act(`/api/orders/${order.id}/status`, {
@@ -208,7 +208,7 @@ export default function OrderDetailPage() {
             )}
             {order.status === "out_for_delivery" && (
               <button
-                className="btn-secondary w-full"
+                className="btn-sec btn-block"
                 disabled={busy}
                 onClick={() =>
                   act(`/api/orders/${order.id}/status`, { status: "delivered" })
@@ -220,7 +220,7 @@ export default function OrderDetailPage() {
             {order.invoice && (
               <Link
                 href={`/office/invoices/${order.invoice.id}`}
-                className="btn-secondary w-full"
+                className="btn-sec btn-block"
               >
                 Open invoice {order.invoice.code}
               </Link>
@@ -233,7 +233,7 @@ export default function OrderDetailPage() {
             )}
             {["draft", "submitted", "confirmed"].includes(order.status) && (
               <button
-                className="btn-danger w-full"
+                className="btn-sec btn-block"
                 disabled={busy}
                 onClick={() => act(`/api/orders/${order.id}/cancel`)}
               >

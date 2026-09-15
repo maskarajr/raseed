@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { StatusPill } from "@/components/badges";
+import { SideSheet } from "@/components/SideSheet";
 
 type Booker = {
   id: string;
@@ -16,14 +17,15 @@ type Booker = {
 export default function BookersPage() {
   const [bookers, setBookers] = useState<Booker[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   async function load() {
     try {
-      const { bookers } = await api<{ bookers: Booker[] }>("/api/bookers");
-      setBookers(bookers);
+      const { bookers: rows } = await api<{ bookers: Booker[] }>("/api/bookers");
+      setBookers(rows);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     }
@@ -44,6 +46,7 @@ export default function BookersPage() {
       setName("");
       setEmail("");
       setPassword("");
+      setOpen(false);
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Create failed");
@@ -59,80 +62,50 @@ export default function BookersPage() {
   }
 
   return (
-    <OfficeChrome title="Bookers">
-      {error && <p className="text-red-600">{error}</p>}
-
-      <form onSubmit={create} className="card grid grid-cols-1 gap-3 sm:grid-cols-4">
-        <h2 className="col-span-full font-semibold">New booker account</h2>
-        <div>
-          <label className="label">Name</label>
-          <input
-            className="input"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="label">Email</label>
-          <input
-            className="input"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="label">Password</label>
-          <input
-            className="input"
-            type="text"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={6}
-            required
-          />
-        </div>
-        <div className="flex items-end">
-          <button className="btn-primary w-full">Create</button>
-        </div>
-      </form>
-
-      <div className="card">
-        <div className="overflow-x-auto">
-          <table className="table">
+    <OfficeChrome
+      title="Bookers"
+      subtitle={`${bookers.filter((b) => b.active).length} active`}
+      actions={
+        <button className="btn-primary" onClick={() => setOpen(true)}>
+          Add booker
+        </button>
+      }
+    >
+      {error && <p className="muted">{error}</p>}
+      <div className="card2 grow">
+        <div className="tbl-wrap">
+          <table className="tbl">
             <thead>
               <tr>
-                <th>Name</th>
+                <th>Booker</th>
                 <th>Email</th>
                 <th>Status</th>
-                <th>Created</th>
-                <th></th>
+                <th />
               </tr>
             </thead>
             <tbody>
               {bookers.map((b) => (
                 <tr key={b.id}>
-                  <td className="font-medium">{b.name}</td>
-                  <td>{b.email}</td>
                   <td>
-                    <span
-                      className={`rounded px-2 py-0.5 text-xs ${
-                        b.active
-                          ? "bg-green-100 text-green-700"
-                          : "bg-slate-200 text-slate-600"
-                      }`}
-                    >
-                      <StatusPill status={b.active ? "active" : "inactive"} />
-                    </span>
+                    <div className="person">
+                      <span className="avatar">
+                        {b.name
+                          .split(" ")
+                          .map((p) => p[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </span>
+                      {b.name}
+                    </div>
                   </td>
-                  <td className="text-xs text-slate-500">
-                    {new Date(b.createdAt).toLocaleDateString()}
+                  <td className="sku">{b.email}</td>
+                  <td>
+                    <StatusPill status={b.active ? "active" : "inactive"} />
                   </td>
-                  <td className="text-right">
+                  <td>
                     <button
-                      className="text-sm text-slate-500"
+                      type="button"
+                      className="btn-ghost btn-sm"
                       onClick={() => toggle(b)}
                     >
                       {b.active ? "Deactivate" : "Activate"}
@@ -140,17 +113,48 @@ export default function BookersPage() {
                   </td>
                 </tr>
               ))}
-              {bookers.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="text-center text-slate-500">
-                    No bookers.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
+          {bookers.length === 0 && <p className="tbl-empty">No bookers.</p>}
         </div>
       </div>
+      {open && (
+        <SideSheet title="Add booker" onClose={() => setOpen(false)}>
+          <form onSubmit={create} className="stack">
+            <div className="lfield">
+              <label>Name</label>
+              <input
+                className="linput"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="lfield">
+              <label>Email</label>
+              <input
+                className="linput"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="lfield">
+              <label>Password</label>
+              <input
+                className="linput"
+                type="text"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                minLength={6}
+                required
+              />
+            </div>
+            <button className="btn-primary btn-block">Create</button>
+          </form>
+        </SideSheet>
+      )}
     </OfficeChrome>
   );
 }

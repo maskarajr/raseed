@@ -1,26 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Customer } from "@prisma/client";
 import { api } from "@/lib/client";
 import { SideSheet } from "@/components/SideSheet";
 import { OfficeChrome } from "@/components/OfficeChrome";
+import { StatusPill } from "@/components/badges";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [sheet, setSheet] = useState<{ mode: "create" | "edit"; customer?: Customer } | null>(
-    null,
-  );
+  const [sheet, setSheet] = useState<{
+    mode: "create" | "edit";
+    customer?: Customer;
+  } | null>(null);
 
   async function load() {
     try {
-      const q = search ? `?search=${encodeURIComponent(search)}` : "";
-      const { customers } = await api<{ customers: Customer[] }>(
-        `/api/customers${q}`,
+      const { customers: rows } = await api<{ customers: Customer[] }>(
+        "/api/customers",
       );
-      setCustomers(customers);
+      setCustomers(rows);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     }
@@ -28,71 +29,71 @@ export default function CustomersPage() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return customers;
+    return customers.filter((c) =>
+      `${c.name} ${c.phone} ${c.area ?? ""}`.toLowerCase().includes(q),
+    );
+  }, [customers, search]);
 
   return (
     <OfficeChrome
       title="Customers"
+      subtitle={`${filtered.length} shown`}
       actions={
-        <button className="btn-primary" onClick={() => setSheet({ mode: "create" })}>
-          New customer
-        </button>
-      }
-    >
-      {error && <p className="text-sm text-danger">{error}</p>}
-
-      <div className="card">
-        <div className="mb-3 flex gap-2">
+        <>
           <input
-            className="input"
-            placeholder="Search name, phone, area…"
+            className="search"
+            placeholder="Shop, area, route"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && load()}
           />
-          <button className="btn-secondary" onClick={load}>
-            Search
+          <button
+            className="btn-primary"
+            onClick={() => setSheet({ mode: "create" })}
+          >
+            New customer
           </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="table">
+        </>
+      }
+    >
+      {error && <p className="muted">{error}</p>}
+      <div className="card2 grow">
+        <div className="tbl-wrap">
+          <table className="tbl">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Phone</th>
+                <th>Shop</th>
                 <th>Area</th>
-                <th className="text-right">Actions</th>
+                <th>Phone</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {customers.map((c) => (
-                <tr key={c.id}>
-                  <td className="font-medium">{c.name}</td>
-                  <td>{c.phone || "—"}</td>
+              {filtered.map((c) => (
+                <tr
+                  key={c.id}
+                  style={{ cursor: "pointer" }}
+                  onClick={() => setSheet({ mode: "edit", customer: c })}
+                >
+                  <td>{c.name}</td>
                   <td>{c.area ?? "—"}</td>
-                  <td className="text-right">
-                    <button
-                      className="text-sm text-primary"
-                      onClick={() => setSheet({ mode: "edit", customer: c })}
-                    >
-                      Edit
-                    </button>
+                  <td className="num">{c.phone || "—"}</td>
+                  <td>
+                    <StatusPill status="active" />
                   </td>
                 </tr>
               ))}
-              {customers.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="text-center text-muted">
-                    No customers.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
+          {filtered.length === 0 && (
+            <p className="tbl-empty">No customers match this search.</p>
+          )}
         </div>
       </div>
-
       {sheet && (
         <CustomerSheet
           customer={sheet.mode === "edit" ? sheet.customer : undefined}
@@ -150,39 +151,41 @@ function CustomerSheet({
       title={isEdit ? "Edit customer" : "New customer"}
       onClose={onClose}
     >
-      <form onSubmit={save} className="space-y-4">
-        <div>
-          <label className="label">
-            Name <span className="text-danger">*</span>
-          </label>
+      <form onSubmit={save} className="stack">
+        <div className="lfield">
+          <label>Name</label>
           <input
-            className="input"
+            className="linput"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            autoFocus
           />
         </div>
-        <div>
-          <label className="label">Phone</label>
+        <div className="lfield">
+          <label>Phone</label>
           <input
-            className="input"
+            className="linput"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
         </div>
-        <div>
-          <label className="label">Area</label>
+        <div className="lfield">
+          <label>Area</label>
           <input
-            className="input"
+            className="linput"
             value={area}
             onChange={(e) => setArea(e.target.value)}
           />
         </div>
-        {error && <p className="text-sm text-danger">{error}</p>}
-        <button className="btn-primary w-full" disabled={saving}>
-          {saving ? "Saving…" : "Save"}
-        </button>
+        {error && <p className="muted">{error}</p>}
+        <div className="row">
+          <button type="button" className="btn-sec grow" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn-primary grow" disabled={saving}>
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
       </form>
     </SideSheet>
   );
