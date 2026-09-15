@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
+import { OfficeChrome } from "@/components/OfficeChrome";
+import { StatusPill } from "@/components/badges";
 
 type ReportsResponse = {
   sales: {
@@ -54,12 +56,28 @@ export default function ReportsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (error) return <p className="text-red-600">{error}</p>;
-  if (!data) return <p className="text-slate-500">Loading…</p>;
+  if (error) {
+    return (
+      <OfficeChrome title="Reports">
+        <p className="muted">{error}</p>
+      </OfficeChrome>
+    );
+  }
+  if (!data) {
+    return (
+      <OfficeChrome title="Reports">
+        <p className="muted">Loading…</p>
+      </OfficeChrome>
+    );
+  }
+
+  const avg =
+    data.sales.invoiceCount > 0
+      ? Math.round(data.sales.totalSales / data.sales.invoiceCount)
+      : 0;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Reports</h1>
+    <OfficeChrome title="Reports" subtitle="Collections vs booked">
 
       <div className="card flex flex-wrap items-end gap-3">
         <div>
@@ -85,11 +103,30 @@ export default function ReportsPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <Stat label="Invoices" value={String(data.sales.invoiceCount)} />
-        <Stat label="Sales" money={data.sales.totalSales} />
-        <Stat label="Collected" money={data.sales.totalCollected} />
-        <Stat label="Outstanding" money={data.sales.totalOutstanding} />
+      <div className="kpis">
+        <div className="kpi">
+          <p className="klab">Orders</p>
+          <p className="kval num">{data.sales.invoiceCount}</p>
+        </div>
+        <div className="kpi">
+          <p className="klab">Value</p>
+          <p className="kval">
+            <Money value={data.sales.totalSales} />
+          </p>
+          <p className="kdelta">Avg <Money value={avg} /> / invoice</p>
+        </div>
+        <div className="kpi">
+          <p className="klab">Collections</p>
+          <p className="kval">
+            <Money value={data.sales.totalCollected} />
+          </p>
+        </div>
+        <div className="kpi">
+          <p className="klab">Returns / outstanding</p>
+          <p className="kval">
+            <Money value={data.sales.totalOutstanding} />
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -173,11 +210,7 @@ export default function ReportsPage() {
                     {s.stockQty}
                   </td>
                   <td>
-                    {s.lowStock && (
-                      <span className="rounded bg-red-100 px-2 py-0.5 text-xs text-red-700">
-                        Low
-                      </span>
-                    )}
+                    {s.lowStock ? <StatusPill status="low" /> : null}
                   </td>
                 </tr>
               ))}
@@ -207,25 +240,6 @@ export default function ReportsPage() {
           </table>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  money,
-}: {
-  label: string;
-  value?: string;
-  money?: number;
-}) {
-  return (
-    <div className="card">
-      <p className="text-sm text-muted">{label}</p>
-      <p className="mt-1 text-xl font-bold">
-        {money !== undefined ? <Money value={money} /> : value}
-      </p>
-    </div>
+    </OfficeChrome>
   );
 }

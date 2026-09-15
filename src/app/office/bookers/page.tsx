@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
+import { OfficeChrome } from "@/components/OfficeChrome";
+import { StatusPill } from "@/components/badges";
 
 type Booker = {
   id: string;
@@ -57,8 +59,7 @@ export default function BookersPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Bookers</h1>
+    <OfficeChrome title="Bookers">
       {error && <p className="text-red-600">{error}</p>}
 
       <form onSubmit={create} className="card grid grid-cols-1 gap-3 sm:grid-cols-4">
@@ -123,7 +124,7 @@ export default function BookersPage() {
                           : "bg-slate-200 text-slate-600"
                       }`}
                     >
-                      {b.active ? "Active" : "Inactive"}
+                      <StatusPill status={b.active ? "active" : "inactive"} />
                     </span>
                   </td>
                   <td className="text-xs text-slate-500">
@@ -150,6 +151,6 @@ export default function BookersPage() {
           </table>
         </div>
       </div>
-    </div>
+    </OfficeChrome>
   );
 }

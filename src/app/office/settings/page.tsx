@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
+import { OfficeChrome } from "@/components/OfficeChrome";
 
 type Me = { name: string; email: string; role: string } | null;
 
@@ -13,8 +14,7 @@ export default function SettingsPage() {
   }, []);
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Settings</h1>
+    <OfficeChrome title="Settings">
 
       <div className="card">
         <h2 className="mb-3 font-semibold">Account</h2>
@@ -37,7 +37,7 @@ export default function SettingsPage() {
           reports each have their own section in the left nav.
         </p>
       </div>
-    </div>
+    </OfficeChrome>
   );
 }
 

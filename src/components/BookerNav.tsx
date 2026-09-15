@@ -2,36 +2,31 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Icon } from "@/components/Icon";
 
 const LINKS = [
-  { href: "/booker", label: "Home" },
-  { href: "/booker/orders", label: "Orders" },
-  { href: "/booker/account", label: "Account" },
+  { href: "/booker", label: "Home", icon: "home" as const, exact: true },
+  { href: "/booker/orders", label: "Orders", icon: "orders" as const },
+  { href: "/booker/account", label: "Account", icon: "user" as const },
 ];
 
 export function BookerNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface">
-      <div className="mx-auto flex max-w-md items-stretch justify-around">
-        {LINKS.map((l) => {
-          const active =
-            l.href === "/booker"
-              ? pathname === "/booker"
-              : pathname.startsWith(l.href);
-          return (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={`flex min-h-[56px] flex-1 items-center justify-center text-sm font-medium ${
-                active ? "text-primary" : "text-muted"
-              }`}
-            >
-              {l.label}
-            </Link>
-          );
-        })}
-      </div>
+    <nav className="ptabs">
+      {LINKS.map((l) => {
+        const on = l.exact ? pathname === l.href : pathname.startsWith(l.href);
+        return (
+          <Link
+            key={l.href}
+            href={l.href}
+            className={`ptab${on ? " is-on" : ""}`}
+          >
+            <Icon name={l.icon} />
+            {l.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

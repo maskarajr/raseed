@@ -13,9 +13,15 @@ export default async function BookerLayout({
   if (session.role !== "booker") redirect("/office");
 
   return (
-    <div className="mx-auto min-h-screen max-w-md pb-24">
-      <main>{children}</main>
-      <BookerNav />
+    <div className="pwa-root">
+      <div className="pwa">
+        <div className="pstatus">
+          <span>Raseed</span>
+          <span>Booker</span>
+        </div>
+        <main className="pbody">{children}</main>
+        <BookerNav />
+      </div>
       <ServiceWorkerRegister />
     </div>
   );

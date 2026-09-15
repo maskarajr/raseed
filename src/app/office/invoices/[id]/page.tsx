@@ -7,6 +7,7 @@ import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { SideSheet } from "@/components/SideSheet";
+import { OfficeChrome } from "@/components/OfficeChrome";
 
 type InvoiceDetail = {
   id: string;
@@ -67,46 +68,47 @@ export default function InvoiceDetailPage() {
     [inv],
   );
 
-  if (error && !inv) return <p className="text-danger">{error}</p>;
-  if (!inv) return <p className="text-muted">Loading…</p>;
+  if (error && !inv) {
+    return (
+      <OfficeChrome title="Invoice">
+        <p className="muted">{error}</p>
+      </OfficeChrome>
+    );
+  }
+  if (!inv) {
+    return (
+      <OfficeChrome title="Invoice">
+        <p className="muted">Loading…</p>
+      </OfficeChrome>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Link href="/office/invoices" className="text-sm text-primary">
-            ← Invoices
-          </Link>
-          <h1 className="mt-1 flex flex-wrap items-center gap-2 text-2xl font-bold">
-            {inv.code}
-            <StatusPill status={inv.paymentStatus} />
-            <StatusPill status={inv.order.status} />
-            {inv.returns.length > 0 && <StatusPill status="return_logged" />}
-          </h1>
-          <p className="text-sm text-muted">
-            Order {inv.order.code} · {inv.order.customer.name}
-          </p>
-        </div>
-        <div className="flex gap-2">
+    <OfficeChrome
+      title={inv.code}
+      subtitle={`Invoices / ${inv.code} · Order ${inv.order.code} · ${inv.order.customer.name}`}
+      actions={
+        <>
+          <StatusPill status={inv.paymentStatus} />
           <button className="btn-primary" onClick={() => setSheet("payment")}>
             Record payment
           </button>
-          <button className="btn-secondary" onClick={() => setSheet("return")}>
+          <button className="btn-sec" onClick={() => setSheet("return")}>
             Log return
           </button>
-          <Link
-            href={`/office/invoices/${inv.id}/print`}
-            className="btn-secondary"
-          >
-            Print / PDF
+          <Link href={`/office/invoices/${inv.id}/print`} className="btn-sec">
+            Print
           </Link>
-        </div>
-      </div>
+        </>
+      }
+    >
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="card lg:col-span-2">
-          <h2 className="mb-3 font-semibold">Items</h2>
-          <table className="table">
+      <div className="row" style={{ alignItems: "flex-start" }}>
+        <div className="card2 grow">
+          <h2 className="h3s" style={{ marginBottom: 12 }}>
+            Items
+          </h2>
+          <table className="tbl">
             <thead>
               <tr>
                 <th>SKU</th>
@@ -119,17 +121,15 @@ export default function InvoiceDetailPage() {
             <tbody>
               {inv.order.items.map((i) => (
                 <tr key={i.id}>
-                  <td className="font-mono text-xs text-muted">
-                    {i.product.sku}
-                  </td>
+                  <td className="sku">{i.product.sku}</td>
                   <td>{i.product.name}</td>
-                  <td className="tnum text-right">
+                  <td className="num r">
                     {i.qty} {i.product.unit}
                   </td>
-                  <td className="text-right">
+                  <td className="money">
                     <Money value={i.unitPrice} />
                   </td>
-                  <td className="text-right">
+                  <td className="money">
                     <Money value={i.qty * i.unitPrice} />
                   </td>
                 </tr>
@@ -139,41 +139,43 @@ export default function InvoiceDetailPage() {
         </div>
 
         {/* Totals block */}
-        <div className="card h-fit">
-          <h2 className="mb-3 font-semibold">Totals</h2>
-          <dl className="space-y-2 text-sm">
-            <TotalRow label="Subtotal">
+        <div className="card2" style={{ width: 280, flex: "none" }}>
+          <h2 className="h3s" style={{ marginBottom: 12 }}>
+            Totals
+          </h2>
+          <div className="totals" style={{ marginLeft: 0, maxWidth: "none" }}>
+            <div className="trow">
+              <span>Subtotal</span>
               <Money value={inv.order.subtotal} />
-            </TotalRow>
-            <TotalRow label="Returns">
-              <span className="text-accent">
+            </div>
+            <div className="trow">
+              <span>Returns</span>
+              <span>
                 {returnsTotal > 0 ? "−" : ""}
                 <Money value={returnsTotal} />
               </span>
-            </TotalRow>
-            <TotalRow label="Paid">
-              <span className="text-success">
-                {inv.amountPaid > 0 ? "−" : ""}
-                <Money value={inv.amountPaid} />
-              </span>
-            </TotalRow>
-            <div className="mt-2 flex items-center justify-between border-t border-line pt-3">
-              <dt className="text-base font-semibold">Balance due</dt>
-              <dd className="text-2xl font-bold text-primary">
-                <Money value={inv.balance} />
-              </dd>
             </div>
-          </dl>
+            <div className="trow">
+              <span>Collected</span>
+              <Money value={inv.amountPaid} />
+            </div>
+            <div className="trow grand">
+              <span>Balance due</span>
+              <Money value={inv.balance} />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="card">
-          <h2 className="mb-2 font-semibold">Payments</h2>
+      <div className="row" style={{ alignItems: "flex-start" }}>
+        <div className="card2 grow">
+          <h2 className="h3s" style={{ marginBottom: 12 }}>
+            Payments
+          </h2>
           {inv.payments.length === 0 ? (
-            <p className="text-sm text-muted">No payments yet.</p>
+            <p className="muted">No payments yet.</p>
           ) : (
-            <table className="table">
+            <table className="tbl">
               <thead>
                 <tr>
                   <th>When</th>
@@ -198,12 +200,14 @@ export default function InvoiceDetailPage() {
           )}
         </div>
 
-        <div className="card">
-          <h2 className="mb-2 font-semibold">Returns</h2>
+        <div className="card2 grow">
+          <h2 className="h3s" style={{ marginBottom: 12 }}>
+            Returns
+          </h2>
           {inv.returns.length === 0 ? (
-            <p className="text-sm text-muted">No returns.</p>
+            <p className="muted">No returns.</p>
           ) : (
-            <table className="table">
+            <table className="tbl">
               <thead>
                 <tr>
                   <th>When</th>
@@ -252,22 +256,7 @@ export default function InvoiceDetailPage() {
           }}
         />
       )}
-    </div>
-  );
-}
-
-function TotalRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <dt className="text-muted">{label}</dt>
-      <dd>{children}</dd>
-    </div>
+    </OfficeChrome>
   );
 }
 
@@ -304,15 +293,15 @@ function PaymentSheet({
   }
 
   return (
-    <SideSheet title="Record payment" onClose={onClose}>
-      <form onSubmit={save} className="space-y-4">
-        <p className="text-sm text-muted">
-          Outstanding balance: <Money value={balance} className="font-semibold text-ink" />
+    <SideSheet title="Record payment" onClose={onClose} variant="sheet">
+      <form onSubmit={save} className="stack">
+        <p className="muted">
+          Balance due: <Money value={balance} />
         </p>
-        <div>
-          <label className="label">Amount (PKR)</label>
+        <div className="lfield">
+          <label>Amount (PKR)</label>
           <input
-            className="input"
+            className="linput"
             type="number"
             min={1}
             max={balance}
@@ -320,16 +309,10 @@ function PaymentSheet({
             onChange={(e) => setAmount(e.target.value)}
             required
           />
-          <p className="mt-1 text-xs text-muted">
-            Partial payments allowed. Cannot exceed the balance.
-          </p>
+          <p className="meta">Cash only. Partial allowed. Never credit.</p>
         </div>
-        <div>
-          <label className="label">Method</label>
-          <p className="input flex items-center bg-canvas text-muted">Cash</p>
-        </div>
-        {error && <p className="text-sm text-danger">{error}</p>}
-        <button className="btn-primary w-full" disabled={saving || balance <= 0}>
+        {error && <p className="muted">{error}</p>}
+        <button className="btn-primary btn-block" disabled={saving || balance <= 0}>
           {balance <= 0 ? "Already settled" : "Record payment"}
         </button>
       </form>
@@ -411,7 +394,7 @@ function ReturnSheet({
             const qty = qtys[l.productId] ?? 0;
             const disabled = l.max === 0;
             return (
-              <div key={l.productId} className="rounded-md border border-line p-3">
+              <div key={l.productId} className="qty-row">
                 <div className="flex items-start justify-between">
                   <div className="min-w-0">
                     <p className="font-mono text-xs text-muted">{l.sku}</p>
@@ -426,7 +409,7 @@ function ReturnSheet({
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      className="flex h-9 w-9 items-center justify-center rounded-md border border-line text-lg font-semibold disabled:opacity-40"
+                      className="qty-btn"
                       disabled={disabled || qty <= 0}
                       onClick={() => setQty(l.productId, qty - 1, l.max)}
                       aria-label={`decrease ${l.sku}`}
@@ -434,7 +417,7 @@ function ReturnSheet({
                       −
                     </button>
                     <input
-                      className="input h-9 w-14 text-center"
+                      className="qty-val"
                       type="number"
                       min={0}
                       max={l.max}
@@ -446,7 +429,7 @@ function ReturnSheet({
                     />
                     <button
                       type="button"
-                      className="flex h-9 w-9 items-center justify-center rounded-md border border-line text-lg font-semibold disabled:opacity-40"
+                      className="qty-btn"
                       disabled={disabled || qty >= l.max}
                       onClick={() => setQty(l.productId, qty + 1, l.max)}
                       aria-label={`increase ${l.sku}`}
@@ -456,7 +439,7 @@ function ReturnSheet({
                   </div>
                 </div>
                 <input
-                  className="input mt-2 h-9 text-sm"
+                  className="linput"
                   placeholder="Reason (optional)"
                   value={reasons[l.productId] ?? ""}
                   disabled={disabled}
@@ -472,16 +455,13 @@ function ReturnSheet({
           })}
         </div>
 
-        <div className="rounded-md bg-primary-soft p-3 text-sm">
-          <p className="font-medium text-primary">Preview</p>
-          <p className="tnum mt-1">
-            Restock +{totalQty} · Invoice −<Money value={totalAmount} />
-          </p>
-        </div>
+        <p className="meta">
+          Restock +{totalQty} · Invoice −<Money value={totalAmount} />
+        </p>
 
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && <p className="muted">{error}</p>}
         <button
-          className="btn-primary w-full"
+          className="btn-primary btn-block"
           disabled={saving || totalQty === 0}
           onClick={save}
         >

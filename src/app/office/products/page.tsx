@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import type { Product } from "@prisma/client";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
+import { OfficeChrome } from "@/components/OfficeChrome";
+import { StatusPill } from "@/components/badges";
+import { stockTone } from "@/lib/status";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -38,9 +41,9 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Products</h1>
+    <OfficeChrome
+      title="Products"
+      actions={
         <button
           className="btn-primary"
           onClick={() => {
@@ -48,9 +51,10 @@ export default function ProductsPage() {
             setEditing(null);
           }}
         >
-          {showCreate ? "Close" : "Add product"}
+          {showCreate ? "Close" : "New product"}
         </button>
-      </div>
+      }
+    >
 
       {error && <p className="text-red-600">{error}</p>}
 
@@ -113,15 +117,11 @@ export default function ProductsPage() {
                   </td>
                   <td>{p.reorderLevel ?? "—"}</td>
                   <td>
-                    <span
-                      className={`rounded px-2 py-0.5 text-xs ${
-                        p.active
-                          ? "bg-green-100 text-green-700"
-                          : "bg-slate-200 text-slate-600"
-                      }`}
-                    >
-                      {p.active ? "Active" : "Inactive"}
-                    </span>
+                    <StatusPill
+                      label={stockTone(p.stockQty, p.reorderLevel).label}
+                      tone={stockTone(p.stockQty, p.reorderLevel).tone}
+                    />
+                    <StatusPill status={p.active ? "active" : "inactive"} />
                   </td>
                   <td className="whitespace-nowrap text-right">
                     <button
@@ -153,7 +153,7 @@ export default function ProductsPage() {
           </table>
         </div>
       </div>
-    </div>
+    </OfficeChrome>
   );
 }
 

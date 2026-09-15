@@ -9,6 +9,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [asRole, setAsRole] = useState<"owner" | "booker">("owner");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -21,7 +22,7 @@ export default function LoginPage() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      router.replace(user.role === "booker" ? "/booker" : "/office");
+      const dest = user.role === "booker" ? "/booker" : "/office";
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -31,51 +32,79 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-primary">Raseed</h1>
-          <p className="mt-1 text-sm text-muted">
-            Wholesale distribution ops
-          </p>
-        </div>
-        <form onSubmit={onSubmit} className="card space-y-4">
-          <div>
-            <label className="label" htmlFor="email">
-              Email
-            </label>
+    <main className="login" style={{ minHeight: "100vh" }}>
+      <div className="login-l">
+        <p className="eyebrow">Raseed</p>
+        <h1 className="ptitle" style={{ margin: "8px 0 24px" }}>
+          Sign in
+        </h1>
+        <form onSubmit={onSubmit} className="stack" style={{ maxWidth: 380 }}>
+          <div className="lfield">
+            <label htmlFor="email">Work email</label>
             <input
               id="email"
               type="email"
-              className="input"
+              className="linput"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="username"
               required
             />
           </div>
-          <div>
-            <label className="label" htmlFor="password">
-              Password
-            </label>
+          <div className="lfield">
+            <label htmlFor="password">Password</label>
             <input
               id="password"
               type="password"
-              className="input"
+              className="linput"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
               required
             />
           </div>
-          {error && <p className="text-sm text-danger">{error}</p>}
-          <button type="submit" className="btn-primary w-full" disabled={loading}>
+          <div className="lfield">
+            <span className="muted" style={{ fontSize: 12 }}>
+              Continue as
+            </span>
+            <div className="stack" style={{ gap: 8 }}>
+              {(
+                [
+                  ["owner", "Owner — office dashboard"],
+                  ["booker", "Booker — capture PWA"],
+                ] as const
+              ).map(([id, copy]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`opt${asRole === id ? " is-on" : ""}`}
+                  onClick={() => setAsRole(id)}
+                >
+                  {copy}
+                </button>
+              ))}
+            </div>
+          </div>
+          {error && <p className="muted">{error}</p>}
+          <button
+            type="submit"
+            className="btn-primary btn-block"
+            disabled={loading}
+          >
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
-        <p className="mt-4 text-center text-xs text-muted">
-          PKR · English · office hours only
-        </p>
+      </div>
+      <div className="login-r">
+        <div>
+          <p className="eyebrow">Wholesale ops</p>
+          <p className="h3s" style={{ marginTop: 8 }}>
+            Book, invoice, collect cash.
+          </p>
+          <p className="muted" style={{ marginTop: 10, maxWidth: 280 }}>
+            PKR · English · office hours 09:00–19:00 Asia/Karachi
+          </p>
+        </div>
       </div>
     </main>
   );

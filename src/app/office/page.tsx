@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
+import { OfficeChrome } from "@/components/OfficeChrome";
 import { formatTodayKarachi } from "@/lib/day";
 
 type HomeResponse = {
@@ -51,8 +52,6 @@ export default function OfficeDashboard() {
   }, []);
 
   useEffect(() => {
-    // Render the date client-side so it reflects the viewer's "today" request
-    // without a server/client hydration mismatch on the formatted string.
     setToday(formatTodayKarachi());
     load();
   }, [load]);
@@ -70,225 +69,128 @@ export default function OfficeDashboard() {
     }
   }
 
-  if (error && !data) return <p className="text-danger">{error}</p>;
-  if (!data) return <p className="text-muted">Loading…</p>;
+  if (error && !data) {
+    return (
+      <OfficeChrome title="Dashboard">
+        <p className="muted">{error}</p>
+      </OfficeChrome>
+    );
+  }
+  if (!data) {
+    return (
+      <OfficeChrome title="Dashboard">
+        <p className="muted">Loading…</p>
+      </OfficeChrome>
+    );
+  }
 
   const { kpis } = data;
-  const needsAttention = data.submitted.length > 0 || data.lowStock.length > 0;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="mt-0.5 text-sm text-muted">
-          Today · {today || "…"} <span className="text-muted">(Asia/Karachi)</span>
-        </p>
-      </div>
-
-      {error && <p className="text-sm text-danger">{error}</p>}
-
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Booked today">
-          <Money value={kpis.bookedToday} />
-        </Kpi>
-        <Kpi label="Outstanding">
-          <Money value={kpis.outstanding} />
-        </Kpi>
-        <Kpi label="Awaiting confirm">
-          <span className="tnum">{kpis.awaitingConfirm}</span>
-        </Kpi>
-        <Kpi label="Low stock">
-          <span className="tnum">{kpis.lowStock}</span>
-        </Kpi>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-6">
-          <section className="card p-0">
-            <div className="flex items-center justify-between border-b border-line px-4 py-3">
-              <h2 className="font-semibold">Needs attention</h2>
-              <Link href="/office/orders" className="text-sm text-primary">
-                All orders →
-              </Link>
-            </div>
-
-            {!needsAttention ? (
-              <div className="px-4 py-10 text-center">
-                <p className="text-sm font-medium">All clear</p>
-                <p className="mt-1 text-sm text-muted">
-                  Nothing to confirm and nothing below reorder level.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-6 p-4">
-                <div>
-                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-                    Orders awaiting confirmation ({data.submitted.length})
-                  </h3>
-                  {data.submitted.length === 0 ? (
-                    <p className="text-sm text-muted">
-                      No orders awaiting confirmation.
-                    </p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="table">
-                        <thead>
-                          <tr>
-                            <th>Time</th>
-                            <th>Order#</th>
-                            <th>Booker</th>
-                            <th>Customer</th>
-                            <th className="text-right">Total</th>
-                            <th className="text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {data.submitted.map((o) => (
-                            <tr key={o.id}>
-                              <td className="whitespace-nowrap text-xs text-muted">
-                                {new Date(o.createdAt).toLocaleString("en-GB", {
-                                  timeZone: "Asia/Karachi",
-                                  day: "2-digit",
-                                  month: "short",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </td>
-                              <td className="font-mono text-xs">{o.code}</td>
-                              <td>{o.booker}</td>
-                              <td>{o.customer}</td>
-                              <td className="text-right">
-                                <Money value={o.subtotal} />
-                              </td>
-                              <td className="whitespace-nowrap text-right">
-                                <button
-                                  className="btn-primary mr-2 h-8 px-2 py-0 text-xs"
-                                  disabled={busyId === o.id}
-                                  onClick={() => confirm(o.id)}
-                                >
-                                  {busyId === o.id ? "…" : "Confirm"}
-                                </button>
-                                <Link
-                                  href={`/office/orders/${o.id}`}
-                                  className="text-sm text-primary"
-                                >
-                                  Open
-                                </Link>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
-                      Low stock ({data.lowStock.length})
-                    </h3>
-                    <Link
-                      href="/office/products"
-                      className="text-sm text-primary"
-                    >
-                      Products →
-                    </Link>
-                  </div>
-                  {data.lowStock.length === 0 ? (
-                    <p className="text-sm text-muted">
-                      Nothing below reorder level.
-                    </p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="table">
-                        <thead>
-                          <tr>
-                            <th>SKU</th>
-                            <th>Name</th>
-                            <th className="text-right">Qty</th>
-                            <th className="text-right">Reorder</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {data.lowStock.map((s) => (
-                            <tr key={s.sku}>
-                              <td className="font-mono text-xs">{s.sku}</td>
-                              <td>{s.name}</td>
-                              <td className="tnum text-right font-semibold text-danger">
-                                {s.stockQty}
-                              </td>
-                              <td className="tnum text-right text-muted">
-                                {s.reorderLevel ?? "—"}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </section>
+    <OfficeChrome
+      title="Dashboard"
+      subtitle={`${today || "…"} · office hours 09:00–19:00`}
+      actions={
+        <Link href="/office/orders" className="btn-primary">
+          New order
+        </Link>
+      }
+    >
+      {error && <p className="muted">{error}</p>}
+      <div className="kpis">
+        <div className="kpi">
+          <p className="klab">Booked today</p>
+          <p className="kval">
+            <Money value={kpis.bookedToday} />
+          </p>
+          <p className="kdelta">{data.submitted.length} awaiting confirm</p>
         </div>
+        <div className="kpi">
+          <p className="klab">Outstanding</p>
+          <p className="kval">
+            <Money value={kpis.outstanding} />
+          </p>
+          <p className="kdelta">{data.outstandingInvoices.length} invoices open</p>
+        </div>
+        <div className="kpi">
+          <p className="klab">Awaiting confirmation</p>
+          <p className="kval num">{kpis.awaitingConfirm}</p>
+        </div>
+        <div className="kpi">
+          <p className="klab">Low stock SKUs</p>
+          <p className="kval num">{kpis.lowStock}</p>
+        </div>
+      </div>
 
-        {/* Billing-health rail: only on very wide screens (≥1280px). */}
-        <aside className="hidden xl:block">
-          <section className="card p-0">
-            <div className="flex items-center justify-between border-b border-line px-4 py-3">
-              <h2 className="font-semibold">Billing health</h2>
-              <Link href="/office/invoices" className="text-sm text-primary">
-                Invoices →
-              </Link>
+      <div className="row" style={{ alignItems: "stretch", gap: 16 }}>
+        <div className="card2 grow">
+          <div className="card2-h">
+            <h2 className="h3s">Orders awaiting confirmation</h2>
+            <Link href="/office/orders" className="btn-ghost btn-sm">
+              View all
+            </Link>
+          </div>
+          {data.submitted.length === 0 ? (
+            <p className="tbl-empty">Nothing waiting.</p>
+          ) : (
+            <div className="tbl-wrap">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Booker</th>
+                    <th className="r">Value</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.submitted.map((o) => (
+                    <tr key={o.id}>
+                      <td className="sku">{o.code}</td>
+                      <td>{o.customer}</td>
+                      <td>{o.booker}</td>
+                      <td className="money">
+                        <Money value={o.subtotal} />
+                      </td>
+                      <td>
+                        <button
+                          className="btn-sec btn-sm"
+                          disabled={busyId === o.id}
+                          onClick={() => confirm(o.id)}
+                        >
+                          Confirm
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            {data.outstandingInvoices.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-muted">
-                No outstanding invoices.
-              </p>
-            ) : (
-              <ul className="divide-y divide-line">
-                {data.outstandingInvoices.map((inv) => (
-                  <li key={inv.id}>
-                    <Link
-                      href={`/office/invoices/${inv.id}`}
-                      className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-canvas"
-                    >
-                      <span className="min-w-0">
-                        <span className="block font-mono text-xs">
-                          {inv.code}
-                        </span>
-                        <span className="block truncate text-xs text-muted">
-                          {inv.customer}
-                        </span>
-                      </span>
-                      <Money
-                        value={inv.balance}
-                        className="shrink-0 font-semibold text-primary"
-                      />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          )}
+        </div>
+        <aside className="card2" style={{ width: 280, flex: "none" }}>
+          <div className="card2-h">
+            <h2 className="h3s">To collect</h2>
+            <Link href="/office/invoices" className="btn-ghost btn-sm">
+              Invoices
+            </Link>
+          </div>
+          {data.outstandingInvoices.length === 0 ? (
+            <p className="tbl-empty">No outstanding invoices.</p>
+          ) : (
+            data.outstandingInvoices.map((inv) => (
+              <Link key={inv.id} href={`/office/invoices/${inv.id}`} className="prow">
+                <div>
+                  <div className="sku">{inv.code}</div>
+                  <div className="pmeta">{inv.customer}</div>
+                </div>
+                <Money value={inv.balance} />
+              </Link>
+            ))
+          )}
         </aside>
       </div>
-    </div>
-  );
-}
-
-function Kpi({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-md border border-line bg-surface p-4">
-      <p className="text-sm text-muted">{label}</p>
-      <p className="mt-1 text-xl font-bold">{children}</p>
-    </div>
+    </OfficeChrome>
   );
 }

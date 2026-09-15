@@ -139,34 +139,14 @@ export default function NewOrderPage() {
 }
 
 function Steps({ step }: { step: 1 | 2 | 3 }) {
-  const items = ["Customer", "Items", "Review"];
   return (
-    <div className="mb-4 flex items-center gap-2">
-      {items.map((label, i) => {
-        const n = (i + 1) as 1 | 2 | 3;
-        const active = n === step;
-        const done = n < step;
-        return (
-          <div key={label} className="flex flex-1 items-center gap-2">
-            <div
-              className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
-                active
-                  ? "bg-primary text-white"
-                  : done
-                    ? "bg-primary-soft text-primary"
-                    : "bg-canvas text-muted"
-              }`}
-            >
-              {n}
-            </div>
-            <span
-              className={`text-xs ${active ? "font-semibold text-ink" : "text-muted"}`}
-            >
-              {label}
-            </span>
-          </div>
-        );
-      })}
+    <div className="wiz-dots" aria-label={`Step ${step} of 3`}>
+      {([1, 2, 3] as const).map((n) => (
+        <div
+          key={n}
+          className={`wiz-dot${n === step ? " is-on" : ""}${n < step ? " is-done" : ""}`}
+        />
+      ))}
     </div>
   );
 }
@@ -199,10 +179,10 @@ function CustomerStep({
     <div className="space-y-3">
       <h2 className="font-semibold">Which shop?</h2>
       {selected && (
-        <div className="card border-primary bg-primary-soft p-3">
-          <p className="text-xs text-primary">Selected</p>
-          <p className="font-medium">{selected.name}</p>
-          <p className="text-xs text-muted">
+        <div className="pcard">
+          <p className="meta">Selected</p>
+          <p className="pname">{selected.name}</p>
+          <p className="meta">
             {selected.phone} · {selected.area ?? "—"}
           </p>
         </div>
@@ -227,11 +207,7 @@ function CustomerStep({
           <button
             key={c.id}
             onClick={() => onSelect(c)}
-            className={`w-full rounded-lg border p-3 text-left ${
-              selected?.id === c.id
-                ? "border-primary bg-primary-soft"
-                : "border-line bg-surface"
-            }`}
+            className={`opt${selected?.id === c.id ? " is-on" : ""}`}
           >
             <p className="font-medium">{c.name}</p>
             <p className="text-xs text-muted">

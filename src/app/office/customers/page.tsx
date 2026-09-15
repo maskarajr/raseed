@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Customer } from "@prisma/client";
 import { api } from "@/lib/client";
 import { SideSheet } from "@/components/SideSheet";
+import { OfficeChrome } from "@/components/OfficeChrome";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -31,13 +32,14 @@ export default function CustomersPage() {
   }, []);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Customers</h1>
+    <OfficeChrome
+      title="Customers"
+      actions={
         <button className="btn-primary" onClick={() => setSheet({ mode: "create" })}>
           New customer
         </button>
-      </div>
+      }
+    >
       {error && <p className="text-sm text-danger">{error}</p>}
 
       <div className="card">
@@ -101,7 +103,7 @@ export default function CustomersPage() {
           }}
         />
       )}
-    </div>
+    </OfficeChrome>
   );
 }
 

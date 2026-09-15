@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Product } from "@prisma/client";
 import { api } from "@/lib/client";
+import { OfficeChrome } from "@/components/OfficeChrome";
 
 type LedgerEntry = {
   id: string;
@@ -61,8 +62,7 @@ export default function StockPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Stock</h1>
+    <OfficeChrome title="Stock ledger">
       {error && <p className="text-red-600">{error}</p>}
 
       <form onSubmit={adjust} className="card grid grid-cols-1 gap-3 sm:grid-cols-4">
@@ -193,6 +193,6 @@ export default function StockPage() {
           </table>
         </div>
       </div>
-    </div>
+    </OfficeChrome>
   );
 }

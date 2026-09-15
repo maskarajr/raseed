@@ -14,29 +14,22 @@ export default async function OfficeLayout({
   if (session.role === "booker") redirect("/booker");
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="no-print flex w-[220px] shrink-0 flex-col border-r border-line bg-surface">
-        <div className="border-b border-line px-4 py-4">
-          <Link href="/office" className="text-xl font-bold text-primary">
-            Raseed
-          </Link>
-          <p className="mt-0.5 text-xs text-muted">Office</p>
-        </div>
-        <div className="flex-1 overflow-y-auto p-3">
-          <OfficeNav />
-        </div>
-        <div className="border-t border-line p-3">
-          <p className="mb-2 truncate text-xs text-muted">
+    <div className="office-root">
+      <aside className="rail no-print">
+        <Link href="/office" className="rbrand">
+          <span className="rmark">R</span>
+          Raseed
+        </Link>
+        <OfficeNav variant="main" />
+        <div className="rfoot">
+          <OfficeNav variant="foot" />
+          <p className="meta" style={{ padding: "10px 8px 4px" }}>
             {session.name} · {session.role}
           </p>
           <LogoutButton />
         </div>
       </aside>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
-          {children}
-        </main>
-      </div>
+      <div className="main">{children}</div>
     </div>
   );
 }

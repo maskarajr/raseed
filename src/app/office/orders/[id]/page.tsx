@@ -6,6 +6,7 @@ import Link from "next/link";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
+import { OfficeChrome } from "@/components/OfficeChrome";
 
 type OrderDetail = {
   id: string;
@@ -66,26 +67,57 @@ export default function OrderDetailPage() {
     }
   }
 
-  if (error && !order) return <p className="text-danger">{error}</p>;
-  if (!order) return <p className="text-muted">Loading…</p>;
+  if (error && !order) {
+    return (
+      <OfficeChrome title="Order">
+        <p className="muted">{error}</p>
+      </OfficeChrome>
+    );
+  }
+  if (!order) {
+    return (
+      <OfficeChrome title="Order">
+        <p className="muted">Loading…</p>
+      </OfficeChrome>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Link href="/office/orders" className="text-sm text-primary">
-          ← Orders
-        </Link>
-        <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold">
-          {order.code} <StatusPill status={order.status} />
-        </h1>
-      </div>
+    <OfficeChrome
+      title={order.code}
+      subtitle={`Orders / ${order.code}`}
+      actions={
+        <>
+          <StatusPill status={order.status} />
+          {order.status === "submitted" && (
+            <button
+              className="btn-primary"
+              disabled={busy}
+              onClick={() => act(`/api/orders/${order.id}/confirm`)}
+            >
+              Confirm order
+            </button>
+          )}
+          {order.status === "confirmed" && (
+            <button
+              className="btn-primary"
+              disabled={busy}
+              onClick={() => act(`/api/orders/${order.id}/invoice`)}
+            >
+              Generate invoice
+            </button>
+          )}
+        </>
+      }
+    >
+      {error && <p className="muted">{error}</p>}
 
-      {error && <p className="text-sm text-danger">{error}</p>}
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="card lg:col-span-2">
-          <h2 className="mb-3 font-semibold">Items</h2>
-          <table className="table">
+      <div className="row" style={{ alignItems: "flex-start" }}>
+        <div className="card2 grow">
+          <h2 className="h3s" style={{ marginBottom: 12 }}>
+            Line items
+          </h2>
+          <table className="tbl">
             <thead>
               <tr>
                 <th>SKU</th>
@@ -128,9 +160,11 @@ export default function OrderDetailPage() {
           )}
         </div>
 
-        <div className="space-y-4">
-          <div className="card">
-            <h2 className="mb-2 font-semibold">Customer</h2>
+        <div className="stack" style={{ width: 280 }}>
+          <div className="card2">
+            <h2 className="h3s" style={{ marginBottom: 8 }}>
+              Customer
+            </h2>
             <p className="font-medium">{order.customer.name}</p>
             <p className="text-sm text-muted">{order.customer.phone}</p>
             <p className="text-sm text-muted">
@@ -139,8 +173,8 @@ export default function OrderDetailPage() {
             <p className="mt-2 text-sm text-muted">Booker: {order.booker.name}</p>
           </div>
 
-          <div className="card space-y-2">
-            <h2 className="font-semibold">Actions</h2>
+          <div className="card2 stack">
+            <h2 className="h3s">Actions</h2>
             {order.status === "submitted" && (
               <button
                 className="btn-primary w-full"
@@ -209,6 +243,6 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
-    </div>
+    </OfficeChrome>
   );
 }
