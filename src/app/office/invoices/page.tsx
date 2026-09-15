@@ -103,6 +103,19 @@ export default function InvoicesPage() {
         />
       </div>
       {error && <p className="muted">{error}</p>}
+      <div className="acts">
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={!invoices.some((i) => i.balance > 0)}
+          onClick={() => {
+            const first = invoices.find((i) => i.balance > 0);
+            if (first) setPay(first);
+          }}
+        >
+          Record payment
+        </button>
+      </div>
       <p className="meta">Collected on file <Money value={collected} /></p>
       <div className="card2">
         <div className="tbl-wrap">
@@ -116,6 +129,7 @@ export default function InvoicesPage() {
                 <th className="r">Collected</th>
                 <th className="r">Value</th>
                 <th>Status</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -141,6 +155,24 @@ export default function InvoicesPage() {
                   </td>
                   <td>
                     <StatusPill status={i.paymentStatus} />
+                  </td>
+                  <td>
+                    {i.balance > 0 ? (
+                      <button
+                        type="button"
+                        className="btn-sec btn-sm"
+                        onClick={() => setPay(i)}
+                      >
+                        Collect
+                      </button>
+                    ) : (
+                      <Link
+                        href={`/office/invoices/${i.id}`}
+                        className="btn-ghost btn-sm"
+                      >
+                        Open
+                      </Link>
+                    )}
                   </td>
                 </tr>
               ))}

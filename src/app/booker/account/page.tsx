@@ -8,6 +8,7 @@ import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { initials } from "@/lib/person";
 import { startOfTodayKarachi } from "@/lib/day";
+import { PwaInstallCta } from "@/components/PwaInstallCta";
 
 type Me = { name: string; email: string; role: string } | null;
 
@@ -107,6 +108,12 @@ export default function BookerAccountPage() {
           <span className="muted">Language</span>
           <span>English</span>
         </div>
+      </div>
+      <div className="pcard">
+        <p className="ptitle-s" style={{ marginBottom: 8 }}>
+          This phone
+        </p>
+        <PwaInstallCta />
       </div>
       <LogoutButton />
     </BookerChrome>

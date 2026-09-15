@@ -110,6 +110,14 @@ export default function OrdersPage() {
         />
       </div>
       {error && <p className="muted">{error}</p>}
+      <div className="acts">
+        <button type="button" className="btn-sec" onClick={() => setFiltersOpen(true)}>
+          Filters
+        </button>
+        <Link href="/office/orders/new" className="btn-primary">
+          New order
+        </Link>
+      </div>
       <div className="card2 grow">
         <div className="tbl-wrap">
           <table className="tbl">

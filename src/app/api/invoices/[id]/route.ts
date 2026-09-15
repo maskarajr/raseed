@@ -16,7 +16,7 @@ export const GET = requireRole<Params>(
       order: {
         include: {
           customer: true,
-          booker: { select: { name: true, route: true } },
+          booker: { select: { name: true } },
           items: {
             include: {
               product: { select: { sku: true, name: true, unit: true } },

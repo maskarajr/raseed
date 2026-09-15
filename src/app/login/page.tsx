@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
 import type { Role } from "@/lib/enums";
+import { PwaInstallCta } from "@/components/PwaInstallCta";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -10,6 +11,12 @@ export default function LoginPage() {
   const [asRole, setAsRole] = useState<"office" | "booker">("office");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(max-width: 820px)").matches) {
+      setAsRole("booker");
+    }
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,7 +59,7 @@ export default function LoginPage() {
               letterSpacing: "-.02em",
             }}
           >
-            Sign in to the office
+            {asRole === "booker" ? "Sign in to the route" : "Sign in to the office"}
           </h1>
           <p className="muted" style={{ fontSize: 14, marginTop: 8 }}>
             Office hours 09:00–19:00 · Asia/Karachi
@@ -138,6 +145,7 @@ export default function LoginPage() {
               ? "Desktop app · full rail"
               : "Phone layout · route first"}
           </p>
+          {asRole === "booker" ? <PwaInstallCta /> : null}
         </div>
       </div>
     </main>

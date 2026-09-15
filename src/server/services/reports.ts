@@ -111,7 +111,7 @@ export async function stockReport() {
 export async function bookerLeaderboard() {
   const bookers = await prisma.user.findMany({
     where: { role: "booker" },
-    select: { id: true, name: true, email: true, route: true },
+    select: { id: true, name: true, email: true },
   });
 
   const results = await Promise.all(
@@ -137,7 +137,10 @@ export async function bookerLeaderboard() {
         _sum: { amount: true },
       });
       return {
-        ...b,
+        id: b.id,
+        name: b.name,
+        email: b.email,
+        route: null as string | null,
         orderCount,
         salesValue,
         collected,

@@ -28,7 +28,7 @@ export const GET = requireRole(
     orderBy: { createdAt: "desc" },
     take: 200,
     include: {
-      booker: { select: { id: true, name: true, route: true } },
+      booker: { select: { id: true, name: true } },
     },
   });
   const balances = await prisma.invoice.groupBy({

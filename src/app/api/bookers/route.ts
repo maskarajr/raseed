@@ -18,8 +18,6 @@ export const GET = requireRole(
       id: true,
       name: true,
       email: true,
-      phone: true,
-      route: true,
       active: true,
       createdAt: true,
     },
@@ -45,6 +43,8 @@ export const GET = requireRole(
       });
       return {
         ...b,
+        phone: null as string | null,
+        route: null as string | null,
         ordersToday: todayOrders.length,
         valueToday: todayOrders.reduce((s, o) => s + o.subtotal, 0),
         collectedToday: collected._sum.amount ?? 0,
@@ -72,15 +72,11 @@ export const POST = requireRole(
       email: input.email,
       passwordHash,
       role: "booker",
-      phone: input.phone,
-      route: input.route,
     },
     select: {
       id: true,
       name: true,
       email: true,
-      phone: true,
-      route: true,
       active: true,
       createdAt: true,
     },

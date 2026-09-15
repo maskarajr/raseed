@@ -38,7 +38,7 @@ export const GET = requireRole(
         ],
       },
       take: 8,
-      select: { id: true, name: true, area: true, route: true },
+      select: { id: true, name: true, area: true },
     }),
     prisma.product.findMany({
       where: {
