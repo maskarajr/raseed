@@ -73,6 +73,7 @@ body {
   background: var(--surface);
 }
 
+@media print {
   .no-print {
     display: none !important;
   }
