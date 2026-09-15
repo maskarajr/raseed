@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { api } from "@/lib/client";
 import type { Role } from "@/lib/enums";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [asRole, setAsRole] = useState<"owner" | "booker">("owner");
@@ -23,8 +21,8 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       const dest = user.role === "booker" ? "/booker" : "/office";
-      router.replace(dest);
-      router.refresh();
+      // Full navigation: Fast Refresh / router.replace can no-op after login.
+      window.location.assign(dest);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
