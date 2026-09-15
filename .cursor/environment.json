@@ -1,0 +1,15 @@
+{
+  "name": "Raseed",
+  "install": "cp -n .env.example .env; npm ci && npx prisma generate && npx prisma migrate deploy && npm run seed",
+  "terminals": [
+    {
+      "name": "next-dev",
+      "command": "npm run dev"
+    }
+  ],
+  "ports": [
+    {
+      "port": 3000
+    }
+  ]
+}
