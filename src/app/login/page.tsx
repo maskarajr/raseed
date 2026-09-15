@@ -7,7 +7,7 @@ import type { Role } from "@/lib/enums";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [asRole, setAsRole] = useState<"owner" | "booker">("owner");
+  const [asRole, setAsRole] = useState<"office" | "booker">("office");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -21,7 +21,6 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       const dest = user.role === "booker" ? "/booker" : "/office";
-      // Full navigation: Fast Refresh / router.replace can no-op after login.
       window.location.assign(dest);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -32,12 +31,38 @@ export default function LoginPage() {
 
   return (
     <main className="login" style={{ minHeight: "100vh" }}>
-      <div className="login-l">
-        <p className="eyebrow">Raseed</p>
-        <h1 className="ptitle" style={{ margin: "8px 0 24px" }}>
-          Sign in
-        </h1>
-        <form onSubmit={onSubmit} className="stack" style={{ maxWidth: 380 }}>
+      <div className="login-l" style={{ gap: 18 }}>
+        <div className="row" style={{ gap: 9 }}>
+          <span className="rmark">R</span>
+          <span
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 19,
+              fontWeight: 600,
+            }}
+          >
+            Raseed
+          </span>
+        </div>
+        <div style={{ maxWidth: "34ch" }}>
+          <h1
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 28,
+              letterSpacing: "-.02em",
+            }}
+          >
+            Sign in to the office
+          </h1>
+          <p className="muted" style={{ fontSize: 14, marginTop: 8 }}>
+            Office hours 09:00–19:00 · Asia/Karachi
+          </p>
+        </div>
+        <form
+          onSubmit={onSubmit}
+          className="stack"
+          style={{ maxWidth: 340, gap: 14 }}
+        >
           <div className="lfield">
             <label htmlFor="email">Work email</label>
             <input
@@ -62,28 +87,6 @@ export default function LoginPage() {
               required
             />
           </div>
-          <div className="lfield">
-            <span className="muted" style={{ fontSize: 12 }}>
-              Continue as
-            </span>
-            <div className="stack" style={{ gap: 8 }}>
-              {(
-                [
-                  ["owner", "Owner — office dashboard"],
-                  ["booker", "Booker — capture PWA"],
-                ] as const
-              ).map(([id, copy]) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={`opt${asRole === id ? " is-on" : ""}`}
-                  onClick={() => setAsRole(id)}
-                >
-                  {copy}
-                </button>
-              ))}
-            </div>
-          </div>
           {error && <p className="muted">{error}</p>}
           <button
             type="submit"
@@ -92,16 +95,48 @@ export default function LoginPage() {
           >
             {loading ? "Signing in…" : "Sign in"}
           </button>
+          <p className="meta">
+            Trouble signing in? Ask your supervisor to reset your password.
+          </p>
         </form>
       </div>
       <div className="login-r">
-        <div>
-          <p className="eyebrow">Wholesale ops</p>
-          <p className="h3s" style={{ marginTop: 8 }}>
-            Book, invoice, collect cash.
-          </p>
-          <p className="muted" style={{ marginTop: 10, maxWidth: 280 }}>
-            PKR · English · office hours 09:00–19:00 Asia/Karachi
+        <div
+          style={{
+            maxWidth: 300,
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+          }}
+        >
+          <p className="ptitle-s">Continue as</p>
+          <button
+            type="button"
+            className={`opt${asRole === "office" ? " is-on" : ""}`}
+            onClick={() => setAsRole("office")}
+          >
+            <span>
+              <span className="pname">Office</span>
+              <br />
+              <span className="pmeta">Dashboard, orders, invoices</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            className={`opt${asRole === "booker" ? " is-on" : ""}`}
+            onClick={() => setAsRole("booker")}
+          >
+            <span>
+              <span className="pname">Booker</span>
+              <br />
+              <span className="pmeta">Route, capture, collections</span>
+            </span>
+          </button>
+          <p className="meta" style={{ marginTop: 4 }}>
+            {asRole === "office"
+              ? "Desktop app · full rail"
+              : "Phone layout · route first"}
           </p>
         </div>
       </div>

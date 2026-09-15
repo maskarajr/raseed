@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { OfficeChrome } from "@/components/OfficeChrome";
+import { StatusPill } from "@/components/badges";
 import { formatTodayKarachi } from "@/lib/day";
 
 type HomeResponse = {
@@ -17,10 +18,12 @@ type HomeResponse = {
   submitted: {
     id: string;
     code: string;
+    status: string;
     createdAt: string;
     booker: string;
     customer: string;
     subtotal: number;
+    items: number;
   }[];
   lowStock: {
     sku: string;
@@ -39,7 +42,6 @@ type HomeResponse = {
 export default function OfficeDashboard() {
   const [data, setData] = useState<HomeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
   const [today, setToday] = useState("");
 
   const load = useCallback(async () => {
@@ -55,19 +57,6 @@ export default function OfficeDashboard() {
     setToday(formatTodayKarachi());
     load();
   }, [load]);
-
-  async function confirm(id: string) {
-    setBusyId(id);
-    setError(null);
-    try {
-      await api(`/api/orders/${id}/confirm`, { method: "POST" });
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Confirm failed");
-    } finally {
-      setBusyId(null);
-    }
-  }
 
   if (error && !data) {
     return (
@@ -103,7 +92,7 @@ export default function OfficeDashboard() {
           <p className="kval">
             <Money value={kpis.bookedToday} />
           </p>
-          <p className="kdelta">{data.submitted.length} awaiting confirm</p>
+          <p className="kdelta">{kpis.awaitingConfirm} awaiting confirm</p>
         </div>
         <div className="kpi">
           <p className="klab">Outstanding</p>
@@ -122,74 +111,49 @@ export default function OfficeDashboard() {
         </div>
       </div>
 
-      <div className="row" style={{ alignItems: "stretch", gap: 16 }}>
-        <div className="card2 grow">
-          <div className="card2-h">
-            <h2 className="h3s">Orders awaiting confirmation</h2>
-            <Link href="/office/orders" className="btn-ghost btn-sm">
-              View all
-            </Link>
-          </div>
-          {data.submitted.length === 0 ? (
-            <p className="tbl-empty">Nothing waiting.</p>
-          ) : (
-            <div className="tbl-wrap">
-              <table className="tbl">
-                <thead>
-                  <tr>
-                    <th>Order</th>
-                    <th>Customer</th>
-                    <th>Booker</th>
-                    <th className="r">Value</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.submitted.map((o) => (
-                    <tr key={o.id}>
-                      <td className="sku">{o.code}</td>
-                      <td>{o.customer}</td>
-                      <td>{o.booker}</td>
-                      <td className="money">
-                        <Money value={o.subtotal} />
-                      </td>
-                      <td>
-                        <button
-                          className="btn-sec btn-sm"
-                          disabled={busyId === o.id}
-                          onClick={() => confirm(o.id)}
-                        >
-                          Confirm
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      <div className="card2 grow" style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <div className="card2-h">
+          <h2 className="h3s">Orders awaiting confirmation</h2>
+          <Link href="/office/orders" className="btn-ghost btn-sm">
+            View all
+          </Link>
         </div>
-        <aside className="card2" style={{ width: 280, flex: "none" }}>
-          <div className="card2-h">
-            <h2 className="h3s">To collect</h2>
-            <Link href="/office/invoices" className="btn-ghost btn-sm">
-              Invoices
-            </Link>
+        {data.submitted.length === 0 ? (
+          <p className="tbl-empty">Nothing waiting.</p>
+        ) : (
+          <div className="tbl-wrap">
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Customer</th>
+                  <th>Booker</th>
+                  <th className="r">Items</th>
+                  <th className="r">Value</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.submitted.map((o) => (
+                  <tr key={o.id}>
+                    <td className="sku">
+                      <Link href={`/office/orders/${o.id}`}>{o.code}</Link>
+                    </td>
+                    <td>{o.customer}</td>
+                    <td>{o.booker}</td>
+                    <td className="r num">{o.items}</td>
+                    <td className="money">
+                      <Money value={o.subtotal} />
+                    </td>
+                    <td>
+                      <StatusPill status={o.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          {data.outstandingInvoices.length === 0 ? (
-            <p className="tbl-empty">No outstanding invoices.</p>
-          ) : (
-            data.outstandingInvoices.map((inv) => (
-              <Link key={inv.id} href={`/office/invoices/${inv.id}`} className="prow">
-                <div>
-                  <div className="sku">{inv.code}</div>
-                  <div className="pmeta">{inv.customer}</div>
-                </div>
-                <Money value={inv.balance} />
-              </Link>
-            ))
-          )}
-        </aside>
+        )}
       </div>
     </OfficeChrome>
   );

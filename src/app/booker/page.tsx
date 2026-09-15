@@ -15,6 +15,7 @@ type OrderRow = {
   subtotal: number;
   createdAt: string;
   customer: { name: string; area: string | null };
+  invoice: { paymentStatus: string; balance?: number } | null;
 };
 
 const CLOSED = ["settled", "cancelled"];
@@ -35,50 +36,99 @@ export default function BookerHome() {
 
   const todayStart = startOfTodayKarachi().getTime();
   const weekStart = startOfWeekKarachi().getTime();
-  const todayBooked = orders
-    .filter((o) => new Date(o.createdAt).getTime() >= todayStart)
-    .reduce((s, o) => s + o.subtotal, 0);
+  const todayOrders = orders.filter(
+    (o) => new Date(o.createdAt).getTime() >= todayStart,
+  );
+  const todayBooked = todayOrders.reduce((s, o) => s + o.subtotal, 0);
   const weekBooked = orders
     .filter((o) => new Date(o.createdAt).getTime() >= weekStart)
     .reduce((s, o) => s + o.subtotal, 0);
-  const openOrders = orders.filter((o) => !CLOSED.includes(o.status)).length;
-  const recent = orders.slice(0, 6);
+  const collectedAmt = orders
+    .filter((o) => o.status === "settled")
+    .reduce((s, o) => s + o.subtotal, 0);
+  const pct =
+    todayBooked > 0
+      ? Math.min(100, Math.round((collectedAmt / todayBooked) * 100))
+      : 0;
   const first = name?.split(" ")[0] ?? "Booker";
+  const nextStops = orders.filter((o) => !CLOSED.includes(o.status)).slice(0, 3);
 
   return (
-    <BookerChrome title={first}>
+    <BookerChrome title={`Salaam, ${first}`}>
       {error && <p className="muted">{error}</p>}
       <div className="pcard">
-        <p className="ptitle-s">Today booked</p>
-        <p className="pbig">
-          <Money value={todayBooked} />
-        </p>
-        <p className="meta">
-          Open {openOrders} · Week <Money value={weekBooked} />
+        <p className="ptitle-s">Today's orders</p>
+        <div className="rowb" style={{ marginTop: 6, alignItems: "flex-end" }}>
+          <span className="pbig num">{todayOrders.length}</span>
+          <span style={{ textAlign: "right" }}>
+            <span className="num" style={{ fontSize: 15, display: "block" }}>
+              <Money value={todayBooked} />
+            </span>
+            <span className="pmeta">Week <Money value={weekBooked} /></span>
+          </span>
+        </div>
+      </div>
+      <div className="pcard">
+        <div className="rowb" style={{ marginBottom: 6 }}>
+          <p className="ptitle-s">Collections</p>
+          <span className="pmeta">vs booked</span>
+        </div>
+        <div className="rowb" style={{ marginTop: 8 }}>
+          <span className="pname">
+            <Money value={collectedAmt} /> collected
+          </span>
+          <StatusPill status="on track" />
+        </div>
+        <div
+          style={{
+            height: 6,
+            background: "var(--border)",
+            borderRadius: 999,
+            marginTop: 10,
+          }}
+        >
+          <div
+            style={{
+              height: 6,
+              width: `${pct}%`,
+              background: "var(--accent)",
+              borderRadius: 999,
+            }}
+          />
+        </div>
+        <p className="pmeta" style={{ marginTop: 6 }}>
+          {pct}% of <Money value={todayBooked} />
         </p>
       </div>
-      <Link href="/booker/orders/new" className="btn-primary btn-block">
-        New order
-      </Link>
-      <div className="pcard">
-        <div className="rowb">
-          <h2 className="h3s">Recent</h2>
-          <Link href="/booker/orders" className="btn-ghost btn-sm">
-            See all
-          </Link>
-        </div>
-        {recent.map((o) => (
+      <div className="row" style={{ gap: 10 }}>
+        <Link
+          href="/booker/orders/new"
+          className="btn-primary grow"
+          style={{ justifyContent: "center" }}
+        >
+          New order
+        </Link>
+        <Link href="/booker/orders" className="btn-sec">
+          Collect
+        </Link>
+      </div>
+      <div className="pcard" style={{ flex: "1 0 auto" }}>
+        <p className="ptitle-s" style={{ marginBottom: 4 }}>
+          Next stops
+        </p>
+        {nextStops.map((o) => (
           <Link key={o.id} href="/booker/orders" className="prow">
-            <div>
-              <p className="pname">{o.customer.name}</p>
-              <p className="sku">
-                {o.code} · <Money value={o.subtotal} />
-              </p>
-            </div>
+            <span>
+              <span className="pname">{o.customer.name}</span>
+              <br />
+              <span className="pmeta">{o.customer.area ?? o.code}</span>
+            </span>
             <StatusPill status={o.status} />
           </Link>
         ))}
-        {recent.length === 0 && <p className="tbl-empty">No orders yet.</p>}
+        {nextStops.length === 0 && (
+          <p className="tbl-empty">No open stops.</p>
+        )}
       </div>
     </BookerChrome>
   );

@@ -7,6 +7,7 @@ import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { OfficeChrome } from "@/components/OfficeChrome";
+import { initials } from "@/lib/person";
 
 type OrderDetail = {
   id: string;
@@ -15,7 +16,12 @@ type OrderDetail = {
   notes: string | null;
   subtotal: number;
   createdAt: string;
-  customer: { name: string; phone: string; area: string | null; address: string | null };
+  customer: {
+    name: string;
+    phone: string;
+    area: string | null;
+    address: string | null;
+  };
   booker: { id: string; name: string };
   items: {
     id: string;
@@ -26,6 +32,16 @@ type OrderDetail = {
   invoice: { id: string; code: string } | null;
 };
 
+function placedLabel(iso: string) {
+  return new Date(iso).toLocaleString("en-GB", {
+    timeZone: "Asia/Karachi",
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -35,8 +51,10 @@ export default function OrderDetailPage() {
 
   async function load() {
     try {
-      const { order } = await api<{ order: OrderDetail }>(`/api/orders/${id}`);
-      setOrder(order);
+      const { order: row } = await api<{ order: OrderDetail }>(
+        `/api/orders/${id}`,
+      );
+      setOrder(row);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     }
@@ -107,141 +125,130 @@ export default function OrderDetailPage() {
               Generate invoice
             </button>
           )}
+          {order.invoice && (
+            <Link
+              href={`/office/invoices/${order.invoice.id}`}
+              className="btn-sec"
+            >
+              Invoice {order.invoice.code}
+            </Link>
+          )}
         </>
       }
     >
       {error && <p className="muted">{error}</p>}
 
-      <div className="row" style={{ alignItems: "flex-start" }}>
-        <div className="card2 grow">
-          <h2 className="h3s" style={{ marginBottom: 12 }}>
-            Line items
-          </h2>
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Product</th>
-                <th className="text-right">Qty</th>
-                <th className="text-right">Unit price</th>
-                <th className="text-right">Line</th>
-              </tr>
-            </thead>
-            <tbody>
-              {order.items.map((i) => (
-                <tr key={i.id}>
-                  <td className="font-mono text-xs">{i.product.sku}</td>
-                  <td>{i.product.name}</td>
-                  <td className="tnum text-right">
-                    {i.qty} {i.product.unit}
-                  </td>
-                  <td className="text-right">
-                    <Money value={i.unitPrice} />
-                  </td>
-                  <td className="text-right">
-                    <Money value={i.qty * i.unitPrice} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan={4} className="text-right font-semibold">
-                  Subtotal
-                </td>
-                <td className="text-right font-semibold">
-                  <Money value={order.subtotal} />
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-          {order.notes && (
-            <p className="mt-3 text-sm text-muted">Notes: {order.notes}</p>
+      <div className="row" style={{ gap: 16, alignItems: "stretch" }}>
+        <div className="card2" style={{ flex: 1 }}>
+          <p className="ptitle-s" style={{ marginBottom: 10 }}>
+            Customer
+          </p>
+          <div className="person">
+            <span className="avatar">{initials(order.customer.name)}</span>
+            <span>
+              <span className="pname">{order.customer.name}</span>
+              <br />
+              <span className="pmeta">
+                {order.customer.area ?? "—"}
+                {order.customer.phone ? ` · ${order.customer.phone}` : ""}
+              </span>
+            </span>
+          </div>
+          <dl className="dl" style={{ marginTop: 14 }}>
+            <div>
+              <dt>Booker</dt>
+              <dd>{order.booker.name}</dd>
+            </div>
+            <div>
+              <dt>Placed</dt>
+              <dd className="num">{placedLabel(order.createdAt)}</dd>
+            </div>
+            <div>
+              <dt>Fulfilment</dt>
+              <dd>Cash on delivery</dd>
+            </div>
+          </dl>
+        </div>
+        <div className="card2 stack" style={{ width: 250 }}>
+          <p className="ptitle-s">Actions</p>
+          {order.status === "invoiced" && (
+            <button
+              className="btn-sec btn-block"
+              disabled={busy}
+              onClick={() =>
+                act(`/api/orders/${order.id}/status`, {
+                  status: "out_for_delivery",
+                })
+              }
+            >
+              Mark out for delivery
+            </button>
+          )}
+          {order.status === "out_for_delivery" && (
+            <button
+              className="btn-sec btn-block"
+              disabled={busy}
+              onClick={() =>
+                act(`/api/orders/${order.id}/status`, { status: "delivered" })
+              }
+            >
+              Mark delivered
+            </button>
+          )}
+          {["draft", "submitted", "confirmed"].includes(order.status) && (
+            <button
+              className="btn-sec btn-block"
+              disabled={busy}
+              onClick={() => act(`/api/orders/${order.id}/cancel`)}
+            >
+              Cancel order
+            </button>
           )}
         </div>
+      </div>
 
-        <div className="stack" style={{ width: 280 }}>
-          <div className="card2">
-            <h2 className="h3s" style={{ marginBottom: 8 }}>
-              Customer
-            </h2>
-            <p className="font-medium">{order.customer.name}</p>
-            <p className="text-sm text-muted">{order.customer.phone}</p>
-            <p className="text-sm text-muted">
-              {order.customer.area ?? ""} {order.customer.address ?? ""}
-            </p>
-            <p className="mt-2 text-sm text-muted">Booker: {order.booker.name}</p>
-          </div>
-
-          <div className="card2 stack">
-            <h2 className="h3s">Actions</h2>
-            {order.status === "submitted" && (
-              <button
-                className="btn-primary w-full"
-                disabled={busy}
-                onClick={() => act(`/api/orders/${order.id}/confirm`)}
-              >
-                Confirm order
-              </button>
-            )}
-            {order.status === "confirmed" && (
-              <button
-                className="btn-primary w-full"
-                disabled={busy}
-                onClick={() => act(`/api/orders/${order.id}/invoice`)}
-              >
-                Generate invoice (deduct stock)
-              </button>
-            )}
-            {order.status === "invoiced" && (
-              <button
-                className="btn-sec btn-block"
-                disabled={busy}
-                onClick={() =>
-                  act(`/api/orders/${order.id}/status`, {
-                    status: "out_for_delivery",
-                  })
-                }
-              >
-                Mark out for delivery
-              </button>
-            )}
-            {order.status === "out_for_delivery" && (
-              <button
-                className="btn-sec btn-block"
-                disabled={busy}
-                onClick={() =>
-                  act(`/api/orders/${order.id}/status`, { status: "delivered" })
-                }
-              >
-                Mark delivered
-              </button>
-            )}
-            {order.invoice && (
-              <Link
-                href={`/office/invoices/${order.invoice.id}`}
-                className="btn-sec btn-block"
-              >
-                Open invoice {order.invoice.code}
-              </Link>
-            )}
-            {order.invoice && order.status !== "settled" && (
-              <p className="text-xs text-muted">
-                Order settles automatically once the invoice balance reaches
-                Rs 0.
-              </p>
-            )}
-            {["draft", "submitted", "confirmed"].includes(order.status) && (
-              <button
-                className="btn-sec btn-block"
-                disabled={busy}
-                onClick={() => act(`/api/orders/${order.id}/cancel`)}
-              >
-                Cancel order
-              </button>
-            )}
+      <div className="card2 grow">
+        <div className="card2-h">
+          <h2 className="h3s">Line items</h2>
+          <span className="meta">{order.items.length} lines</span>
+        </div>
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Product</th>
+              <th className="r">Qty</th>
+              <th className="r">Rate</th>
+              <th className="r">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {order.items.map((i) => (
+              <tr key={i.id}>
+                <td className="sku">{i.product.sku}</td>
+                <td>{i.product.name}</td>
+                <td className="r num">
+                  {i.qty} {i.product.unit}
+                </td>
+                <td className="money">
+                  <Money value={i.unitPrice} />
+                </td>
+                <td className="money">
+                  <Money value={i.qty * i.unitPrice} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="totals" style={{ marginTop: 14 }}>
+          <div className="trow grand">
+            <span>Total</span>
+            <span className="num">
+              <Money value={order.subtotal} />
+            </span>
           </div>
         </div>
+        {order.notes ? <p className="meta">Notes: {order.notes}</p> : null}
       </div>
     </OfficeChrome>
   );

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/server/auth/session";
 import { OfficeNav } from "@/components/OfficeNav";
-import { LogoutButton } from "@/components/LogoutButton";
+import { initials } from "@/lib/person";
 
 export default async function OfficeLayout({
   children,
@@ -23,10 +23,16 @@ export default async function OfficeLayout({
         <OfficeNav variant="main" />
         <div className="rfoot">
           <OfficeNav variant="foot" />
-          <p className="meta" style={{ padding: "10px 8px 4px" }}>
-            {session.name} · {session.role}
-          </p>
-          <LogoutButton />
+          <div className="row" style={{ gap: 9, padding: "10px 9px 0" }}>
+            <span className="avatar">{initials(session.name)}</span>
+            <span>
+              <span className="pname">{session.name}</span>
+              <br />
+              <span className="pmeta">
+                {session.role === "owner" ? "Owner" : "Office"}
+              </span>
+            </span>
+          </div>
         </div>
       </aside>
       <div className="main">{children}</div>

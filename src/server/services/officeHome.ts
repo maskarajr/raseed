@@ -37,10 +37,12 @@ export async function officeHomeSummary() {
         select: {
           id: true,
           code: true,
+          status: true,
           createdAt: true,
           subtotal: true,
           booker: { select: { name: true } },
           customer: { select: { name: true } },
+          _count: { select: { items: true } },
         },
       }),
       // Low stock candidates (active products only).
@@ -74,10 +76,12 @@ export async function officeHomeSummary() {
     submitted: submittedOrders.map((o) => ({
       id: o.id,
       code: o.code,
+      status: o.status,
       createdAt: o.createdAt,
       booker: o.booker.name,
       customer: o.customer.name,
       subtotal: o.subtotal,
+      items: o._count.items,
     })),
     lowStock: lowStockRows.map((p) => ({
       sku: p.sku,

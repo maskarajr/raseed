@@ -113,9 +113,9 @@ export default function InvoiceDetailPage() {
               <tr>
                 <th>SKU</th>
                 <th>Desc</th>
-                <th className="text-right">Qty</th>
-                <th className="text-right">Unit Rs</th>
-                <th className="text-right">Line Rs</th>
+                <th className="r">Qty</th>
+                <th className="r">Unit Rs</th>
+                <th className="r">Line Rs</th>
               </tr>
             </thead>
             <tbody>
@@ -180,7 +180,7 @@ export default function InvoiceDetailPage() {
                 <tr>
                   <th>When</th>
                   <th>Method</th>
-                  <th className="text-right">Amount</th>
+                  <th className="r">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -190,7 +190,7 @@ export default function InvoiceDetailPage() {
                       {new Date(p.createdAt).toLocaleString()}
                     </td>
                     <td className="capitalize">{p.mode}</td>
-                    <td className="text-right">
+                    <td className="r">
                       <Money value={p.amount} />
                     </td>
                   </tr>
@@ -212,8 +212,8 @@ export default function InvoiceDetailPage() {
                 <tr>
                   <th>When</th>
                   <th>Product</th>
-                  <th className="text-right">Qty</th>
-                  <th className="text-right">Amount</th>
+                  <th className="r">Qty</th>
+                  <th className="r">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -223,8 +223,8 @@ export default function InvoiceDetailPage() {
                       {new Date(r.createdAt).toLocaleString()}
                     </td>
                     <td>{r.product.sku}</td>
-                    <td className="tnum text-right">{r.qty}</td>
-                    <td className="text-right">
+                    <td className="tnum r">{r.qty}</td>
+                    <td className="r">
                       <Money value={r.amount} />
                     </td>
                   </tr>
@@ -349,7 +349,6 @@ function ReturnSheet({
 
   // Per-line return qty + optional reason (reason is UI-only in v1).
   const [qtys, setQtys] = useState<Record<string, number>>({});
-  const [reasons, setReasons] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -388,25 +387,21 @@ function ReturnSheet({
 
   return (
     <SideSheet title={`Log returns — Invoice #${invoice.code}`} onClose={onClose}>
-      <div className="space-y-4">
-        <div className="space-y-3">
-          {lines.map((l) => {
+      <div className="stack" style={{ gap: 12 }}>
+        {lines.map((l) => {
             const qty = qtys[l.productId] ?? 0;
             const disabled = l.max === 0;
             return (
               <div key={l.productId} className="qty-row">
-                <div className="flex items-start justify-between">
-                  <div className="min-w-0">
-                    <p className="font-mono text-xs text-muted">{l.sku}</p>
-                    <p className="truncate text-sm font-medium">{l.name}</p>
-                    <p className="text-xs text-muted">
-                      Invoiced qty: <span className="tnum">{l.invoicedQty}</span>
-                      {l.max < l.invoicedQty && (
-                        <span> · returnable {l.max}</span>
-                      )}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
+                <span className="grow">
+                  <span className="pname">{l.name}</span>
+                  <br />
+                  <span className="pmeta num">
+                    {l.sku} · invoiced {l.invoicedQty}
+                    {l.max < l.invoicedQty ? ` · returnable ${l.max}` : ""}
+                  </span>
+                </span>
+                <span className="qty-ctl">
                     <button
                       type="button"
                       className="qty-btn"
@@ -416,17 +411,7 @@ function ReturnSheet({
                     >
                       −
                     </button>
-                    <input
-                      className="qty-val"
-                      type="number"
-                      min={0}
-                      max={l.max}
-                      value={qty}
-                      disabled={disabled}
-                      onChange={(e) =>
-                        setQty(l.productId, Number(e.target.value), l.max)
-                      }
-                    />
+                    <span className="qty-val">{qty}</span>
                     <button
                       type="button"
                       className="qty-btn"
@@ -436,24 +421,10 @@ function ReturnSheet({
                     >
                       +
                     </button>
-                  </div>
-                </div>
-                <input
-                  className="linput"
-                  placeholder="Reason (optional)"
-                  value={reasons[l.productId] ?? ""}
-                  disabled={disabled}
-                  onChange={(e) =>
-                    setReasons((prev) => ({
-                      ...prev,
-                      [l.productId]: e.target.value,
-                    }))
-                  }
-                />
+                </span>
               </div>
             );
           })}
-        </div>
 
         <p className="meta">
           Restock +{totalQty} · Invoice −<Money value={totalAmount} />
