@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/server/auth/session";
 import { BookerNav } from "@/components/BookerNav";
-import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
 export default async function BookerLayout({
   children,
@@ -22,7 +21,6 @@ export default async function BookerLayout({
         {children}
         <BookerNav />
       </div>
-      <ServiceWorkerRegister />
     </div>
   );
 }

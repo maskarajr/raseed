@@ -4,17 +4,20 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
 import type { Role } from "@/lib/enums";
 import { PwaInstallCta } from "@/components/PwaInstallCta";
+import { isBookerSurface } from "@/lib/pwaInstall";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [asRole, setAsRole] = useState<"office" | "booker">("office");
+  const [phone, setPhone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.matchMedia("(max-width: 820px)").matches) {
+    if (isBookerSurface()) {
       setAsRole("booker");
+      setPhone(true);
     }
   }, []);
 
@@ -25,7 +28,11 @@ export default function LoginPage() {
     try {
       const { user } = await api<{ user: { role: Role } }>("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password, asRole }),
+        body: JSON.stringify({
+          email,
+          password,
+          asRole: phone ? "booker" : asRole,
+        }),
       });
       const dest = user.role === "booker" ? "/booker" : "/office";
       window.location.assign(dest);
@@ -59,7 +66,9 @@ export default function LoginPage() {
               letterSpacing: "-.02em",
             }}
           >
-            {asRole === "booker" ? "Sign in to the route" : "Sign in to the office"}
+            {phone || asRole === "booker"
+              ? "Sign in to the route"
+              : "Sign in to the office"}
           </h1>
           <p className="muted" style={{ fontSize: 14, marginTop: 8 }}>
             Office hours 09:00–19:00 · Asia/Karachi
@@ -145,9 +154,9 @@ export default function LoginPage() {
               ? "Desktop app · full rail"
               : "Phone layout · route first"}
           </p>
-          {asRole === "booker" ? <PwaInstallCta /> : null}
         </div>
       </div>
+      <PwaInstallCta />
     </main>
   );
 }
