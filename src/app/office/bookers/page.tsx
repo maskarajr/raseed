@@ -10,8 +10,13 @@ type Booker = {
   id: string;
   name: string;
   email: string;
+  phone: string | null;
+  route: string | null;
   active: boolean;
   createdAt: string;
+  ordersToday: number;
+  valueToday: number;
+  collectedToday: number;
 };
 
 export default function BookersPage() {
@@ -21,6 +26,8 @@ export default function BookersPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [route, setRoute] = useState("");
 
   async function load() {
     try {
@@ -41,7 +48,7 @@ export default function BookersPage() {
     try {
       await api("/api/bookers", {
         method: "POST",
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, phone, route }),
       });
       setName("");
       setEmail("");
@@ -64,7 +71,7 @@ export default function BookersPage() {
   return (
     <OfficeChrome
       title="Bookers"
-      subtitle={`${bookers.filter((b) => b.active).length} active`}
+      subtitle={`${bookers.filter((b) => b.active).length} on the road`}
       actions={
         <button className="btn-primary" onClick={() => setOpen(true)}>
           Add booker
@@ -78,7 +85,11 @@ export default function BookersPage() {
             <thead>
               <tr>
                 <th>Booker</th>
-                <th>Email</th>
+                <th>Route</th>
+                <th>Phone</th>
+                <th className="r">Orders today</th>
+                <th className="r">Value today</th>
+                <th className="r">Collected</th>
                 <th>Status</th>
                 <th />
               </tr>
@@ -98,7 +109,11 @@ export default function BookersPage() {
                       {b.name}
                     </div>
                   </td>
-                  <td className="sku">{b.email}</td>
+                  <td className="sku">{b.route ?? "—"}</td>
+                  <td className="num">{b.phone ?? "—"}</td>
+                  <td className="r num">{b.ordersToday}</td>
+                  <td className="money">{b.valueToday.toLocaleString("en-PK")}</td>
+                  <td className="money">{b.collectedToday.toLocaleString("en-PK")}</td>
                   <td>
                     <StatusPill status={b.active ? "active" : "inactive"} />
                   </td>
@@ -109,6 +124,21 @@ export default function BookersPage() {
                       onClick={() => toggle(b)}
                     >
                       {b.active ? "Deactivate" : "Activate"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-ghost btn-sm"
+                      onClick={async () => {
+                        const password = prompt("New password (min 6)") ?? "";
+                        if (password.length < 6) return;
+                        await api(`/api/bookers/${b.id}`, {
+                          method: "PATCH",
+                          body: JSON.stringify({ password }),
+                        });
+                        load();
+                      }}
+                    >
+                      Reset PIN
                     </button>
                   </td>
                 </tr>
@@ -138,6 +168,22 @@ export default function BookersPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+              />
+            </div>
+            <div className="lfield">
+              <label>Route</label>
+              <input
+                className="linput"
+                value={route}
+                onChange={(e) => setRoute(e.target.value)}
+              />
+            </div>
+            <div className="lfield">
+              <label>Phone</label>
+              <input
+                className="linput"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
               />
             </div>
             <div className="lfield">

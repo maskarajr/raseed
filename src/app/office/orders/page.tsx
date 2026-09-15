@@ -8,6 +8,7 @@ import { StatusPill } from "@/components/badges";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { startOfTodayKarachi, endOfTodayKarachi } from "@/lib/day";
 import { statusUi } from "@/lib/status";
+import { SideSheet } from "@/components/SideSheet";
 
 type OrderRow = {
   id: string;
@@ -33,6 +34,8 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [term, setTerm] = useState("");
   const [search, setSearch] = useState("");
+  const [booker, setBooker] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -46,6 +49,8 @@ export default function OrdersPage() {
 
   useEffect(() => {
     load();
+    const chip = new URLSearchParams(window.location.search).get("chip");
+    if (chip === "awaiting") setTerm("awaiting");
   }, []);
 
   const filtered = useMemo(() => {
@@ -58,10 +63,11 @@ export default function OrdersPage() {
       const hay =
         `${o.code} ${o.customer.name} ${o.booker.name} ${o.status} ${statusUi(o.status).label}${extra}`.toLowerCase();
       if (term && !hay.includes(term)) return false;
+      if (booker && o.booker.name !== booker) return false;
       if (q && !hay.includes(q)) return false;
       return true;
     });
-  }, [orders, term, search]);
+  }, [orders, term, search, booker]);
 
   const placedToday = orders.filter((o) => {
     const t = new Date(o.createdAt).getTime();
@@ -72,6 +78,16 @@ export default function OrdersPage() {
     <OfficeChrome
       title="Orders"
       subtitle={`${filtered.length} shown · ${placedToday} placed today`}
+      actions={
+        <>
+          <button type="button" className="btn-sec" onClick={() => setFiltersOpen(true)}>
+            Filters
+          </button>
+          <Link href="/office/orders/new" className="btn-primary">
+            New order
+          </Link>
+        </>
+      }
     >
       <div className="rowb">
         <div className="chips">
@@ -133,6 +149,34 @@ export default function OrdersPage() {
           )}
         </div>
       </div>
+      {filtersOpen && (
+        <SideSheet title="Filters" onClose={() => setFiltersOpen(false)}>
+          <div className="stack">
+            <div className="lfield">
+              <label>Booker</label>
+              <select
+                className="linput"
+                value={booker}
+                onChange={(e) => setBooker(e.target.value)}
+              >
+                <option value="">All</option>
+                {[...new Set(orders.map((o) => o.booker.name))].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => setFiltersOpen(false)}
+            >
+              Apply
+            </button>
+          </div>
+        </SideSheet>
+      )}
     </OfficeChrome>
   );
 }

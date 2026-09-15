@@ -8,14 +8,15 @@ type Params = { id: string };
 export const GET = requireRole<Params>(
   "owner",
   "office",
-)(async (_req: NextRequest, { params }) => {
+  "booker",
+)(async (_req: NextRequest, { params, session }) => {
   const invoice = await prisma.invoice.findUnique({
     where: { id: params.id },
     include: {
       order: {
         include: {
           customer: true,
-          booker: { select: { name: true } },
+          booker: { select: { name: true, route: true } },
           items: {
             include: {
               product: { select: { sku: true, name: true, unit: true } },
@@ -31,5 +32,8 @@ export const GET = requireRole<Params>(
     },
   });
   if (!invoice) throw new ApiError(404, "Invoice not found");
+  if (session.role === "booker" && invoice.order.bookerId !== session.id) {
+    throw new ApiError(403, "Forbidden");
+  }
   return json({ invoice });
 });

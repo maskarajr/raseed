@@ -7,6 +7,7 @@ import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { BookerChrome } from "@/components/BookerChrome";
 import { statusUi } from "@/lib/status";
+import { PaymentSheet } from "@/components/PaymentSheet";
 import { startOfTodayKarachi, endOfTodayKarachi } from "@/lib/day";
 
 type OrderRow = {
@@ -16,7 +17,11 @@ type OrderRow = {
   subtotal: number;
   createdAt: string;
   customer: { name: string; area: string | null };
-  invoice: { paymentStatus: string } | null;
+  invoice: {
+    id: string;
+    paymentStatus: string;
+    balance: number;
+  } | null;
   _count: { items: number };
 };
 
@@ -48,6 +53,7 @@ export default function BookerOrdersPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [term, setTerm] = useState("");
+  const [collect, setCollect] = useState<OrderRow | null>(null);
 
   useEffect(() => {
     api<{ orders: OrderRow[] }>("/api/orders")
@@ -89,7 +95,7 @@ export default function BookerOrdersPage() {
       <div className="stack" style={{ gap: 10 }}>
         {filtered.map((o) => {
           const ui = bookerOrderLabel(o);
-          const collect = ui.label === "To collect";
+          const canCollect = ui.label === "To collect" && o.invoice;
           return (
             <div key={o.id} className="pcard" data-row>
               <div className="rowb">
@@ -98,6 +104,9 @@ export default function BookerOrdersPage() {
                   <br />
                   <span className="pmeta num">
                     {o.code} · {o._count.items} items
+                    {canCollect && o.invoice
+                      ? ` · Rs ${o.invoice.balance.toLocaleString("en-PK")} left`
+                      : ""}
                   </span>
                 </span>
                 <StatusPill status={ui.status} label={ui.label} />
@@ -106,8 +115,14 @@ export default function BookerOrdersPage() {
                 <span className="num" style={{ fontSize: 15 }}>
                   <Money value={o.subtotal} />
                 </span>
-                {collect ? (
-                  <span className="btn-sec btn-sm">Collect</span>
+                {canCollect ? (
+                  <button
+                    type="button"
+                    className="btn-sec btn-sm"
+                    onClick={() => setCollect(o)}
+                  >
+                    Collect
+                  </button>
                 ) : (
                   <Link href="/booker/orders" className="btn-sec btn-sm">
                     Open
@@ -120,6 +135,20 @@ export default function BookerOrdersPage() {
       </div>
       {filtered.length === 0 && (
         <p className="tbl-empty">No orders match this filter.</p>
+      )}
+      {collect?.invoice && (
+        <PaymentSheet
+          invoiceId={collect.invoice.id}
+          invoiceCode={collect.code}
+          balance={collect.invoice.balance}
+          onClose={() => setCollect(null)}
+          onDone={() => {
+            setCollect(null);
+            api<{ orders: OrderRow[] }>("/api/orders")
+              .then((d) => setOrders(d.orders))
+              .catch(() => undefined);
+          }}
+        />
       )}
     </BookerChrome>
   );

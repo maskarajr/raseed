@@ -8,6 +8,8 @@ import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { initials } from "@/lib/person";
+import { SideSheet } from "@/components/SideSheet";
+import { useToast } from "@/components/Toast";
 
 type OrderDetail = {
   id: string;
@@ -45,9 +47,12 @@ function placedLabel(iso: string) {
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const toast = useToast();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [reassign, setReassign] = useState(false);
+  const [bookers, setBookers] = useState<{ id: string; name: string }[]>([]);
 
   async function load() {
     try {
@@ -62,6 +67,9 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     load();
+    api<{ bookers: { id: string; name: string }[] }>("/api/bookers")
+      .then((d) => setBookers(d.bookers))
+      .catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -107,6 +115,34 @@ export default function OrderDetailPage() {
       actions={
         <>
           <StatusPill status={order.status} />
+          <button
+            type="button"
+            className="btn-ghost"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                const { order: copy } = await api<{ order: { id: string; code: string } }>(
+                  `/api/orders/${order.id}/duplicate`,
+                  { method: "POST" },
+                );
+                toast(`Order duplicated as ${copy.code}`);
+                router.push(`/office/orders/${copy.id}`);
+              } catch (e) {
+                setError(e instanceof Error ? e.message : "Duplicate failed");
+                setBusy(false);
+              }
+            }}
+          >
+            Duplicate
+          </button>
+          <button
+            type="button"
+            className="btn-sec"
+            onClick={() => setReassign(true)}
+          >
+            Reassign booker
+          </button>
           {order.status === "submitted" && (
             <button
               className="btn-primary"
@@ -170,7 +206,36 @@ export default function OrderDetailPage() {
           </dl>
         </div>
         <div className="card2 stack" style={{ width: 250 }}>
-          <p className="ptitle-s">Actions</p>
+          <p className="ptitle-s">Timeline</p>
+          <div className="timeline">
+            <div className="tl-item">
+              <span className="tl-dot done" />
+              <div>
+                <p className="pname">Captured</p>
+                <p className="pmeta">
+                  {placedLabel(order.createdAt)} · {order.booker.name}
+                </p>
+              </div>
+            </div>
+            <div className="tl-item">
+              <span
+                className={`tl-dot${["confirmed", "invoiced", "out_for_delivery", "delivered", "settled"].includes(order.status) ? " done" : ""}`}
+              />
+              <div>
+                <p className="pname">Confirmed</p>
+                <p className="pmeta">office review</p>
+              </div>
+            </div>
+            <div className="tl-item">
+              <span
+                className={`tl-dot${["invoiced", "out_for_delivery", "delivered", "settled"].includes(order.status) ? " done" : ""}`}
+              />
+              <div>
+                <p className="pname">Invoiced</p>
+                <p className="pmeta">stock deducted</p>
+              </div>
+            </div>
+          </div>
           {order.status === "invoiced" && (
             <button
               className="btn-sec btn-block"
@@ -250,6 +315,37 @@ export default function OrderDetailPage() {
         </div>
         {order.notes ? <p className="meta">Notes: {order.notes}</p> : null}
       </div>
+      {reassign && (
+        <SideSheet title="Reassign booker" onClose={() => setReassign(false)}>
+          <div className="stack">
+            {bookers.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                className={`opt${b.id === order.booker.id ? " is-on" : ""}`}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await api(`/api/orders/${order.id}/reassign`, {
+                      method: "POST",
+                      body: JSON.stringify({ bookerId: b.id }),
+                    });
+                    toast(`Reassigned to ${b.name}`);
+                    setReassign(false);
+                    load();
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : "Reassign failed");
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {b.name}
+              </button>
+            ))}
+          </div>
+        </SideSheet>
+      )}
     </OfficeChrome>
   );
 }

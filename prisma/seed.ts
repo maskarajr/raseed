@@ -5,8 +5,8 @@ const prisma = new PrismaClient();
 
 const OWNER = { name: "Agency Owner", email: "owner@raseed.local", password: "owner123" };
 const BOOKERS = [
-  { name: "Bilal Booker", email: "bilal@raseed.local", password: "booker123" },
-  { name: "Sana Salesman", email: "sana@raseed.local", password: "booker123" },
+  { name: "Bilal Booker", email: "bilal@raseed.local", password: "booker123", phone: "0301 7654321", route: "1" },
+  { name: "Sana Salesman", email: "sana@raseed.local", password: "booker123", phone: "0301 9988776", route: "5" },
 ];
 
 // Realistic Pakistani FMCG / grocery wholesale items. Prices in whole PKR.
@@ -57,12 +57,16 @@ async function main() {
         role: "booker",
         passwordHash: hash,
         active: true,
+        phone: b.phone,
+        route: b.route,
       },
       create: {
         name: b.name,
         email: b.email,
         passwordHash: hash,
         role: "booker",
+        phone: b.phone,
+        route: b.route,
       },
     });
     bookers.push(booker);
@@ -82,6 +86,87 @@ async function main() {
       await prisma.customer.create({
         data: { ...c, createdBy: owner.id },
       });
+    }
+  }
+
+  const shops = await prisma.customer.findMany();
+  const catalog = await prisma.product.findMany();
+  if (shops.length && catalog.length && bookers[0]) {
+    const existingOrders = await prisma.order.count();
+    if (existingOrders === 0) {
+      const shop = shops[0]!;
+      const line = catalog[0]!;
+      const submitted = await prisma.order.create({
+        data: {
+          code: "ORD-00001",
+          bookerId: bookers[0].id,
+          customerId: shop.id,
+          status: "submitted",
+          subtotal: line.price * 2,
+          items: {
+            create: {
+              productId: line.id,
+              qty: 2,
+              unitPrice: line.price,
+            },
+          },
+        },
+      });
+      void submitted;
+      if (bookers[1] && shops[1] && catalog[1]) {
+        const p2 = catalog[1];
+        const shop2 = shops[1];
+        const confirmed = await prisma.order.create({
+          data: {
+            code: "ORD-00002",
+            bookerId: bookers[1].id,
+            customerId: shop2.id,
+            status: "confirmed",
+            subtotal: p2.price,
+            advance: 10000,
+            items: {
+              create: {
+                productId: p2.id,
+                qty: 1,
+                unitPrice: p2.price,
+              },
+            },
+          },
+        });
+        void confirmed;
+      }
+      if (shops[2] && catalog[2]) {
+        const p3 = catalog[2];
+        const shop3 = shops[2];
+        const total = p3.price * 3;
+        const invoiced = await prisma.order.create({
+          data: {
+            code: "ORD-00003",
+            bookerId: bookers[0].id,
+            customerId: shop3.id,
+            status: "invoiced",
+            subtotal: total,
+            items: {
+              create: {
+                productId: p3.id,
+                qty: 3,
+                unitPrice: p3.price,
+              },
+            },
+            invoice: {
+              create: {
+                code: "INV-00001",
+                customerId: shop3.id,
+                total,
+                amountPaid: 0,
+                balance: total,
+                paymentStatus: "unpaid",
+              },
+            },
+          },
+        });
+        void invoiced;
+      }
     }
   }
 

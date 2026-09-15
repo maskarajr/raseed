@@ -1,24 +1,33 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Customer } from "@prisma/client";
+type Shop = {
+  id: string;
+  name: string;
+  phone: string;
+  area: string | null;
+  route: string | null;
+  active: boolean;
+  outstanding: number;
+  booker: { name: string } | null;
+};
 import { api } from "@/lib/client";
 import { SideSheet } from "@/components/SideSheet";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { StatusPill } from "@/components/badges";
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<Shop[]>([]);
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sheet, setSheet] = useState<{
     mode: "create" | "edit";
-    customer?: Customer;
+    customer?: Shop;
   } | null>(null);
 
   async function load() {
     try {
-      const { customers: rows } = await api<{ customers: Customer[] }>(
+      const { customers: rows } = await api<{ customers: Shop[] }>(
         "/api/customers",
       );
       setCustomers(rows);
@@ -35,7 +44,7 @@ export default function CustomersPage() {
     const q = search.trim().toLowerCase();
     if (!q) return customers;
     return customers.filter((c) =>
-      `${c.name} ${c.phone} ${c.area ?? ""}`.toLowerCase().includes(q),
+      `${c.name} ${c.phone} ${c.area ?? ""} ${c.route ?? ""} ${c.booker?.name ?? ""}`.toLowerCase().includes(q),
     );
   }, [customers, search]);
 
@@ -68,7 +77,9 @@ export default function CustomersPage() {
               <tr>
                 <th>Shop</th>
                 <th>Area</th>
-                <th>Phone</th>
+                <th>Route</th>
+                <th>Booker</th>
+                <th className="r">Outstanding</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -81,9 +92,13 @@ export default function CustomersPage() {
                 >
                   <td>{c.name}</td>
                   <td>{c.area ?? "—"}</td>
-                  <td className="num">{c.phone || "—"}</td>
+                  <td className="sku">{c.route ?? "—"}</td>
+                  <td>{c.booker?.name ?? "—"}</td>
+                  <td className="money">
+                    {c.outstanding > 0 ? c.outstanding.toLocaleString("en-PK") : "—"}
+                  </td>
                   <td>
-                    <StatusPill status="active" />
+                    <StatusPill status={c.active ? "active" : "inactive"} />
                   </td>
                 </tr>
               ))}
@@ -113,7 +128,7 @@ function CustomerSheet({
   onClose,
   onSaved,
 }: {
-  customer?: Customer;
+  customer?: Shop;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -121,6 +136,7 @@ function CustomerSheet({
   const [name, setName] = useState(customer?.name ?? "");
   const [phone, setPhone] = useState(customer?.phone ?? "");
   const [area, setArea] = useState(customer?.area ?? "");
+  const [route, setRoute] = useState(customer?.route ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -133,6 +149,7 @@ function CustomerSheet({
         name,
         phone,
         area: area || (isEdit ? null : undefined),
+        route: route || (isEdit ? null : undefined),
       });
       if (isEdit) {
         await api(`/api/customers/${customer!.id}`, { method: "PATCH", body });
@@ -175,6 +192,14 @@ function CustomerSheet({
             className="linput"
             value={area}
             onChange={(e) => setArea(e.target.value)}
+          />
+        </div>
+        <div className="lfield">
+          <label>Route</label>
+          <input
+            className="linput"
+            value={route}
+            onChange={(e) => setRoute(e.target.value)}
           />
         </div>
         {error && <p className="muted">{error}</p>}

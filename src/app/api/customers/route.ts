@@ -20,13 +20,26 @@ export const GET = requireRole(
       { name: { contains: q.search } },
       { phone: { contains: q.search } },
       { area: { contains: q.search } },
+      { route: { contains: q.search } },
     ];
   }
-  const customers = await prisma.customer.findMany({
+  const rows = await prisma.customer.findMany({
     where,
     orderBy: { createdAt: "desc" },
     take: 200,
+    include: {
+      booker: { select: { id: true, name: true, route: true } },
+    },
   });
+  const balances = await prisma.invoice.groupBy({
+    by: ["customerId"],
+    _sum: { balance: true },
+  });
+  const byCust = new Map(balances.map((b) => [b.customerId, b._sum.balance ?? 0]));
+  const customers = rows.map((c) => ({
+    ...c,
+    outstanding: byCust.get(c.id) ?? 0,
+  }));
   return json({ customers });
 });
 
@@ -42,6 +55,8 @@ export const POST = requireRole(
       phone: input.phone ?? "",
       address: input.address,
       area: input.area,
+      route: input.route,
+      bookerId: input.bookerId,
       createdBy: session.id,
     },
   });

@@ -26,9 +26,12 @@ model User {
   passwordHash String
   role         String // owner | office | booker
   active       Boolean  @default(true)
+  phone        String?
+  route        String?
   createdAt    DateTime @default(now())
 
-  orders Order[] @relation("BookerOrders")
+  orders    Order[]    @relation("BookerOrders")
+  customers Customer[] @relation("CustomerBooker")
 }
 
 model Product {
@@ -71,9 +74,13 @@ model Customer {
   phone     String
   address   String?
   area      String?
+  route     String?
+  bookerId  String?
+  active    Boolean  @default(true)
   createdBy String
   createdAt DateTime @default(now())
 
+  booker User?    @relation("CustomerBooker", fields: [bookerId], references: [id])
   orders Order[]
 }
 
@@ -85,6 +92,7 @@ model Order {
   status     String   @default("draft") // draft|submitted|confirmed|invoiced|out_for_delivery|delivered|settled|cancelled
   notes      String?
   subtotal   Int      @default(0)
+  advance    Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -134,7 +142,8 @@ model Payment {
   id        String   @id @default(cuid())
   invoiceId String
   amount    Int
-  mode      String // cash | credit
+  mode      String // cash | bank | cheque
+  kind      String   @default("part") // part | advance | full
   createdAt DateTime @default(now())
   createdBy String
 
@@ -157,4 +166,9 @@ model Return {
 
   @@index([invoiceId])
   @@index([productId])
+}
+
+model AppSetting {
+  key   String @id
+  value String
 }

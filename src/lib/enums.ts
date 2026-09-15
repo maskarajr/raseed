@@ -29,8 +29,11 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export const PAYMENT_STATUSES = ["unpaid", "partial", "paid"] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
-export const PAYMENT_MODES = ["cash", "credit"] as const;
+export const PAYMENT_MODES = ["cash", "bank", "cheque"] as const;
 export type PaymentMode = (typeof PAYMENT_MODES)[number];
+
+export const PAYMENT_KINDS = ["part", "advance", "full"] as const;
+export type PaymentKind = (typeof PAYMENT_KINDS)[number];
 
 // Allowed order status transitions (server-enforced lifecycle).
 // draft -> submitted -> confirmed -> invoiced -> out_for_delivery ->

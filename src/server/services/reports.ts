@@ -15,13 +15,23 @@ export async function salesReport(from?: string, to?: string) {
 
   const invoices = await prisma.invoice.findMany({
     where,
-    select: { total: true, amountPaid: true, balance: true, createdAt: true },
+    select: {
+      total: true,
+      amountPaid: true,
+      balance: true,
+      createdAt: true,
+      returns: { select: { amount: true } },
+    },
     orderBy: { createdAt: "asc" },
   });
 
   const totalSales = invoices.reduce((s, i) => s + i.total, 0);
   const totalCollected = invoices.reduce((s, i) => s + i.amountPaid, 0);
   const totalOutstanding = invoices.reduce((s, i) => s + i.balance, 0);
+  const totalReturns = invoices.reduce(
+    (s, i) => s + i.returns.reduce((a, r) => a + r.amount, 0),
+    0,
+  );
 
   const byDayMap = new Map<string, { sales: number; count: number }>();
   for (const inv of invoices) {
@@ -42,6 +52,7 @@ export async function salesReport(from?: string, to?: string) {
     totalSales,
     totalCollected,
     totalOutstanding,
+    totalReturns,
     byDay,
   };
 }
@@ -100,14 +111,14 @@ export async function stockReport() {
 export async function bookerLeaderboard() {
   const bookers = await prisma.user.findMany({
     where: { role: "booker" },
-    select: { id: true, name: true, email: true },
+    select: { id: true, name: true, email: true, route: true },
   });
 
   const results = await Promise.all(
     bookers.map(async (b) => {
       const orders = await prisma.order.findMany({
         where: { bookerId: b.id },
-        select: { subtotal: true, status: true },
+        select: { subtotal: true, status: true, invoice: { select: { amountPaid: true } } },
       });
       const orderCount = orders.length;
       const salesValue = orders
@@ -117,7 +128,21 @@ export async function bookerLeaderboard() {
           ),
         )
         .reduce((s, o) => s + o.subtotal, 0);
-      return { ...b, orderCount, salesValue };
+      const collected = orders.reduce(
+        (s, o) => s + (o.invoice?.amountPaid ?? 0),
+        0,
+      );
+      const returns = await prisma.return.aggregate({
+        where: { invoice: { order: { bookerId: b.id } } },
+        _sum: { amount: true },
+      });
+      return {
+        ...b,
+        orderCount,
+        salesValue,
+        collected,
+        returns: returns._sum.amount ?? 0,
+      };
     }),
   );
 

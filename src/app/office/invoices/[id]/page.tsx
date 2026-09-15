@@ -8,6 +8,7 @@ import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { SideSheet } from "@/components/SideSheet";
 import { OfficeChrome } from "@/components/OfficeChrome";
+import { PaymentSheet } from "@/components/PaymentSheet";
 
 type InvoiceDetail = {
   id: string;
@@ -238,6 +239,7 @@ export default function InvoiceDetailPage() {
       {sheet === "payment" && (
         <PaymentSheet
           invoiceId={inv.id}
+          invoiceCode={inv.code}
           balance={inv.balance}
           onClose={() => setSheet(null)}
           onDone={() => {
@@ -257,66 +259,6 @@ export default function InvoiceDetailPage() {
         />
       )}
     </OfficeChrome>
-  );
-}
-
-function PaymentSheet({
-  invoiceId,
-  balance,
-  onClose,
-  onDone,
-}: {
-  invoiceId: string;
-  balance: number;
-  onClose: () => void;
-  onDone: () => void;
-}) {
-  // Amount defaults to the current outstanding balance. v1 is cash-only.
-  const [amount, setAmount] = useState(String(balance));
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setError(null);
-    try {
-      await api("/api/payments", {
-        method: "POST",
-        body: JSON.stringify({ invoiceId, amount: Number(amount), mode: "cash" }),
-      });
-      onDone();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Payment failed");
-      setSaving(false);
-    }
-  }
-
-  return (
-    <SideSheet title="Record payment" onClose={onClose} variant="sheet">
-      <form onSubmit={save} className="stack">
-        <p className="muted">
-          Balance due: <Money value={balance} />
-        </p>
-        <div className="lfield">
-          <label>Amount (PKR)</label>
-          <input
-            className="linput"
-            type="number"
-            min={1}
-            max={balance}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-          />
-          <p className="meta">Cash only. Partial allowed. Never credit.</p>
-        </div>
-        {error && <p className="muted">{error}</p>}
-        <button className="btn-primary btn-block" disabled={saving || balance <= 0}>
-          {balance <= 0 ? "Already settled" : "Record payment"}
-        </button>
-      </form>
-    </SideSheet>
   );
 }
 

@@ -24,7 +24,8 @@ export async function generateInvoice(session: SessionUser, orderId: string) {
     }
 
     const total = order.subtotal;
-    const { balance, paymentStatus } = deriveInvoiceState(total, 0);
+    const advance = Math.min(order.advance, total);
+    const { balance, paymentStatus } = deriveInvoiceState(total, advance);
     const code = await nextInvoiceCode(tx);
 
     const invoice = await tx.invoice.create({
@@ -33,11 +34,23 @@ export async function generateInvoice(session: SessionUser, orderId: string) {
         orderId: order.id,
         customerId: order.customerId,
         total,
-        amountPaid: 0,
+        amountPaid: advance,
         balance,
         paymentStatus,
       },
     });
+
+    if (advance > 0) {
+      await tx.payment.create({
+        data: {
+          invoiceId: invoice.id,
+          amount: advance,
+          mode: "cash",
+          kind: "advance",
+          createdBy: session.id,
+        },
+      });
+    }
 
     // Deduct stock for each line via the stock service.
     for (const item of order.items) {

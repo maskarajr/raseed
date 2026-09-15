@@ -1,77 +1,101 @@
 import { prisma } from "@/lib/prisma";
 import { startOfTodayKarachi, endOfTodayKarachi } from "@/lib/day";
 
-// Read-only aggregation powering the Office Home dashboard. Pure reads — no
-// ledger writes, no status transitions. Deliberately separate from reports.ts
-// so the dashboard can evolve without perturbing report semantics used
-// elsewhere (leaderboard, sales, print, etc.).
 export async function officeHomeSummary() {
   const start = startOfTodayKarachi();
   const end = endOfTodayKarachi();
+  const yStart = new Date(start.getTime() - 24 * 60 * 60 * 1000);
 
-  const [todayOrders, outstandingInvoices, submittedOrders, products] =
-    await Promise.all([
-      // Booked today = subtotal of non-cancelled orders created within Today (PKT).
-      prisma.order.findMany({
-        where: {
-          createdAt: { gte: start, lt: end },
-          status: { not: "cancelled" },
-        },
-        select: { subtotal: true },
-      }),
-      // Outstanding = every invoice still carrying a positive balance.
-      prisma.invoice.findMany({
-        where: { balance: { gt: 0 } },
-        orderBy: { balance: "desc" },
-        select: {
-          id: true,
-          code: true,
-          balance: true,
-          order: { select: { customer: { select: { name: true } } } },
-        },
-      }),
-      // Awaiting confirm = orders sitting in 'submitted'.
-      prisma.order.findMany({
-        where: { status: "submitted" },
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          code: true,
-          status: true,
-          createdAt: true,
-          subtotal: true,
-          booker: { select: { name: true } },
-          customer: { select: { name: true } },
-          _count: { select: { items: true } },
-        },
-      }),
-      // Low stock candidates (active products only).
-      prisma.product.findMany({
-        where: { active: true },
-        orderBy: { stockQty: "asc" },
-        select: {
-          id: true,
-          sku: true,
-          name: true,
-          stockQty: true,
-          reorderLevel: true,
-        },
-      }),
-    ]);
+  const [
+    todayOrders,
+    yesterdayOrders,
+    outstandingInvoices,
+    submittedOrders,
+    products,
+    collectedToday,
+  ] = await Promise.all([
+    prisma.order.findMany({
+      where: {
+        createdAt: { gte: start, lt: end },
+        status: { not: "cancelled" },
+      },
+      select: { subtotal: true },
+    }),
+    prisma.order.findMany({
+      where: {
+        createdAt: { gte: yStart, lt: start },
+        status: { not: "cancelled" },
+      },
+      select: { subtotal: true },
+    }),
+    prisma.invoice.findMany({
+      where: { balance: { gt: 0 } },
+      orderBy: { balance: "desc" },
+      select: {
+        id: true,
+        code: true,
+        balance: true,
+        order: { select: { customer: { select: { name: true } } } },
+      },
+    }),
+    prisma.order.findMany({
+      where: { status: "submitted" },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        code: true,
+        status: true,
+        createdAt: true,
+        subtotal: true,
+        booker: { select: { name: true } },
+        customer: { select: { name: true } },
+        _count: { select: { items: true } },
+      },
+    }),
+    prisma.product.findMany({
+      where: { active: true },
+      orderBy: { stockQty: "asc" },
+      select: {
+        id: true,
+        sku: true,
+        name: true,
+        stockQty: true,
+        reorderLevel: true,
+      },
+    }),
+    prisma.payment.aggregate({
+      where: { createdAt: { gte: start, lt: end } },
+      _sum: { amount: true },
+    }),
+  ]);
 
   const bookedToday = todayOrders.reduce((s, o) => s + o.subtotal, 0);
+  const bookedYesterday = yesterdayOrders.reduce((s, o) => s + o.subtotal, 0);
   const outstanding = outstandingInvoices.reduce((s, i) => s + i.balance, 0);
-
   const lowStockRows = products.filter(
     (p) => p.reorderLevel != null && p.stockQty <= p.reorderLevel,
   );
+  const outOfStock = products.filter((p) => p.stockQty <= 0).length;
+  const oldest = submittedOrders[0];
+  const oldestMins = oldest
+    ? Math.max(
+        0,
+        Math.round((Date.now() - oldest.createdAt.getTime()) / 60000),
+      )
+    : 0;
 
   return {
     kpis: {
       bookedToday,
+      bookedYesterday,
+      ordersToday: todayOrders.length,
       outstanding,
+      outstandingCount: outstandingInvoices.length,
+      collectedToday: collectedToday._sum.amount ?? 0,
       awaitingConfirm: submittedOrders.length,
+      oldestAwaitingMins: oldestMins,
       lowStock: lowStockRows.length,
+      outOfStock,
     },
     submitted: submittedOrders.map((o) => ({
       id: o.id,

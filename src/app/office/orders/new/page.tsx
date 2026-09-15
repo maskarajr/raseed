@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { Customer, Product } from "@prisma/client";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
-import { BookerChrome } from "@/components/BookerChrome";
+import { OfficeChrome } from "@/components/OfficeChrome";
 import { SideSheet } from "@/components/SideSheet";
 import { initials } from "@/lib/person";
 
@@ -23,6 +23,8 @@ type SubmitResult = {
 export default function NewOrderPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [bookerId, setBookerId] = useState("");
+  const [bookers, setBookers] = useState<{ id: string; name: string }[]>([]);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [advance, setAdvance] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +48,7 @@ export default function NewOrderPage() {
         method: "POST",
         body: JSON.stringify({
           customerId: customer!.id,
+          bookerId,
           submit: true,
           items: cart.map((l) => ({
             productId: l.product.id,
@@ -63,16 +66,37 @@ export default function NewOrderPage() {
     }
   }
 
+  useEffect(() => {
+    api<{ bookers: { id: string; name: string }[] }>("/api/bookers")
+      .then((d) => {
+        setBookers(d.bookers);
+        if (d.bookers[0]) setBookerId(d.bookers[0].id);
+      })
+      .catch(() => undefined);
+  }, []);
+
   if (result) {
     return <SuccessScreen result={result} />;
   }
 
   return (
-    <BookerChrome
-      title="New order"
-      backHref="/booker"
-      meta={`Step ${step} of 3`}
-    >
+    <OfficeChrome title="New order" subtitle={`Step ${step} of 3`}>
+      {step === 1 && (
+        <div className="lfield" style={{ maxWidth: 340 }}>
+          <label>Booker</label>
+          <select
+            className="linput"
+            value={bookerId}
+            onChange={(e) => setBookerId(e.target.value)}
+          >
+            {bookers.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="wiz">
         <Steps step={step} />
         {error && <p className="muted">{error}</p>}
@@ -112,7 +136,7 @@ export default function NewOrderPage() {
             {step === 1 && (
               <button
                 className="btn-primary grow"
-                disabled={!customer}
+                disabled={!customer || !bookerId}
                 onClick={() => setStep(2)}
               >
                 Continue
@@ -139,7 +163,7 @@ export default function NewOrderPage() {
           </div>
         </div>
       </div>
-    </BookerChrome>
+    </OfficeChrome>
   );
 }
 
@@ -473,10 +497,10 @@ function ReviewStep({
 
 function SuccessScreen({ result }: { result: SubmitResult }) {
   return (
-    <BookerChrome title="New order" backHref="/booker">
+    <OfficeChrome title="New order">
       <div className="pcard stack">
         <p className="h3s">Order {result.code} submitted</p>
-        <p className="muted">The office will confirm and invoice it.</p>
+        <p className="muted">Confirm it from the orders queue.</p>
         {result.warnings.length > 0 && (
           <div className="warnbox">
             Low stock noted (non-blocking):{" "}
@@ -485,10 +509,10 @@ function SuccessScreen({ result }: { result: SubmitResult }) {
               .join(", ")}
           </div>
         )}
-        <Link href="/booker" className="btn-primary btn-block">
-          Back to home
+        <Link href="/office/orders" className="btn-primary btn-block">
+          Open orders
         </Link>
       </div>
-    </BookerChrome>
+    </OfficeChrome>
   );
 }

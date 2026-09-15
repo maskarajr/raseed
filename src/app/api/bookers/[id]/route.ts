@@ -21,9 +21,13 @@ export const PATCH = requireRole<Params>(
     name?: string;
     active?: boolean;
     passwordHash?: string;
+    phone?: string | null;
+    route?: string | null;
   } = {};
   if (input.name !== undefined) data.name = input.name;
   if (input.active !== undefined) data.active = input.active;
+  if (input.phone !== undefined) data.phone = input.phone;
+  if (input.route !== undefined) data.route = input.route;
   if (input.password !== undefined) {
     data.passwordHash = await hashPassword(input.password);
   }

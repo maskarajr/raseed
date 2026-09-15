@@ -18,7 +18,7 @@ export default function LoginPage() {
     try {
       const { user } = await api<{ user: { role: Role } }>("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, asRole }),
       });
       const dest = user.role === "booker" ? "/booker" : "/office";
       window.location.assign(dest);

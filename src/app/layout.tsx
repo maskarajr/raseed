@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "@/styles/raseed.css";
+import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: "Raseed",
@@ -27,7 +28,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en-PK">
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

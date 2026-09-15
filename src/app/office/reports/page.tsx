@@ -12,13 +12,17 @@ type ReportsResponse = {
     totalSales: number;
     totalCollected: number;
     totalOutstanding: number;
+    totalReturns: number;
     byDay: { day: string; sales: number; invoices: number }[];
   };
   bookers: {
     id: string;
     name: string;
+    route: string | null;
     orderCount: number;
     salesValue: number;
+    collected: number;
+    returns: number;
   }[];
 };
 
@@ -105,7 +109,32 @@ export default function ReportsPage() {
               </button>
             ))}
           </div>
-          <button type="button" className="btn-sec" onClick={() => window.print()}>
+          <button
+            type="button"
+            className="btn-sec"
+            onClick={() => {
+              if (!data) return;
+              const rows = [
+                ["Booker", "Route", "Orders", "Value", "Collected", "Returns"],
+                ...data.bookers.map((b) => [
+                  b.name,
+                  b.route ?? "",
+                  String(b.orderCount),
+                  String(b.salesValue),
+                  String(b.collected),
+                  String(b.returns),
+                ]),
+              ];
+              const csv = rows.map((r) => r.join(",")).join("\n");
+              const blob = new Blob([csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `raseed-reports-${dates.label}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
             Export
           </button>
         </>
@@ -139,11 +168,19 @@ export default function ReportsPage() {
               <p className="kdelta">{collectPct}% of invoiced</p>
             </div>
             <div className="kpi">
-              <p className="klab">Outstanding</p>
+              <p className="klab">Returns</p>
               <p className="kval">
-                <Money value={data.sales.totalOutstanding} />
+                <Money value={data.sales.totalReturns} />
               </p>
-              <p className="kdelta">To collect</p>
+              <p className="kdelta">
+                {data.sales.totalSales
+                  ? (
+                      (data.sales.totalReturns / data.sales.totalSales) *
+                      100
+                    ).toFixed(1)
+                  : "0"}
+                % of value
+              </p>
             </div>
           </div>
           <div className="card2 grow">
@@ -156,21 +193,27 @@ export default function ReportsPage() {
                 <thead>
                   <tr>
                     <th>Booker</th>
+                    <th>Route</th>
                     <th className="r">Orders</th>
                     <th className="r">Value</th>
-                    <th>Status</th>
+                    <th className="r">Collected</th>
+                    <th className="r">Returns</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.bookers.map((b) => (
                     <tr key={b.id}>
                       <td>{b.name}</td>
+                      <td className="sku">{b.route ?? "—"}</td>
                       <td className="r num">{b.orderCount}</td>
                       <td className="money">
                         <Money value={b.salesValue} />
                       </td>
-                      <td>
-                        <StatusPill status="on track" />
+                      <td className="money">
+                        <Money value={b.collected} />
+                      </td>
+                      <td className="money">
+                        <Money value={b.returns} />
                       </td>
                     </tr>
                   ))}

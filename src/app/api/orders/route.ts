@@ -26,7 +26,15 @@ export const GET = requireRole(
     include: {
       customer: { select: { name: true, area: true } },
       booker: { select: { name: true } },
-      invoice: { select: { id: true, code: true, paymentStatus: true } },
+      invoice: {
+        select: {
+          id: true,
+          code: true,
+          paymentStatus: true,
+          balance: true,
+          amountPaid: true,
+        },
+      },
       _count: { select: { items: true } },
     },
     take: 200,
@@ -58,6 +66,7 @@ export const POST = requireRole(
     notes: input.notes,
     items: input.items,
     submit: input.submit ?? false,
+    advance: input.advance,
   });
   return json(result, 201);
 });
