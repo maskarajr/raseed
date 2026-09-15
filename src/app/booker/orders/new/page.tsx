@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Customer, Product } from "@prisma/client";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
+import { BookerChrome } from "@/components/BookerChrome";
 
 type CartLine = {
   product: Product;
@@ -61,80 +62,86 @@ export default function NewOrderPage() {
     return <SuccessScreen result={result} />;
   }
 
+  if (result) {
+    return <SuccessScreen result={result} />;
+  }
+
   return (
-    <div className="px-4 pt-5">
-      <Steps step={step} />
-
-      {error && <p className="mb-3 text-sm text-danger">{error}</p>}
-
-      <div className="pb-40">
-        {step === 1 && (
-          <CustomerStep
-            selected={customer}
-            onSelect={(c) => setCustomer(c)}
-          />
-        )}
-        {step === 2 && (
-          <LinesStep cart={cart} setCart={setCart} notes={notes} setNotes={setNotes} />
-        )}
-        {step === 3 && (
-          <ReviewStep
-            customer={customer!}
-            cart={cart}
-            setCart={setCart}
-            notes={notes}
-            subtotal={subtotal}
-          />
-        )}
-      </div>
-
-      {/* Sticky bottom CTA (sits directly above the bottom nav). Extra bottom
-          padding clears the iOS home indicator / safe area. */}
-      <div className="fixed inset-x-0 bottom-[56px] z-30 border-t border-line bg-surface">
-        <div
-          className="mx-auto flex max-w-md items-center gap-3 p-3"
-          style={{
-            paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))",
-          }}
-        >
-          {step > 1 && (
-            <button
-              className="btn-secondary min-h-[48px] flex-1"
-              onClick={() => setStep((s) => (s === 3 ? 2 : 1))}
-            >
-              Back
-            </button>
-          )}
+    <BookerChrome
+      title="New order"
+      backHref="/booker"
+      meta={`Step ${step} of 3`}
+    >
+      <div className="wiz">
+        <Steps step={step} />
+        {error && <p className="muted">{error}</p>}
+        <div className="wiz-step">
           {step === 1 && (
-            <button
-              className="btn-primary min-h-[48px] flex-1 text-base"
-              disabled={!customer}
-              onClick={() => setStep(2)}
-            >
-              Continue
-            </button>
+            <CustomerStep
+              selected={customer}
+              onSelect={(c) => setCustomer(c)}
+            />
           )}
           {step === 2 && (
-            <button
-              className="btn-primary min-h-[48px] flex-1 text-base"
-              disabled={cart.length === 0}
-              onClick={() => setStep(3)}
-            >
-              Review ({cart.length})
-            </button>
+            <LinesStep cart={cart} setCart={setCart} notes={notes} setNotes={setNotes} />
           )}
           {step === 3 && (
-            <button
-              className="btn-primary min-h-[48px] flex-1 text-base"
-              disabled={submitting}
-              onClick={submit}
-            >
-              {submitting ? "Submitting…" : "Submit order"}
-            </button>
+            <ReviewStep
+              customer={customer!}
+              cart={cart}
+              setCart={setCart}
+              notes={notes}
+              subtotal={subtotal}
+            />
           )}
         </div>
+        <div className="totbar">
+          <div className="rowb" style={{ marginBottom: 10 }}>
+            <span className="meta">{cart.length} items</span>
+            <span className="num" style={{ fontSize: 17, fontWeight: 600 }}>
+              <Money value={subtotal} />
+            </span>
+          </div>
+          <div className="wiz-foot" style={{ paddingTop: 0 }}>
+            {step > 1 && (
+              <button
+                className="btn-sec"
+                onClick={() => setStep((s) => (s === 3 ? 2 : 1))}
+              >
+                Back
+              </button>
+            )}
+            {step === 1 && (
+              <button
+                className="btn-primary grow"
+                disabled={!customer}
+                onClick={() => setStep(2)}
+              >
+                Continue
+              </button>
+            )}
+            {step === 2 && (
+              <button
+                className="btn-primary grow"
+                disabled={cart.length === 0}
+                onClick={() => setStep(3)}
+              >
+                Continue
+              </button>
+            )}
+            {step === 3 && (
+              <button
+                className="btn-primary grow"
+                disabled={submitting}
+                onClick={submit}
+              >
+                {submitting ? "Submitting…" : "Submit order"}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </BookerChrome>
   );
 }
 
@@ -558,9 +565,9 @@ function ReviewStep({
         ))}
       </div>
       {notes && <p className="text-sm text-muted">Notes: {notes}</p>}
-      <div className="flex items-center justify-between rounded-lg border border-primary bg-primary-soft p-4">
-        <span className="text-lg font-semibold">Total</span>
-        <Money value={subtotal} className="text-3xl font-extrabold text-primary" />
+      <div className="rowb">
+        <span className="pname">Total</span>
+        <Money value={subtotal} />
       </div>
     </div>
   );
@@ -569,31 +576,22 @@ function ReviewStep({
 // ---------------------------------------------------------------- Success
 function SuccessScreen({ result }: { result: SubmitResult }) {
   return (
-    <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft text-3xl text-primary">
-        ✓
+    <BookerChrome title="New order" backHref="/booker">
+      <div className="pcard stack">
+        <p className="h3s">Order {result.code} submitted</p>
+        <p className="muted">The office will confirm and invoice it.</p>
+        {result.warnings.length > 0 && (
+          <div className="warnbox">
+            Low stock noted (non-blocking):{" "}
+            {result.warnings
+              .map((w) => `${w.sku} (need ${w.requested}, have ${w.available})`)
+              .join(", ")}
+          </div>
+        )}
+        <Link href="/booker" className="btn-primary btn-block">
+          Back to home
+        </Link>
       </div>
-      <h1 className="mt-4 text-xl font-bold">Order {result.code} submitted</h1>
-      <p className="mt-1 text-sm text-muted">
-        The office will confirm and invoice it.
-      </p>
-      {result.warnings.length > 0 && (
-        <div
-          className="mt-4 w-full rounded-md p-3 text-left text-xs"
-          style={{ backgroundColor: "#FDF0E6", color: "var(--warning)" }}
-        >
-          Low stock noted (non-blocking):{" "}
-          {result.warnings
-            .map((w) => `${w.sku} (need ${w.requested}, have ${w.available})`)
-            .join(", ")}
-        </div>
-      )}
-      <Link
-        href="/booker"
-        className="btn-primary mt-6 min-h-[48px] w-full max-w-xs text-base"
-      >
-        Back to home
-      </Link>
-    </div>
+    </BookerChrome>
   );
 }

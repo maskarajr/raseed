@@ -181,7 +181,8 @@ p{margin:0;text-wrap:pretty}
 /* wrap a table that shares a row with a rail so it can never bleed over it */
 .tbl-wrap{min-width:0;overflow-x:auto;scrollbar-width:thin}
 .tbl.tight th,.tbl.tight td{padding-left:7px;padding-right:7px}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
 .klab{font-size:12px;color:var(--muted)}
 .kval{font-family:var(--font-display);font-size:27px;line-height:1.15;letter-spacing:-.02em;font-weight:600;margin-top:6px}

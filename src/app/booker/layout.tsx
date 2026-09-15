@@ -19,7 +19,7 @@ export default async function BookerLayout({
           <span>Raseed</span>
           <span>Booker</span>
         </div>
-        <main className="pbody">{children}</main>
+        {children}
         <BookerNav />
       </div>
       <ServiceWorkerRegister />

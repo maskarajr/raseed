@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
 import { LogoutButton } from "@/components/LogoutButton";
+import { BookerChrome } from "@/components/BookerChrome";
 
 type Me = { name: string; email: string; role: string } | null;
 
@@ -14,10 +15,7 @@ export default function BookerAccountPage() {
   }, []);
 
   return (
-    <>
-      <div className="pbar">
-        <p className="pbar-t">Account</p>
-      </div>
+    <BookerChrome title="Account">
       <div className="pcard">
         <div className="prow">
           <span className="muted">Name</span>
@@ -35,8 +33,12 @@ export default function BookerAccountPage() {
           <span className="muted">Currency</span>
           <span>PKR</span>
         </div>
+        <div className="prow">
+          <span className="muted">Language</span>
+          <span>English</span>
+        </div>
       </div>
       <LogoutButton />
-    </>
+    </BookerChrome>
   );
 }

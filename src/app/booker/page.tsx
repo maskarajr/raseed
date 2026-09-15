@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
+import { BookerChrome } from "@/components/BookerChrome";
 import { startOfTodayKarachi, startOfWeekKarachi } from "@/lib/day";
 
 type OrderRow = {
@@ -42,15 +43,10 @@ export default function BookerHome() {
     .reduce((s, o) => s + o.subtotal, 0);
   const openOrders = orders.filter((o) => !CLOSED.includes(o.status)).length;
   const recent = orders.slice(0, 6);
+  const first = name?.split(" ")[0] ?? "Booker";
 
   return (
-    <>
-      <div className="pbar">
-        <div>
-          <p className="pbar-t">Raseed</p>
-          <p className="pmeta">{name ?? "Booker"}</p>
-        </div>
-      </div>
+    <BookerChrome title={first}>
       {error && <p className="muted">{error}</p>}
       <div className="pcard">
         <p className="ptitle-s">Today booked</p>
@@ -84,6 +80,6 @@ export default function BookerHome() {
         ))}
         {recent.length === 0 && <p className="tbl-empty">No orders yet.</p>}
       </div>
-    </>
+    </BookerChrome>
   );
 }
