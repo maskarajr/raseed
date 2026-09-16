@@ -5,7 +5,7 @@ Raseed is a self-hosted operations tool for a wholesale distributor (agency). It
 ## Tech stack
 
 - Next.js 14 (App Router) + TypeScript
-- Prisma ORM + SQLite (`prisma/dev.db`) — Prisma-generated types are the shared type source
+- Prisma ORM 7 + SQLite via `@prisma/adapter-better-sqlite3` (`prisma/dev.db`) — generated types live in `src/generated/prisma`
 - Tailwind CSS
 - Zod for all request validation
 - Auth: credentials (email + password, bcrypt), session in an httpOnly JWT cookie (`jose`)
@@ -14,7 +14,7 @@ Raseed is a self-hosted operations tool for a wholesale distributor (agency). It
 
 ## Prerequisites (Windows)
 
-- Install **Node.js LTS** for Windows (from https://nodejs.org). This includes `npm`.
+- Install **Node.js 20.19+** (22.x recommended) for Windows (from https://nodejs.org). This includes `npm`.
 - Open **PowerShell** or **Command Prompt** in the project folder.
 
 ## Setup & run (Windows)
@@ -22,7 +22,8 @@ Raseed is a self-hosted operations tool for a wholesale distributor (agency). It
 ```bat
 npm install
 copy .env.example .env
-npx prisma migrate dev
+npx prisma generate
+npx prisma migrate deploy
 npm run seed
 npm run build
 npm start
@@ -40,7 +41,7 @@ For day-to-day development you can instead run:
 npm run dev
 ```
 
-> On Windows, `copy .env.example .env` is the Command Prompt form. In PowerShell use `Copy-Item .env.example .env`. `.env` already ships with sane local defaults (`DATABASE_URL="file:./dev.db"`), so you mainly need to set a strong `JWT_SECRET` before real use.
+> On Windows, `copy .env.example .env` is the Command Prompt form. In PowerShell use `Copy-Item .env.example .env`. `.env` already ships with sane local defaults (`DATABASE_URL="file:./prisma/dev.db"`), so you mainly need to set a strong `JWT_SECRET` before real use. Prisma CLI does not load `.env` by itself — `prisma.config.ts` loads `dotenv`. After changing the schema always run `npx prisma generate` (Next no longer gets a client from `node_modules/@prisma/client`).
 
 ## Seeded login credentials
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Product } from "@prisma/client";
+import type { Product } from "@/generated/prisma/client";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { OfficeChrome } from "@/components/OfficeChrome";

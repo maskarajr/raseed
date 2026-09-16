@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { Customer, Product } from "@prisma/client";
+import type { Customer, Product } from "@/generated/prisma/client";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { OfficeChrome } from "@/components/OfficeChrome";

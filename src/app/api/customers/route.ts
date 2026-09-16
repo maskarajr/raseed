@@ -6,7 +6,7 @@ import {
   createCustomerSchema,
   listCustomersQuerySchema,
 } from "@/server/schemas/customers";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 
 export const GET = requireRole(
   "owner",

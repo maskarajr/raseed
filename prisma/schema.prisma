@@ -3,20 +3,20 @@
 // NOTE: SQLite does not support Prisma native enums, so enum-like fields are
 // stored as String and their allowed values are enforced centrally via Zod +
 // TypeScript unions in src/lib/enums.ts. Model shapes below are the single
-// source of truth for row types (imported via @prisma/client), never hand
-// duplicated.
+// source of truth for row types (imported via the generated Prisma client),
+// never hand duplicated.
 //
-// Money: all monetary values are stored as integers representing whole PKR
-// (Pakistani Rupees). FMCG wholesale prices are whole-rupee in practice, and
-// integer math avoids floating point / Decimal-serialization issues.
+// Money: all monetary values are stored as integers representing whole PKR.
+// Prisma ORM v7: datasource URL lives in prisma.config.ts; client is generated
+// to src/generated/prisma and queried through @prisma/adapter-better-sqlite3.
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -43,13 +43,13 @@ model Product {
   price        Int // whole PKR
   stockQty     Int      @default(0)
   reorderLevel Int?
-  active        Boolean  @default(true)
+  active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  orderItems   OrderItem[]
-  stockLedger  StockLedger[]
-  returns      Return[]
+  orderItems  OrderItem[]
+  stockLedger StockLedger[]
+  returns     Return[]
 }
 
 model StockLedger {
@@ -96,8 +96,8 @@ model Order {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  booker   User     @relation("BookerOrders", fields: [bookerId], references: [id])
-  customer Customer @relation(fields: [customerId], references: [id])
+  booker   User        @relation("BookerOrders", fields: [bookerId], references: [id])
+  customer Customer    @relation(fields: [customerId], references: [id])
   items    OrderItem[]
   invoice  Invoice?
 

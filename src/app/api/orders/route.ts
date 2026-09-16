@@ -7,7 +7,7 @@ import {
   listOrdersQuerySchema,
 } from "@/server/schemas/orders";
 import { createOrder } from "@/server/services/orders";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 
 export const GET = requireRole(
   "owner",
