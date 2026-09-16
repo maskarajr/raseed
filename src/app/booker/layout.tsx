@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/server/auth/session";
 import { BookerNav } from "@/components/BookerNav";
+import { BrandMark } from "@/components/BrandMark";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import type { Metadata, Viewport } from "next";
 
@@ -34,7 +35,10 @@ export default async function BookerLayout({
     <div className="pwa-root">
       <div className="pwa">
         <div className="pstatus">
-          <span>Raseed</span>
+          <span className="row" style={{ gap: 6 }}>
+            <BrandMark compact className="rmark rmark-sm" />
+            Raseed
+          </span>
           <span>Booker</span>
         </div>
         {children}

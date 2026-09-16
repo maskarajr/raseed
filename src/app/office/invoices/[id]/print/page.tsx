@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { BrandMark } from "@/components/BrandMark";
 import { Money } from "@/components/Money";
 
 type InvoiceDetail = {
@@ -63,7 +64,10 @@ export default function InvoicePrintPage() {
     <div className="doc">
       <div className="doc-head">
         <div>
-          <p className="eyebrow">Raseed</p>
+          <p className="rbrand" style={{ padding: 0, fontSize: 16 }}>
+            <BrandMark compact className="rmark" />
+            Raseed
+          </p>
           <h1 className="doc-t">Invoice</h1>
         </div>
         <div className="r">

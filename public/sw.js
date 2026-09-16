@@ -3,13 +3,14 @@
 // is a non-goal). We only provide a basic app-shell fetch passthrough so the
 // install criteria (a fetch handler + manifest + icons over HTTPS) are met.
 
-const CACHE = "raseed-shell-v1";
+const CACHE = "raseed-shell-v2";
 const SHELL = [
   "/booker",
   "/login",
   "/manifest.webmanifest",
   "/icon-192.png",
   "/icon-512.png",
+  "/brand/raseed-app-icon.svg",
 ];
 
 self.addEventListener("install", (event) => {

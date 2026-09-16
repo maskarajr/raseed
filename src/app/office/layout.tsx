@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/server/auth/session";
 import { OfficeNav } from "@/components/OfficeNav";
+import { BrandMark } from "@/components/BrandMark";
 import { initials } from "@/lib/person";
 
 export default async function OfficeLayout({
@@ -17,7 +18,7 @@ export default async function OfficeLayout({
     <div className="office-root">
       <aside className="rail no-print">
         <Link href="/office" className="rbrand">
-          <span className="rmark">R</span>
+          <BrandMark compact className="rmark" />
           Raseed
         </Link>
         <OfficeNav variant="main" />

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/lib/client";
 import type { Role } from "@/lib/enums";
 import { PwaInstallCta } from "@/components/PwaInstallCta";
+import { BrandMark } from "@/components/BrandMark";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -32,17 +33,9 @@ export function LoginForm() {
     <div className="login-wrap">
       <main className="login" style={{ minHeight: "100vh" }}>
         <div className="login-l" style={{ gap: 18 }}>
-          <div className="row" style={{ gap: 9 }}>
-            <span className="rmark">R</span>
-            <span
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: 19,
-                fontWeight: 600,
-              }}
-            >
-              Raseed
-            </span>
+          <div className="rbrand" style={{ padding: 0 }}>
+            <BrandMark compact className="rmark" />
+            Raseed
           </div>
           <div style={{ maxWidth: "34ch" }}>
             <h1 className="login-h login-h-office">Sign in to the office</h1>
@@ -96,7 +89,12 @@ export function LoginForm() {
         </div>
         <div className="login-r">
           <div style={{ maxWidth: 300 }}>
-            <p className="eyebrow">Raseed</p>
+            <p
+              className="meta"
+              style={{ letterSpacing: ".08em", textTransform: "uppercase" }}
+            >
+              Raseed
+            </p>
             <p
               className="h3s"
               style={{
