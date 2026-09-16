@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/server/auth/requireRole";
 import { parseQuery, json } from "@/server/http";
 import { ledgerQuerySchema } from "@/server/schemas/stock";
-import type { Prisma } from "@prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 
 export const GET = requireRole(
   "owner",

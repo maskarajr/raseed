@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 32" width="240" height="64" role="img" aria-label="Raseed">
+  <title>Raseed lockup</title>
+  <!-- Horizontal lockup — mark at 24, wordmark in the display serif with -.02em
+       tracking, both sitting on one optical baseline.
+
+       REFERENCE ONLY for external use (email, PDF, partner decks). The wordmark is
+       live text in the display stack, so it renders differently wherever 'Iowan Old
+       Style' / 'Charter' / Georgia is unavailable. In product, use the `.rlock`
+       component in handoff/raseed.css instead, which inherits the app's own font
+       loading. Outline the wordmark to paths before distributing this file. -->
+  <g fill="#0B6E4F" transform="translate(0 4)">
+    <rect x="2" y="5.4" width="20" height="2.8" rx="1.4"/>
+    <rect x="4.4" y="8.2" width="2.8" height="3.4" rx="1.4"/>
+    <rect x="16.8" y="8.2" width="2.8" height="3.4" rx="1.4"/>
+    <rect x="2" y="11.6" width="7.6" height="3.4" rx="1.7"/>
+    <rect x="14.4" y="11.6" width="7.6" height="3.4" rx="1.7"/>
+    <rect x="10.6" y="8.2" width="2.8" height="7.6" rx="1.4"/>
+    <rect x="6.3" y="15.8" width="11.4" height="2.8" rx="1.4"/>
+  </g>
+  <text x="33" y="22.5" font-family="'Iowan Old Style','Charter',Georgia,'Times New Roman',serif" font-size="22" font-weight="600" letter-spacing="-0.44" fill="#14181C">Raseed</text>
+</svg>

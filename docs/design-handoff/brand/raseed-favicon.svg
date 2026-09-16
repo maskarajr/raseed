@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" role="img" aria-label="Raseed">
+  <title>Raseed favicon</title>
+  <!-- Tab icon — the compact glyph runs at 86%, four points larger than the app
+       icon, because a 16px tab has no room for padding. -->
+  <rect width="24" height="24" rx="5.4" fill="#0B6E4F"/>
+  <g fill="#FFFFFF" transform="translate(12 12) scale(.86) translate(-12 -12)">
+    <rect x="1.5" y="6.35" width="21" height="3.4" rx="1.7"/>
+    <rect x="4.15" y="9.75" width="2.8" height="3.4" rx="1.4"/>
+    <rect x="17.05" y="9.75" width="2.8" height="3.4" rx="1.4"/>
+    <rect x="1.5" y="13.15" width="8.1" height="4.4" rx="2.2"/>
+    <rect x="14.4" y="13.15" width="8.1" height="4.4" rx="2.2"/>
+  </g>
+</svg>

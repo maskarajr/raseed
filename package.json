@@ -6,21 +6,22 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
-    "seed": "tsx prisma/seed.ts",
+    "seed": "prisma db seed",
     "e2e": "tsx scripts/e2e.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "dependencies": {
-    "@prisma/client": "5.22.0",
+    "@prisma/adapter-libsql": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "@libsql/client": "0.17.0",
     "bcryptjs": "2.4.3",
+    "dotenv": "16.4.5",
     "jose": "5.9.6",
-    "next": "14.2.15",
+    "next": "14.2.35",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "zod": "3.23.8"
@@ -31,10 +32,21 @@
     "@types/react": "18.3.11",
     "@types/react-dom": "18.3.0",
     "autoprefixer": "10.4.20",
-    "postcss": "8.4.47",
-    "prisma": "5.22.0",
+    "postcss": "8.5.28",
+    "prisma": "7.10.0",
     "tailwindcss": "3.4.14",
-    "tsx": "4.19.1",
+    "tsx": "4.23.13",
     "typescript": "5.6.3"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "overrides": {
+    "prisma": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "@prisma/adapter-libsql": "7.10.0",
+    "deepmerge-ts": "8.0.2",
+    "mysql2": "3.24.4",
+    "esbuild": "0.25.12"
   }
 }

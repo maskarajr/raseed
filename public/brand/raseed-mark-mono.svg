@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Raseed">
+  <title>Raseed mark (mono)</title>
+  <!-- Single-ink version: inherits currentColor. Drop the post and base below 28px
+       (see raseed-mark-compact.svg) so the two trays stay legible. -->
+  <g fill="currentColor">
+    <rect x="2" y="5.4" width="20" height="2.8" rx="1.4"/>
+    <rect x="4.4" y="8.2" width="2.8" height="3.4" rx="1.4"/>
+    <rect x="16.8" y="8.2" width="2.8" height="3.4" rx="1.4"/>
+    <rect x="2" y="11.6" width="7.6" height="3.4" rx="1.7"/>
+    <rect x="14.4" y="11.6" width="7.6" height="3.4" rx="1.7"/>
+    <rect x="10.6" y="8.2" width="2.8" height="7.6" rx="1.4"/>
+    <rect x="6.3" y="15.8" width="11.4" height="2.8" rx="1.4"/>
+  </g>
+</svg>

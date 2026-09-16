@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Product } from "@prisma/client";
+import type { Product } from "@/generated/prisma/client";
 import { api } from "@/lib/client";
+import { OfficeChrome } from "@/components/OfficeChrome";
+import { StatusPill } from "@/components/badges";
+import { stockTone } from "@/lib/status";
 
 type LedgerEntry = {
   id: string;
@@ -24,13 +27,13 @@ export default function StockPage() {
 
   async function load() {
     try {
-      const [{ products }, { entries }] = await Promise.all([
+      const [{ products: rows }, { entries }] = await Promise.all([
         api<{ products: Product[] }>("/api/products?active=true"),
         api<{ entries: LedgerEntry[] }>("/api/stock/ledger"),
       ]);
-      setProducts(products);
+      setProducts(rows);
       setLedger(entries);
-      if (!productId && products[0]) setProductId(products[0].id);
+      if (!productId && rows[0]) setProductId(rows[0].id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     }
@@ -61,138 +64,110 @@ export default function StockPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Stock</h1>
-      {error && <p className="text-red-600">{error}</p>}
-
-      <form onSubmit={adjust} className="card grid grid-cols-1 gap-3 sm:grid-cols-4">
-        <h2 className="col-span-full font-semibold">Manual adjustment</h2>
-        <div className="sm:col-span-2">
-          <label className="label">Product</label>
-          <select
-            className="input"
-            value={productId}
-            onChange={(e) => setProductId(e.target.value)}
-          >
-            {products.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.sku} — {p.name} (stock {p.stockQty})
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="label">Delta (+/-)</label>
-          <input
-            className="input"
-            type="number"
-            value={delta}
-            onChange={(e) => setDelta(e.target.value)}
-            placeholder="e.g. 50 or -5"
-            required
-          />
-        </div>
-        <div>
-          <label className="label">Reason</label>
-          <select
-            className="input"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          >
-            <option value="purchase">purchase</option>
-            <option value="adjustment">adjustment</option>
-            <option value="correction">correction</option>
-          </select>
-        </div>
-        <div className="col-span-full">
-          <button className="btn-primary">Apply adjustment</button>
-        </div>
-      </form>
-
-      <div className="card">
-        <h2 className="mb-3 font-semibold">Current stock</h2>
-        <div className="overflow-x-auto">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Name</th>
-                <th>Stock</th>
-                <th>Reorder</th>
-                <th>Flag</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p) => {
-                const low =
-                  p.reorderLevel != null && p.stockQty <= p.reorderLevel;
-                return (
-                  <tr key={p.id}>
-                    <td className="font-mono text-xs">{p.sku}</td>
-                    <td>{p.name}</td>
-                    <td className={low ? "font-semibold text-red-600" : ""}>
-                      {p.stockQty} {p.unit}
-                    </td>
-                    <td>{p.reorderLevel ?? "—"}</td>
-                    <td>
-                      {low && (
-                        <span className="rounded bg-red-100 px-2 py-0.5 text-xs text-red-700">
-                          Low
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="card">
-        <h2 className="mb-3 font-semibold">Ledger history</h2>
-        <div className="overflow-x-auto">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Product</th>
-                <th>Delta</th>
-                <th>Reason</th>
-                <th>Ref</th>
-                <th>Balance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ledger.map((l) => (
-                <tr key={l.id}>
-                  <td className="whitespace-nowrap text-xs">
-                    {new Date(l.createdAt).toLocaleString()}
-                  </td>
-                  <td>{l.product.sku}</td>
-                  <td
-                    className={
-                      l.delta >= 0 ? "text-green-700" : "text-red-600"
-                    }
-                  >
-                    {l.delta > 0 ? `+${l.delta}` : l.delta}
-                  </td>
-                  <td>{l.reason === "return" ? "Return restock" : l.reason}</td>
-                  <td className="text-xs text-slate-500">{l.refType ?? "—"}</td>
-                  <td>{l.balanceAfter}</td>
-                </tr>
-              ))}
-              {ledger.length === 0 && (
+    <OfficeChrome
+      title="Stock"
+      subtitle="Godown · on hand vs reorder"
+      actions={
+        <button className="btn-sec" form="stock-adjust">
+          Adjust
+        </button>
+      }
+    >
+      {error && <p className="muted">{error}</p>}
+      <div className="row" style={{ alignItems: "stretch" }}>
+        <div className="card2 grow">
+          <div className="tbl-wrap">
+            <table className="tbl tight">
+              <thead>
                 <tr>
-                  <td colSpan={6} className="text-center text-slate-500">
-                    No movements yet.
-                  </td>
+                  <th>SKU</th>
+                  <th>Product</th>
+                  <th className="r">On hand</th>
+                  <th className="r">Reorder at</th>
+                  <th>Status</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {products.map((p) => {
+                  const st = stockTone(p.stockQty, p.reorderLevel);
+                  return (
+                    <tr key={p.id}>
+                      <td className="sku">{p.sku}</td>
+                      <td>{p.name}</td>
+                      <td className="r num">
+                        {p.stockQty} {p.unit}
+                      </td>
+                      <td className="r num">{p.reorderLevel ?? "—"}</td>
+                      <td>
+                        <StatusPill label={st.label} tone={st.tone} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
+        <aside className="card2" style={{ width: 224, flex: "none" }}>
+          <div className="card2-h">
+            <h2 className="h3s">Adjust</h2>
+          </div>
+          <form id="stock-adjust" onSubmit={adjust} className="stack">
+            <div className="lfield">
+              <label>Product</label>
+              <select
+                className="linput"
+                value={productId}
+                onChange={(e) => setProductId(e.target.value)}
+              >
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.sku}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="lfield">
+              <label>Delta</label>
+              <input
+                className="linput"
+                type="number"
+                value={delta}
+                onChange={(e) => setDelta(e.target.value)}
+                required
+              />
+            </div>
+            <div className="lfield">
+              <label>Reason</label>
+              <select
+                className="linput"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              >
+                <option value="purchase">purchase</option>
+                <option value="adjustment">adjustment</option>
+                <option value="correction">correction</option>
+              </select>
+            </div>
+            <button className="btn-primary btn-block">Apply</button>
+          </form>
+          <p className="ptitle-s" style={{ marginTop: 16 }}>
+            Recent
+          </p>
+          {ledger.slice(0, 6).map((l) => (
+            <div key={l.id} className="prow">
+              <span>
+                <span className="sku">{l.product.sku}</span>
+                <br />
+                <span className="pmeta">{l.reason}</span>
+              </span>
+              <span className="num">
+                {l.delta > 0 ? `+${l.delta}` : l.delta}
+              </span>
+            </div>
+          ))}
+        </aside>
       </div>
-    </div>
+    </OfficeChrome>
   );
 }

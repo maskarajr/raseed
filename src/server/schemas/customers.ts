@@ -6,6 +6,9 @@ export const createCustomerSchema = z.object({
   phone: z.string().max(40).optional(),
   address: z.string().max(300).optional(),
   area: z.string().max(120).optional(),
+  route: z.string().max(40).optional(),
+  bookerId: z.string().min(1).optional(),
+  active: z.boolean().optional(),
 });
 
 export const updateCustomerSchema = z.object({
@@ -13,6 +16,9 @@ export const updateCustomerSchema = z.object({
   phone: z.string().max(40).optional(),
   address: z.string().max(300).nullish(),
   area: z.string().max(120).nullish(),
+  route: z.string().max(40).nullish(),
+  bookerId: z.string().min(1).nullish(),
+  active: z.boolean().optional(),
 });
 
 export const listCustomersQuerySchema = z.object({

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="512" height="512" role="img" aria-label="Raseed">
+  <title>Raseed app icon (maskable)</title>
+  <!-- purpose: maskable — the tile bleeds to every edge, so the platform may crop
+       it to a circle, squircle or rounded square. The glyph stays inside the
+       centre 80% safe zone at 68%. -->
+  <rect width="24" height="24" fill="#0B6E4F"/>
+  <g fill="#FFFFFF" transform="translate(12 12) scale(.68) translate(-12 -12)">
+    <rect x="1.5" y="6.35" width="21" height="3.4" rx="1.7"/>
+    <rect x="4.15" y="9.75" width="2.8" height="3.4" rx="1.4"/>
+    <rect x="17.05" y="9.75" width="2.8" height="3.4" rx="1.4"/>
+    <rect x="1.5" y="13.15" width="8.1" height="4.4" rx="2.2"/>
+    <rect x="14.4" y="13.15" width="8.1" height="4.4" rx="2.2"/>
+  </g>
+</svg>

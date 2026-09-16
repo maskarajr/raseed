@@ -7,6 +7,7 @@ import { recordPayment } from "@/server/services/payments";
 export const POST = requireRole(
   "owner",
   "office",
+  "booker",
 )(async (req: NextRequest, { session }) => {
   const input = await parseBody(req, createPaymentSchema);
   const result = await recordPayment(session, input);

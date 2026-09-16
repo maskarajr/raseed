@@ -3,20 +3,20 @@
 // NOTE: SQLite does not support Prisma native enums, so enum-like fields are
 // stored as String and their allowed values are enforced centrally via Zod +
 // TypeScript unions in src/lib/enums.ts. Model shapes below are the single
-// source of truth for row types (imported via @prisma/client), never hand
-// duplicated.
+// source of truth for row types (imported via the generated Prisma client),
+// never hand duplicated.
 //
-// Money: all monetary values are stored as integers representing whole PKR
-// (Pakistani Rupees). FMCG wholesale prices are whole-rupee in practice, and
-// integer math avoids floating point / Decimal-serialization issues.
+// Money: all monetary values are stored as integers representing whole PKR.
+// Prisma ORM v7: datasource URL lives in prisma.config.ts; client is generated
+// to src/generated/prisma and queried through @prisma/adapter-better-sqlite3.
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -26,9 +26,12 @@ model User {
   passwordHash String
   role         String // owner | office | booker
   active       Boolean  @default(true)
+  phone        String?
+  route        String?
   createdAt    DateTime @default(now())
 
-  orders Order[] @relation("BookerOrders")
+  orders    Order[]    @relation("BookerOrders")
+  customers Customer[] @relation("CustomerBooker")
 }
 
 model Product {
@@ -40,13 +43,13 @@ model Product {
   price        Int // whole PKR
   stockQty     Int      @default(0)
   reorderLevel Int?
-  active        Boolean  @default(true)
+  active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  orderItems   OrderItem[]
-  stockLedger  StockLedger[]
-  returns      Return[]
+  orderItems  OrderItem[]
+  stockLedger StockLedger[]
+  returns     Return[]
 }
 
 model StockLedger {
@@ -71,9 +74,13 @@ model Customer {
   phone     String
   address   String?
   area      String?
+  route     String?
+  bookerId  String?
+  active    Boolean  @default(true)
   createdBy String
   createdAt DateTime @default(now())
 
+  booker User?    @relation("CustomerBooker", fields: [bookerId], references: [id])
   orders Order[]
 }
 
@@ -85,11 +92,12 @@ model Order {
   status     String   @default("draft") // draft|submitted|confirmed|invoiced|out_for_delivery|delivered|settled|cancelled
   notes      String?
   subtotal   Int      @default(0)
+  advance    Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  booker   User     @relation("BookerOrders", fields: [bookerId], references: [id])
-  customer Customer @relation(fields: [customerId], references: [id])
+  booker   User        @relation("BookerOrders", fields: [bookerId], references: [id])
+  customer Customer    @relation(fields: [customerId], references: [id])
   items    OrderItem[]
   invoice  Invoice?
 
@@ -134,7 +142,8 @@ model Payment {
   id        String   @id @default(cuid())
   invoiceId String
   amount    Int
-  mode      String // cash | credit
+  mode      String // cash | bank | cheque
+  kind      String   @default("part") // part | advance | full
   createdAt DateTime @default(now())
   createdBy String
 
@@ -157,4 +166,9 @@ model Return {
 
   @@index([invoiceId])
   @@index([productId])
+}
+
+model AppSetting {
+  key   String @id
+  value String
 }
