@@ -12,6 +12,8 @@ Raseed is a self-hosted operations tool for a wholesale distributor (agency). It
 - Invoice "PDF": print-friendly HTML page + `window.print()` (browser Print-to-PDF)
 - PWA: `public/manifest.webmanifest` + a basic service worker (`public/sw.js`)
 
+Client **Vercel demo** (Turso, not the SQLite file) lives on the `demo` branch — see `docs/DEMO-VERCEL.md`. Keep `main` for local Windows.
+
 ## Prerequisites (Windows)
 
 - Install **Node.js 20.19+** (22.x recommended) for Windows (from https://nodejs.org). This includes `npm`.
