@@ -52,7 +52,20 @@ npm install
 npx prisma generate
 ```
 
-`generate` must print **7.10.0**. If npm warns `install scripts blocked` / `allowScripts`, approve at least `@prisma/client`, `prisma`, `esbuild`, and `better-sqlite3` (native SQLite driver), then `npm install` again.
+`generate` must print **7.10.0**. Prisma generate already ran; the remaining warning is **install scripts blocked**. Without them, `better-sqlite3` has no native binary and login/API will crash. In that same PowerShell:
+
+```powershell
+npm install-scripts approve better-sqlite3
+npm install-scripts approve @prisma/engines
+npm install-scripts approve prisma
+npm install-scripts approve esbuild
+npm install
+npx prisma migrate deploy
+npm run seed
+npm run dev
+```
+
+Ignore `npm audit fix --force` and the Next 14.2.15 security notice for this install — that is a later upgrade, not Prisma. The `prebuild-install` deprecation is noise from `better-sqlite3`.
 
 ## Seeded login credentials
 
