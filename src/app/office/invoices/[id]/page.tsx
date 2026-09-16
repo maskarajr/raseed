@@ -209,7 +209,7 @@ export default function InvoiceDetailPage() {
           <h2 className="h3s">Charges</h2>
           <span className="meta">from order {inv.order.code}</span>
         </div>
-        <table className="tbl">
+        <table className="tbl store">
           <thead>
             <tr>
               <th>SKU</th>

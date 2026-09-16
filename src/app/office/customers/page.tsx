@@ -72,7 +72,7 @@ export default function CustomersPage() {
       {error && <p className="muted">{error}</p>}
       <div className="card2 grow">
         <div className="tbl-wrap">
-          <table className="tbl">
+          <table className="tbl store">
             <thead>
               <tr>
                 <th>Shop</th>

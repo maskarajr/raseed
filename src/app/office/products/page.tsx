@@ -88,7 +88,7 @@ export default function ProductsPage() {
       </div>
       <div className="card2 grow">
         <div className="tbl-wrap">
-          <table className="tbl">
+          <table className="tbl store">
             <thead>
               <tr>
                 <th>SKU</th>

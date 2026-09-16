@@ -284,7 +284,7 @@ export default function OrderDetailPage() {
           <h2 className="h3s">Line items</h2>
           <span className="meta">{order.items.length} lines</span>
         </div>
-        <table className="tbl">
+        <table className="tbl store">
           <thead>
             <tr>
               <th>SKU</th>

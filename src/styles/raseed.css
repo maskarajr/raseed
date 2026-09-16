@@ -180,7 +180,10 @@ p{margin:0;text-wrap:pretty}
 .tbl-empty{font-size:13px;color:var(--muted);padding:22px 10px;text-align:center}
 /* wrap a table that shares a row with a rail so it can never bleed over it */
 .tbl-wrap{min-width:0;overflow-x:auto;scrollbar-width:thin}
-.tbl.tight th,.tbl.tight td{padding-left:7px;padding-right:7px}
+.tbl.store th,.tbl.store td{text-align:center}
+.tbl.store .money,.tbl.store .r{text-align:center}
+.tbl.store .status{display:inline-flex;margin-inline:auto}
+.tbl.store .person{justify-content:center}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 @media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}

@@ -107,7 +107,7 @@ export default function InvoicesPage() {
       <p className="meta">Collected on file <Money value={collected} /></p>
       <div className="card2">
         <div className="tbl-wrap">
-          <table className="tbl">
+          <table className="tbl store">
             <thead>
               <tr>
                 <th>Invoice</th>
