@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/server/auth/session";
 import { BookerNav } from "@/components/BookerNav";
 import { BrandMark } from "@/components/BrandMark";
+import { PwaShell } from "@/components/PwaShell";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import type { Metadata, Viewport } from "next";
 
@@ -20,6 +21,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default async function BookerLayout({
@@ -32,7 +34,7 @@ export default async function BookerLayout({
   if (session.role !== "booker") redirect("/office");
 
   return (
-    <div className="pwa-root">
+    <PwaShell>
       <div className="pwa">
         <div className="pstatus">
           <span className="row" style={{ gap: 6 }}>
@@ -45,6 +47,6 @@ export default async function BookerLayout({
         <BookerNav />
       </div>
       <ServiceWorkerRegister />
-    </div>
+    </PwaShell>
   );
 }
