@@ -41,7 +41,18 @@ For day-to-day development you can instead run:
 npm run dev
 ```
 
-> On Windows, `copy .env.example .env` is the Command Prompt form. In PowerShell use `Copy-Item .env.example .env`. `.env` already ships with sane local defaults (`DATABASE_URL="file:./prisma/dev.db"`), so you mainly need to set a strong `JWT_SECRET` before real use. Prisma CLI does not load `.env` by itself — `prisma.config.ts` loads `dotenv`. After changing the schema always run `npx prisma generate` (Next no longer gets a client from `node_modules/@prisma/client`).
+> On Windows, `copy .env.example .env` is the Command Prompt form. In PowerShell use `Copy-Item .env.example .env`. `.env` already ships with sane local defaults (`DATABASE_URL="file:./prisma/dev.db"`), so you mainly need to set a strong `JWT_SECRET` before real use. Prisma CLI does not load `.env` by itself — `prisma.config.ts` loads `dotenv`. After changing the schema always run `npx prisma generate`. Success looks like **Generated Prisma Client (7.10.0) to ./src/generated/prisma**. If it still says **v5.22.0** and writes to `node_modules\@prisma\client`, this checkout is old or `prisma@latest` (v8 RC) was installed on top. Do **not** run `npm i prisma@latest`. Reset to the lockfile on this branch:
+
+```powershell
+git fetch origin
+git checkout cursor/design-handoff-truth-b7d6
+git restore package.json package-lock.json
+Remove-Item -Recurse -Force node_modules
+npm install
+npx prisma generate
+```
+
+`generate` must print **7.10.0**. If npm warns `install scripts blocked` / `allowScripts`, approve at least `@prisma/client`, `prisma`, `esbuild`, and `better-sqlite3` (native SQLite driver), then `npm install` again.
 
 ## Seeded login credentials
 
