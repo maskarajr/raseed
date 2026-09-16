@@ -113,7 +113,7 @@ export default function BookerAccountPage() {
         <p className="ptitle-s" style={{ marginBottom: 8 }}>
           This phone
         </p>
-        <PwaInstallCta />
+        <PwaInstallCta compact />
       </div>
       <LogoutButton />
     </BookerChrome>

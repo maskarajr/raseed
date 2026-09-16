@@ -5,11 +5,25 @@ export type BeforeInstallPromptEvent = Event & {
 
 const DISMISS_KEY = "raseed-install-dismissed";
 
+declare global {
+  interface Window {
+    __raseedInstall?: BeforeInstallPromptEvent;
+  }
+}
+
 let deferred: BeforeInstallPromptEvent | null = null;
 const listeners = new Set<() => void>();
+let capturing = false;
 
 function notify() {
   listeners.forEach((l) => l());
+}
+
+function adopt(e: BeforeInstallPromptEvent | undefined) {
+  if (!e) return;
+  deferred = e;
+  if (typeof window !== "undefined") window.__raseedInstall = e;
+  notify();
 }
 
 export function isStandalone() {
@@ -37,6 +51,9 @@ export function dismissInstall() {
 }
 
 export function getDeferredInstall() {
+  if (!deferred && typeof window !== "undefined") {
+    deferred = window.__raseedInstall ?? null;
+  }
   return deferred;
 }
 
@@ -49,13 +66,16 @@ export function subscribeInstall(fn: () => void) {
 
 export function captureInstallPrompt() {
   if (typeof window === "undefined") return () => undefined;
+  adopt(window.__raseedInstall);
+  if (capturing) return () => undefined;
+  capturing = true;
   const onPrompt = (e: Event) => {
     e.preventDefault();
-    deferred = e as BeforeInstallPromptEvent;
-    notify();
+    adopt(e as BeforeInstallPromptEvent);
   };
   const onInstalled = () => {
     deferred = null;
+    window.__raseedInstall = undefined;
     sessionStorage.setItem(DISMISS_KEY, "1");
     notify();
   };
@@ -64,17 +84,27 @@ export function captureInstallPrompt() {
   return () => {
     window.removeEventListener("beforeinstallprompt", onPrompt);
     window.removeEventListener("appinstalled", onInstalled);
+    capturing = false;
   };
 }
 
 export async function promptNativeInstall() {
-  if (!deferred) return "unavailable" as const;
-  await deferred.prompt();
-  const { outcome } = await deferred.userChoice;
+  const event = getDeferredInstall();
+  if (!event) return "unavailable" as const;
+  await event.prompt();
+  const { outcome } = await event.userChoice;
   deferred = null;
+  if (typeof window !== "undefined") window.__raseedInstall = undefined;
   if (outcome === "accepted") {
     sessionStorage.setItem(DISMISS_KEY, "1");
   }
   notify();
   return outcome;
+}
+
+export function registerBookerServiceWorker() {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+    return Promise.resolve();
+  }
+  return navigator.serviceWorker.register("/sw.js").catch(() => undefined);
 }

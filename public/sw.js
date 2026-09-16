@@ -4,7 +4,13 @@
 // install criteria (a fetch handler + manifest + icons over HTTPS) are met.
 
 const CACHE = "raseed-shell-v1";
-const SHELL = ["/booker", "/login", "/manifest.webmanifest", "/icon-192.png"];
+const SHELL = [
+  "/booker",
+  "/login",
+  "/manifest.webmanifest",
+  "/icon-192.png",
+  "/icon-512.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

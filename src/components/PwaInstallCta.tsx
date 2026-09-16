@@ -8,6 +8,7 @@ import {
   isIosDevice,
   isStandalone,
   promptNativeInstall,
+  registerBookerServiceWorker,
   subscribeInstall,
 } from "@/lib/pwaInstall";
 
@@ -16,6 +17,8 @@ export function PwaInstallCta({ compact = false }: { compact?: boolean }) {
   const [ios, setIos] = useState(false);
   const [canNative, setCanNative] = useState(false);
   const [standalone, setStandalone] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [hint, setHint] = useState<string | null>(null);
 
   useEffect(() => {
     const sync = () => {
@@ -24,6 +27,7 @@ export function PwaInstallCta({ compact = false }: { compact?: boolean }) {
       setCanNative(Boolean(getDeferredInstall()));
     };
     sync();
+    void registerBookerServiceWorker();
     return subscribeInstall(sync);
   }, []);
 
@@ -42,14 +46,27 @@ export function PwaInstallCta({ compact = false }: { compact?: boolean }) {
   if (standalone) return null;
 
   async function install() {
+    setBusy(true);
+    setHint(null);
+    if (ios) {
+      setBusy(false);
+      setOpen(true);
+      setHint("Safari: tap Share, then Add to Home Screen.");
+      return;
+    }
     const outcome = await promptNativeInstall();
+    setBusy(false);
     if (outcome === "accepted") {
       setOpen(false);
       return;
     }
-    if (outcome === "unavailable") {
-      setOpen(true);
-    }
+    if (outcome === "dismissed") return;
+    setOpen(true);
+    setHint(
+      ios
+        ? "Safari: tap Share, then Add to Home Screen."
+        : "Chrome: tap the menu (⋮), then Install app / Add to Home screen. The system prompt only appears after the app is installable (HTTPS or localhost, with this page kept open a moment).",
+    );
   }
 
   function notNow() {
@@ -75,16 +92,22 @@ export function PwaInstallCta({ compact = false }: { compact?: boolean }) {
         <p className="muted" style={{ fontSize: 14 }}>
           Booker orders and collections in one tap. Install the app — no browser menu.
         </p>
-        {ios || !canNative ? (
+        {ios || !canNative || hint ? (
           <p className="meta" style={{ marginTop: 10 }}>
-            {ios
-              ? "Tap Share, then Add to Home Screen. Open Raseed from the home screen next time."
-              : "Tap Install and confirm the system prompt. If it has not appeared yet, wait a moment and tap again."}
+            {hint ??
+              (ios
+                ? "Tap Share, then Add to Home Screen. Open Raseed from the home screen next time."
+                : "Tap Install and confirm the system prompt. If it has not appeared yet, wait a moment and tap again.")}
           </p>
         ) : null}
         <div className="stack" style={{ gap: 8, marginTop: 16 }}>
-          <button type="button" className="btn-primary btn-block" onClick={install}>
-            Install booker app
+          <button
+            type="button"
+            className="btn-primary btn-block"
+            onClick={install}
+            disabled={busy}
+          >
+            {busy ? "Opening…" : "Install booker app"}
           </button>
           <button type="button" className="btn-ghost btn-block" onClick={notNow}>
             Not now
