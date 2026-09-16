@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
@@ -31,12 +32,14 @@ const CHIPS: { label: string; term: string }[] = [
 ];
 
 export default function OrdersPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [term, setTerm] = useState("");
   const [search, setSearch] = useState("");
   const [booker, setBooker] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   async function load() {
     try {
@@ -110,14 +113,6 @@ export default function OrdersPage() {
         />
       </div>
       {error && <p className="muted">{error}</p>}
-      <div className="acts">
-        <button type="button" className="btn-sec" onClick={() => setFiltersOpen(true)}>
-          Filters
-        </button>
-        <Link href="/office/orders/new" className="btn-primary">
-          New order
-        </Link>
-      </div>
       <div className="card2 grow">
         <div className="tbl-wrap">
           <table className="tbl">
@@ -130,6 +125,7 @@ export default function OrdersPage() {
                 <th className="r">Items</th>
                 <th className="r">Value</th>
                 <th>Status</th>
+                <th />
               </tr>
             </thead>
             <tbody>
@@ -147,6 +143,78 @@ export default function OrdersPage() {
                   </td>
                   <td>
                     <StatusPill status={o.status} />
+                  </td>
+                  <td>
+                    <div className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
+                      {o.status === "submitted" ? (
+                        <button
+                          type="button"
+                          className="btn-sec btn-sm"
+                          disabled={busyId === o.id}
+                          onClick={async () => {
+                            setBusyId(o.id);
+                            try {
+                              await api(`/api/orders/${o.id}/confirm`, {
+                                method: "POST",
+                              });
+                              await load();
+                            } catch (e) {
+                              setError(
+                                e instanceof Error ? e.message : "Confirm failed",
+                              );
+                            } finally {
+                              setBusyId(null);
+                            }
+                          }}
+                        >
+                          Confirm
+                        </button>
+                      ) : null}
+                      {o.status === "confirmed" ? (
+                        <button
+                          type="button"
+                          className="btn-sec btn-sm"
+                          disabled={busyId === o.id}
+                          onClick={async () => {
+                            setBusyId(o.id);
+                            try {
+                              const res = await api<{ invoice?: { id: string } }>(
+                                `/api/orders/${o.id}/invoice`,
+                                { method: "POST" },
+                              );
+                              if (res.invoice) {
+                                router.push(`/office/invoices/${res.invoice.id}`);
+                                return;
+                              }
+                              await load();
+                            } catch (e) {
+                              setError(
+                                e instanceof Error ? e.message : "Invoice failed",
+                              );
+                            } finally {
+                              setBusyId(null);
+                            }
+                          }}
+                        >
+                          Invoice
+                        </button>
+                      ) : null}
+                      {o.invoice ? (
+                        <Link
+                          href={`/office/invoices/${o.invoice.id}`}
+                          className="btn-ghost btn-sm"
+                        >
+                          Open invoice
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/office/orders/${o.id}`}
+                          className="btn-ghost btn-sm"
+                        >
+                          Open
+                        </Link>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

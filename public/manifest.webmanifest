@@ -3,7 +3,7 @@
   "short_name": "Raseed",
   "description": "Field order capture for wholesale distribution",
   "id": "/booker",
-  "start_url": "/booker",
+  "start_url": "/booker/login",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

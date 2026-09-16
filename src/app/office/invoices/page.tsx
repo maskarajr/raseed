@@ -103,19 +103,6 @@ export default function InvoicesPage() {
         />
       </div>
       {error && <p className="muted">{error}</p>}
-      <div className="acts">
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={!invoices.some((i) => i.balance > 0)}
-          onClick={() => {
-            const first = invoices.find((i) => i.balance > 0);
-            if (first) setPay(first);
-          }}
-        >
-          Record payment
-        </button>
-      </div>
       <p className="meta">Collected on file <Money value={collected} /></p>
       <div className="card2">
         <div className="tbl-wrap">

@@ -5,7 +5,6 @@ import {
   dismissInstall,
   getDeferredInstall,
   installDismissed,
-  isBookerSurface,
   isIosDevice,
   isStandalone,
   promptNativeInstall,
@@ -31,7 +30,11 @@ export function PwaInstallCta({ compact = false }: { compact?: boolean }) {
   useEffect(() => {
     if (compact) return;
     if (standalone || installDismissed()) return;
-    if (!isBookerSurface()) return;
+    const phone =
+      ios ||
+      /Mobile|Android/i.test(navigator.userAgent) ||
+      window.matchMedia("(max-width: 820px)").matches;
+    if (!phone) return;
     const t = window.setTimeout(() => setOpen(true), canNative || ios ? 200 : 600);
     return () => window.clearTimeout(t);
   }, [compact, standalone, canNative, ios]);

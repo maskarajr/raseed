@@ -6,12 +6,6 @@ import { Providers } from "@/components/Providers";
 export const metadata: Metadata = {
   title: "Raseed",
   description: "Wholesale distribution ops — Raseed",
-  manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Raseed",
-  },
 };
 
 export const viewport: Viewport = {

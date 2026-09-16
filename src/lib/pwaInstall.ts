@@ -26,11 +26,6 @@ export function isIosDevice() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
-export function isBookerSurface() {
-  if (typeof window === "undefined") return false;
-  return isStandalone() || window.matchMedia("(max-width: 820px)").matches;
-}
-
 export function installDismissed() {
   if (typeof sessionStorage === "undefined") return false;
   return sessionStorage.getItem(DISMISS_KEY) === "1";

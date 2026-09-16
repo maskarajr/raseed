@@ -7,7 +7,10 @@ export function LogoutButton() {
   const router = useRouter();
   async function logout() {
     await api("/api/auth/logout", { method: "POST" });
-    router.replace("/login");
+    const dest = window.location.pathname.startsWith("/booker")
+      ? "/booker/login"
+      : "/office/login";
+    router.replace(dest);
     router.refresh();
   }
   return (
