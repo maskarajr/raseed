@@ -67,7 +67,6 @@ export const POST = requireRole(
     notes: input.notes,
     items: input.items,
     submit: input.submit ?? false,
-    advance: input.advance,
   });
   return json(result, 201);
 });

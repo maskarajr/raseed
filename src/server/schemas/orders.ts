@@ -14,7 +14,6 @@ export const createOrderSchema = z.object({
   notes: z.string().max(500).optional(),
   items: z.array(orderItemSchema).min(1),
   submit: z.boolean().default(false),
-  advance: z.number().int().nonnegative().optional(),
 });
 
 // Statuses reachable via the generic status endpoint (office advancing an
