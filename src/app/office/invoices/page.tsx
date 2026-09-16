@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
@@ -32,6 +32,7 @@ const CHIPS = [
 ];
 
 export default function InvoicesPage() {
+  const router = useRouter();
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [term, setTerm] = useState("");
@@ -116,15 +117,16 @@ export default function InvoicesPage() {
                 <th className="r">Collected</th>
                 <th className="r">Value</th>
                 <th>Status</th>
-                <th />
               </tr>
             </thead>
             <tbody>
               {filtered.map((i) => (
-                <tr key={i.id}>
-                  <td className="sku">
-                    <Link href={`/office/invoices/${i.id}`}>{i.code}</Link>
-                  </td>
+                <tr
+                  key={i.id}
+                  style={{ cursor: "pointer" }}
+                  onClick={() => router.push(`/office/invoices/${i.id}`)}
+                >
+                  <td className="sku">{i.code}</td>
                   <td>{i.order.customer.name}</td>
                   <td>{i.order.booker.name}</td>
                   <td className="meta">
@@ -142,24 +144,6 @@ export default function InvoicesPage() {
                   </td>
                   <td>
                     <StatusPill status={i.paymentStatus} />
-                  </td>
-                  <td>
-                    {i.balance > 0 ? (
-                      <button
-                        type="button"
-                        className="btn-sec btn-sm"
-                        onClick={() => setPay(i)}
-                      >
-                        Collect
-                      </button>
-                    ) : (
-                      <Link
-                        href={`/office/invoices/${i.id}`}
-                        className="btn-ghost btn-sm"
-                      >
-                        Open
-                      </Link>
-                    )}
                   </td>
                 </tr>
               ))}

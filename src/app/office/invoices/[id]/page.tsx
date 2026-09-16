@@ -9,6 +9,8 @@ import { StatusPill } from "@/components/badges";
 import { SideSheet } from "@/components/SideSheet";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { PaymentSheet } from "@/components/PaymentSheet";
+import { initials } from "@/lib/person";
+import { useToast } from "@/components/Toast";
 
 type InvoiceDetail = {
   id: string;
@@ -23,6 +25,7 @@ type InvoiceDetail = {
     status: string;
     subtotal: number;
     customer: { name: string; phone: string; area: string | null };
+    booker: { name: string };
     items: {
       id: string;
       qty: number;
@@ -31,7 +34,7 @@ type InvoiceDetail = {
       product: { sku: string; name: string; unit: string };
     }[];
   };
-  payments: { id: string; amount: number; mode: string; createdAt: string }[];
+  payments: { id: string; amount: number; mode: string; kind?: string; createdAt: string }[];
   returns: {
     id: string;
     qty: number;
@@ -44,6 +47,7 @@ type InvoiceDetail = {
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const toast = useToast();
   const [inv, setInv] = useState<InvoiceDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sheet, setSheet] = useState<"payment" | "return" | null>(null);
@@ -87,152 +91,173 @@ export default function InvoiceDetailPage() {
   return (
     <OfficeChrome
       title={inv.code}
-      subtitle={`Invoices / ${inv.code} · Order ${inv.order.code} · ${inv.order.customer.name}`}
+      kicker={`Invoices / ${inv.code}`}
+      status={<StatusPill status={inv.paymentStatus} />}
       actions={
         <>
-          <StatusPill status={inv.paymentStatus} />
-          <button className="btn-primary" onClick={() => setSheet("payment")}>
-            Record payment
-          </button>
-          <button className="btn-sec" onClick={() => setSheet("return")}>
-            Log return
+          <button
+            type="button"
+            className="btn-sec"
+            onClick={() => toast(`Invoice sent on WhatsApp · ${inv.code}`)}
+          >
+            Send
           </button>
           <Link href={`/office/invoices/${inv.id}/print`} className="btn-sec">
             Print
           </Link>
+          <button type="button" className="btn-sec" onClick={() => setSheet("return")}>
+            Log return
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => setSheet("payment")}
+          >
+            Record payment
+          </button>
         </>
       }
     >
-
-      <div className="row" style={{ alignItems: "flex-start" }}>
-        <div className="card2 grow">
-          <h2 className="h3s" style={{ marginBottom: 12 }}>
-            Items
-          </h2>
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Desc</th>
-                <th className="r">Qty</th>
-                <th className="r">Unit Rs</th>
-                <th className="r">Line Rs</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inv.order.items.map((i) => (
-                <tr key={i.id}>
-                  <td className="sku">{i.product.sku}</td>
-                  <td>{i.product.name}</td>
-                  <td className="num r">
-                    {i.qty} {i.product.unit}
-                  </td>
-                  <td className="money">
-                    <Money value={i.unitPrice} />
-                  </td>
-                  <td className="money">
-                    <Money value={i.qty * i.unitPrice} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Totals block */}
-        <div className="card2" style={{ width: 280, flex: "none" }}>
-          <h2 className="h3s" style={{ marginBottom: 12 }}>
-            Totals
-          </h2>
-          <div className="totals" style={{ marginLeft: 0, maxWidth: "none" }}>
-            <div className="trow">
-              <span>Subtotal</span>
-              <Money value={inv.order.subtotal} />
-            </div>
-            <div className="trow">
-              <span>Returns</span>
-              <span>
-                {returnsTotal > 0 ? "−" : ""}
-                <Money value={returnsTotal} />
+      <div className="row" style={{ gap: 16, alignItems: "stretch" }}>
+        <div className="card2" style={{ flex: 1 }}>
+          <p className="ptitle-s" style={{ marginBottom: 10 }}>
+            Billed to
+          </p>
+          <div className="person">
+            <span className="avatar">{initials(inv.order.customer.name)}</span>
+            <span>
+              <span className="pname">{inv.order.customer.name}</span>
+              <br />
+              <span className="pmeta">
+                {inv.order.customer.area ?? "—"}
+                {inv.order.customer.phone ? ` · ${inv.order.customer.phone}` : ""}
               </span>
-            </div>
-            <div className="trow">
-              <span>Collected</span>
-              <Money value={inv.amountPaid} />
-            </div>
-            <div className="trow grand">
-              <span>Balance due</span>
-              <Money value={inv.balance} />
-            </div>
+            </span>
           </div>
+          <dl className="dl" style={{ marginTop: 12 }}>
+            <div>
+              <dt>Issued</dt>
+              <dd className="num">
+                {new Date(inv.createdAt).toLocaleDateString("en-GB", {
+                  timeZone: "Asia/Karachi",
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </dd>
+            </div>
+            <div>
+              <dt>Collection</dt>
+              <dd>Cash on delivery</dd>
+            </div>
+            <div>
+              <dt>Collects</dt>
+              <dd>{inv.order.booker.name}</dd>
+            </div>
+            <div>
+              <dt>Received</dt>
+              <dd className="num">
+                <Money value={inv.amountPaid} />
+              </dd>
+            </div>
+            <div>
+              <dt>To collect</dt>
+              <dd className="num" style={{ color: "var(--warn-fg)" }}>
+                <Money value={inv.balance} />
+              </dd>
+            </div>
+          </dl>
         </div>
-      </div>
-
-      <div className="row" style={{ alignItems: "flex-start" }}>
-        <div className="card2 grow">
-          <h2 className="h3s" style={{ marginBottom: 12 }}>
-            Payments
-          </h2>
+        <div className="card2" style={{ width: 340 }}>
+          <p className="ptitle-s" style={{ marginBottom: 10 }}>
+            Payment history
+          </p>
           {inv.payments.length === 0 ? (
             <p className="muted">No payments yet.</p>
           ) : (
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>When</th>
-                  <th>Method</th>
-                  <th className="r">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inv.payments.map((p) => (
-                  <tr key={p.id}>
-                    <td className="text-xs">
-                      {new Date(p.createdAt).toLocaleString()}
-                    </td>
-                    <td className="capitalize">{p.mode}</td>
-                    <td className="r">
-                      <Money value={p.amount} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            inv.payments.map((p) => (
+              <div className="prow" key={p.id}>
+                <span>
+                  {p.kind === "advance"
+                    ? "Advance"
+                    : p.kind === "full"
+                      ? "Full settlement"
+                      : "Part payment"}{" "}
+                  ·{" "}
+                  {new Date(p.createdAt).toLocaleDateString("en-GB", {
+                    timeZone: "Asia/Karachi",
+                    day: "2-digit",
+                    month: "short",
+                  })}
+                </span>
+                <span className="num">
+                  <Money value={p.amount} />
+                </span>
+              </div>
+            ))
           )}
+          <div className="prow">
+            <span className="pname">To collect</span>
+            <span className="num" style={{ fontWeight: 600, color: "var(--warn-fg)" }}>
+              <Money value={inv.balance} />
+            </span>
+          </div>
         </div>
-
-        <div className="card2 grow">
-          <h2 className="h3s" style={{ marginBottom: 12 }}>
-            Returns
-          </h2>
-          {inv.returns.length === 0 ? (
-            <p className="muted">No returns.</p>
-          ) : (
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>When</th>
-                  <th>Product</th>
-                  <th className="r">Qty</th>
-                  <th className="r">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inv.returns.map((r) => (
-                  <tr key={r.id}>
-                    <td className="text-xs">
-                      {new Date(r.createdAt).toLocaleString()}
-                    </td>
-                    <td>{r.product.sku}</td>
-                    <td className="tnum r">{r.qty}</td>
-                    <td className="r">
-                      <Money value={r.amount} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+      </div>
+      <div className="card2 grow">
+        <div className="card2-h">
+          <h2 className="h3s">Charges</h2>
+          <span className="meta">from order {inv.order.code}</span>
+        </div>
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Product</th>
+              <th className="r">Qty</th>
+              <th className="r">Rate</th>
+              <th className="r">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {inv.order.items.map((i) => (
+              <tr key={i.id}>
+                <td className="sku">{i.product.sku}</td>
+                <td>{i.product.name}</td>
+                <td className="r num">
+                  {i.qty} {i.product.unit}
+                </td>
+                <td className="money">
+                  <Money value={i.unitPrice} />
+                </td>
+                <td className="money">
+                  <Money value={i.qty * i.unitPrice} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="totals" style={{ marginTop: 14 }}>
+          <div className="trow">
+            <span className="muted">Subtotal</span>
+            <span className="num">
+              <Money value={inv.order.subtotal} />
+            </span>
+          </div>
+          {returnsTotal > 0 ? (
+            <div className="trow">
+              <span className="muted">Returns</span>
+              <span className="num">
+                −<Money value={returnsTotal} />
+              </span>
+            </div>
+          ) : null}
+          <div className="trow grand">
+            <span>Invoice total</span>
+            <span className="num">
+              <Money value={inv.total} />
+            </span>
+          </div>
         </div>
       </div>
 

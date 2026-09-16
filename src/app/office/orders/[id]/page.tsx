@@ -10,6 +10,7 @@ import { OfficeChrome } from "@/components/OfficeChrome";
 import { initials } from "@/lib/person";
 import { SideSheet } from "@/components/SideSheet";
 import { useToast } from "@/components/Toast";
+import { stockTone } from "@/lib/status";
 
 type OrderDetail = {
   id: string;
@@ -29,7 +30,13 @@ type OrderDetail = {
     id: string;
     qty: number;
     unitPrice: number;
-    product: { sku: string; name: string; unit: string };
+    product: {
+      sku: string;
+      name: string;
+      unit: string;
+      stockQty: number;
+      reorderLevel: number | null;
+    };
   }[];
   invoice: { id: string; code: string } | null;
 };
@@ -111,10 +118,10 @@ export default function OrderDetailPage() {
   return (
     <OfficeChrome
       title={order.code}
-      subtitle={`Orders / ${order.code}`}
+      kicker={`Orders / ${order.code}`}
+      status={<StatusPill status={order.status} />}
       actions={
         <>
-          <StatusPill status={order.status} />
           <button
             type="button"
             className="btn-ghost"
@@ -285,6 +292,7 @@ export default function OrderDetailPage() {
               <th className="r">Qty</th>
               <th className="r">Rate</th>
               <th className="r">Amount</th>
+              <th>Stock</th>
             </tr>
           </thead>
           <tbody>
@@ -300,6 +308,11 @@ export default function OrderDetailPage() {
                 </td>
                 <td className="money">
                   <Money value={i.qty * i.unitPrice} />
+                </td>
+                <td>
+                  <StatusPill
+                    status={stockTone(i.product.stockQty, i.product.reorderLevel).label}
+                  />
                 </td>
               </tr>
             ))}

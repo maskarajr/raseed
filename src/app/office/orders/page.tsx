@@ -39,7 +39,6 @@ export default function OrdersPage() {
   const [booker, setBooker] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
 
   async function load() {
     try {
@@ -125,15 +124,16 @@ export default function OrdersPage() {
                 <th className="r">Items</th>
                 <th className="r">Value</th>
                 <th>Status</th>
-                <th />
               </tr>
             </thead>
             <tbody>
               {filtered.map((o) => (
-                <tr key={o.id}>
-                  <td className="sku">
-                    <Link href={`/office/orders/${o.id}`}>{o.code}</Link>
-                  </td>
+                <tr
+                  key={o.id}
+                  style={{ cursor: "pointer" }}
+                  onClick={() => router.push(`/office/orders/${o.id}`)}
+                >
+                  <td className="sku">{o.code}</td>
                   <td>{o.customer.name}</td>
                   <td>{o.booker.name}</td>
                   <td className="sku">{o.customer.area ?? "—"}</td>
@@ -143,78 +143,6 @@ export default function OrdersPage() {
                   </td>
                   <td>
                     <StatusPill status={o.status} />
-                  </td>
-                  <td>
-                    <div className="row" style={{ gap: 8, justifyContent: "flex-end" }}>
-                      {o.status === "submitted" ? (
-                        <button
-                          type="button"
-                          className="btn-sec btn-sm"
-                          disabled={busyId === o.id}
-                          onClick={async () => {
-                            setBusyId(o.id);
-                            try {
-                              await api(`/api/orders/${o.id}/confirm`, {
-                                method: "POST",
-                              });
-                              await load();
-                            } catch (e) {
-                              setError(
-                                e instanceof Error ? e.message : "Confirm failed",
-                              );
-                            } finally {
-                              setBusyId(null);
-                            }
-                          }}
-                        >
-                          Confirm
-                        </button>
-                      ) : null}
-                      {o.status === "confirmed" ? (
-                        <button
-                          type="button"
-                          className="btn-sec btn-sm"
-                          disabled={busyId === o.id}
-                          onClick={async () => {
-                            setBusyId(o.id);
-                            try {
-                              const res = await api<{ invoice?: { id: string } }>(
-                                `/api/orders/${o.id}/invoice`,
-                                { method: "POST" },
-                              );
-                              if (res.invoice) {
-                                router.push(`/office/invoices/${res.invoice.id}`);
-                                return;
-                              }
-                              await load();
-                            } catch (e) {
-                              setError(
-                                e instanceof Error ? e.message : "Invoice failed",
-                              );
-                            } finally {
-                              setBusyId(null);
-                            }
-                          }}
-                        >
-                          Invoice
-                        </button>
-                      ) : null}
-                      {o.invoice ? (
-                        <Link
-                          href={`/office/invoices/${o.invoice.id}`}
-                          className="btn-ghost btn-sm"
-                        >
-                          Open invoice
-                        </Link>
-                      ) : (
-                        <Link
-                          href={`/office/orders/${o.id}`}
-                          className="btn-ghost btn-sm"
-                        >
-                          Open
-                        </Link>
-                      )}
-                    </div>
                   </td>
                 </tr>
               ))}
