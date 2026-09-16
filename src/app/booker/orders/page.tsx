@@ -33,14 +33,14 @@ const CHIPS = [
 ];
 
 function bookerOrderLabel(o: OrderRow): { label: string; status: string } {
-  if (o.status === "settled" || o.invoice?.paymentStatus === "paid") {
+  if (
+    o.status === "settled" ||
+    o.invoice?.paymentStatus === "paid" ||
+    (o.invoice != null && o.invoice.balance <= 0)
+  ) {
     return { label: "Collected", status: "settled" };
   }
-  if (
-    o.invoice &&
-    (o.invoice.paymentStatus === "unpaid" ||
-      o.invoice.paymentStatus === "partial")
-  ) {
+  if (o.invoice && o.invoice.balance > 0) {
     return { label: "To collect", status: "unpaid" };
   }
   if (o.status === "confirmed" || o.status === "invoiced") {
@@ -95,7 +95,7 @@ export default function BookerOrdersPage() {
       <div className="stack" style={{ gap: 10 }}>
         {filtered.map((o) => {
           const ui = bookerOrderLabel(o);
-          const canCollect = ui.label === "To collect" && o.invoice;
+          const canCollect = Boolean(o.invoice && o.invoice.balance > 0);
           return (
             <div key={o.id} className="pcard" data-row>
               <div className="rowb">
