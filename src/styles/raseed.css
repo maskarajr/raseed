@@ -230,13 +230,19 @@ p{margin:0;text-wrap:pretty}
    anchors them to the viewport. Only the positioning changed. */
 .scrim{position:fixed;inset:0;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .18s;z-index:40}
 .scrim.is-open{opacity:1;pointer-events:auto}
-.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-radius:18px 18px 0 0;padding:10px 16px 18px;transform:translateY(102%);transition:transform .2s ease;max-height:82%;overflow:hidden;z-index:50}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-radius:18px 18px 0 0;padding:10px 16px calc(18px + env(safe-area-inset-bottom,0px));transform:translateY(102%);transition:transform .2s ease;max-height:min(82dvh,100dvh);overflow-x:hidden;overflow-y:auto;z-index:50;box-sizing:border-box;width:auto;max-width:100%}
 .sheet.is-open{transform:translateY(0)}
 .grab{width:36px;height:4px;border-radius:999px;background:var(--border);margin:0 auto 12px}
-.sheet-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-/* office modal variant — the same sheet, centred */
-.sheet-d{left:50%;right:auto;width:560px;bottom:22px;border-radius:18px;padding:16px 20px 20px;transform:translate(-50%,102%);box-shadow:0 24px 60px -24px color-mix(in oklch, var(--fg) 45%, transparent)}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;min-width:0}
+.sheet-h .h3s{min-width:0;flex:1;overflow-wrap:anywhere}
+/* office modal variant — the same sheet, centred; never wider than the viewport */
+.sheet-d{left:50%;right:auto;width:min(560px,calc(100vw - 24px));max-width:calc(100vw - 24px);bottom:22px;border-radius:18px;padding:16px 20px calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,102%);box-shadow:0 24px 60px -24px color-mix(in oklch, var(--fg) 45%, transparent)}
 .sheet-d.is-open{transform:translate(-50%,0)}
+@media (max-width:720px){
+  .sheet-d{left:0;right:0;width:auto;max-width:100%;bottom:0;border-radius:18px 18px 0 0;transform:translateY(102%);box-shadow:none;padding:10px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+  .sheet-d.is-open{transform:translateY(0)}
+  .sheet .row{flex-wrap:wrap}
+}
 .drawer{position:fixed;top:0;right:0;bottom:0;width:400px;background:var(--surface);border-left:1px solid var(--border);transform:translateX(102%);transition:transform .2s ease;display:flex;flex-direction:column;z-index:50}
 .drawer.is-open{transform:translateX(0)}
 .drawer-h{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
