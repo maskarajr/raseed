@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { SessionUser } from "@/server/auth/session";
 import { ApiError } from "@/server/http";
-import type { PaymentKind, PaymentMode } from "@/lib/enums";
+import type { CollectPaymentKind, PaymentMode } from "@/lib/enums";
 import { deriveInvoiceState } from "./invoiceMath";
 import { settleOrderIfPaid } from "./settle";
 
@@ -9,7 +9,7 @@ export type RecordPaymentInput = {
   invoiceId: string;
   amount: number;
   mode: PaymentMode;
-  kind?: PaymentKind;
+  kind?: CollectPaymentKind;
 };
 
 export async function recordPayment(

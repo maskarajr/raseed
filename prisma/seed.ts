@@ -121,7 +121,7 @@ async function main() {
             customerId: shop2.id,
             status: "confirmed",
             subtotal: p2.price,
-            advance: 10000,
+            advance: 0,
             items: {
               create: {
                 productId: p2.id,
