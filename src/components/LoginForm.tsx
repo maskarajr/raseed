@@ -32,12 +32,13 @@ export function LoginForm() {
   return (
     <div className="login-wrap">
       <main className="login" style={{ minHeight: "100vh" }}>
-        <div className="login-l" style={{ gap: 18 }}>
+        <div className="login-l">
+          <div className="login-card">
           <div className="rbrand" style={{ padding: 0 }}>
             <BrandMark compact className="rmark" />
             Raseed
           </div>
-          <div style={{ maxWidth: "34ch" }}>
+          <div>
             <h1 className="login-h login-h-office">Sign in to the office</h1>
             <h1 className="login-h login-h-booker">Sign in to the route</h1>
             <p className="muted" style={{ fontSize: 14, marginTop: 8 }}>
@@ -47,7 +48,7 @@ export function LoginForm() {
           <form
             onSubmit={onSubmit}
             className="stack"
-            style={{ maxWidth: 340, gap: 14 }}
+            style={{ gap: 14 }}
           >
             <div className="lfield">
               <label htmlFor="email">Work email</label>
@@ -85,6 +86,7 @@ export function LoginForm() {
               Trouble signing in? Ask your supervisor to reset your password.
             </p>
           </form>
+          </div>
           <PwaInstallCta />
         </div>
         <div className="login-r">
