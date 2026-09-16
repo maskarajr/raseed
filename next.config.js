@@ -3,8 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   experimental: {
     serverComponentsExternalPackages: [
-      "better-sqlite3",
-      "@prisma/adapter-better-sqlite3",
+      "@libsql/client",
+      "@libsql/win32-x64-msvc",
+      "@prisma/adapter-libsql",
     ],
   },
 };

@@ -15,10 +15,10 @@
     "prisma:migrate": "prisma migrate dev"
   },
   "dependencies": {
-    "@prisma/adapter-better-sqlite3": "7.10.0",
+    "@prisma/adapter-libsql": "7.10.0",
     "@prisma/client": "7.10.0",
+    "@libsql/client": "0.17.0",
     "bcryptjs": "2.4.3",
-    "better-sqlite3": "11.10.0",
     "dotenv": "16.4.5",
     "jose": "5.9.6",
     "next": "14.2.15",
@@ -28,7 +28,6 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "2.4.6",
-    "@types/better-sqlite3": "7.6.12",
     "@types/node": "20.16.11",
     "@types/react": "18.3.11",
     "@types/react-dom": "18.3.0",
@@ -45,7 +44,6 @@
   "overrides": {
     "prisma": "7.10.0",
     "@prisma/client": "7.10.0",
-    "@prisma/adapter-better-sqlite3": "7.10.0",
-    "better-sqlite3": "11.10.0"
+    "@prisma/adapter-libsql": "7.10.0"
   }
 }

@@ -5,7 +5,7 @@ Raseed is a self-hosted operations tool for a wholesale distributor (agency). It
 ## Tech stack
 
 - Next.js 14 (App Router) + TypeScript
-- Prisma ORM 7 + SQLite via `@prisma/adapter-better-sqlite3` (`prisma/dev.db`) — generated types live in `src/generated/prisma`
+- Prisma ORM 7 + SQLite via `@prisma/adapter-libsql` (`prisma/dev.db`) — generated types live in `src/generated/prisma`
 - Tailwind CSS
 - Zod for all request validation
 - Auth: credentials (email + password, bcrypt), session in an httpOnly JWT cookie (`jose`)
@@ -52,20 +52,17 @@ npm install
 npx prisma generate
 ```
 
-`generate` must print **7.10.0**. Prisma generate already ran; the remaining warning is **install scripts blocked**. Without them, `better-sqlite3` has no native binary and login/API will crash. In that same PowerShell:
+`generate` must print **7.10.0**. SQLite goes through `@libsql/client` (Windows prebuild), not `better-sqlite3` (that package needs a blocked `node-gyp` script). After pull:
 
 ```powershell
-npm install-scripts approve better-sqlite3
-npm install-scripts approve @prisma/engines
-npm install-scripts approve prisma
-npm install-scripts approve esbuild
+git pull
 npm install
 npx prisma migrate deploy
 npm run seed
 npm run dev
 ```
 
-Ignore `npm audit fix --force` and the Next 14.2.15 security notice for this install — that is a later upgrade, not Prisma. The `prebuild-install` deprecation is noise from `better-sqlite3`.
+Ignore `npm audit fix --force` and the Next 14.2.15 security notice for this install.
 
 ## Seeded login credentials
 
