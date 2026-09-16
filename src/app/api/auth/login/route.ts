@@ -8,7 +8,7 @@ import type { Role } from "@/lib/enums";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, asRole } = await parseBody(req, loginSchema);
+    const { email, password } = await parseBody(req, loginSchema);
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || !user.active) {
@@ -18,13 +18,6 @@ export async function POST(req: NextRequest) {
     const ok = await verifyPassword(password, user.passwordHash);
     if (!ok) {
       throw new ApiError(401, "Invalid credentials");
-    }
-
-    if (asRole === "booker" && user.role !== "booker") {
-      throw new ApiError(403, "That account is not a booker");
-    }
-    if (asRole === "office" && user.role === "booker") {
-      throw new ApiError(403, "That account is a booker — use Booker to continue");
     }
 
     const sessionUser = {

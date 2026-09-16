@@ -1,0 +1,58 @@
+- generic [active] [ref=f27e1]:
+  - generic [ref=f27e3]:
+    - generic [ref=f27e4]:
+      - generic [ref=f27e5]: Raseed
+      - generic [ref=f27e6]: Booker
+    - generic [ref=f27e7]:
+      - link "Back" [ref=f27e8] [cursor=pointer]:
+        - /url: /booker
+        - text: ←
+      - generic [ref=f27e9]: New order
+      - generic [ref=f27e10]: Step 1 of 3
+    - generic [ref=f27e12]:
+      - generic "Step 1 of 3" [ref=f27e13]
+      - generic [ref=f27e17]:
+        - paragraph [ref=f27e18]: Step 1 · Pick the shop
+        - textbox "Search shop name, phone, area…" [ref=f27e20]
+        - generic [ref=f27e42]:
+          - button "CM City Mart DHA · 0301-4455667" [ref=f27e43] [cursor=pointer]:
+            - generic [ref=f27e44]: CM
+            - generic [ref=f27e45]:
+              - text: City Mart
+              - generic [ref=f27e46]: DHA · 0301-4455667
+          - button "RK Rehman Karyana Township · 0345-5566778" [ref=f27e47] [cursor=pointer]:
+            - generic [ref=f27e48]: RK
+            - generic [ref=f27e49]:
+              - text: Rehman Karyana
+              - generic [ref=f27e50]: Township · 0345-5566778
+          - button "BG Bismillah General Store Model Town · 0333-9988776" [ref=f27e51] [cursor=pointer]:
+            - generic [ref=f27e52]: BG
+            - generic [ref=f27e53]:
+              - text: Bismillah General Store
+              - generic [ref=f27e54]: Model Town · 0333-9988776
+          - button "NS New Sabzi Mandi Store Johar Town · 0321-2223344" [ref=f27e55] [cursor=pointer]:
+            - generic [ref=f27e56]: NS
+            - generic [ref=f27e57]:
+              - text: New Sabzi Mandi Store
+              - generic [ref=f27e58]: Johar Town · 0321-2223344
+          - button "AK Al-Madina Kiryana Store Gulberg · 0300-1234567" [ref=f27e59] [cursor=pointer]:
+            - generic [ref=f27e60]: AK
+            - generic [ref=f27e61]:
+              - text: Al-Madina Kiryana Store
+              - generic [ref=f27e62]: Gulberg · 0300-1234567
+        - button "Can’t find? Add a new shop" [ref=f27e21] [cursor=pointer]
+      - generic [ref=f27e22]:
+        - generic [ref=f27e23]:
+          - generic [ref=f27e24]: 0 items
+          - generic [ref=f27e25]: Rs 0
+        - button "Continue" [disabled] [ref=f27e27]
+    - navigation [ref=f27e28]:
+      - link "Home" [ref=f27e29] [cursor=pointer]:
+        - /url: /booker
+      - link "Orders" [ref=f27e32] [cursor=pointer]:
+        - /url: /booker/orders
+      - link "New" [ref=f27e35] [cursor=pointer]:
+        - /url: /booker/orders/new
+      - link "Account" [ref=f27e38] [cursor=pointer]:
+        - /url: /booker/account
+  - alert [ref=f27e41]

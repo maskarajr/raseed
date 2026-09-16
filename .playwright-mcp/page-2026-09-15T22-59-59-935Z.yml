@@ -1,0 +1,26 @@
+- generic [ref=f24e1]:
+  - alert [ref=f24e79]
+  - main [ref=f24e80]:
+    - generic [ref=f24e81]:
+      - generic [ref=f24e82]:
+        - generic [ref=f24e83]: R
+        - generic [ref=f24e84]: Raseed
+      - generic [ref=f24e85]:
+        - heading "Sign in to the office" [level=1] [ref=f24e86]
+        - paragraph [ref=f24e87]: Office hours 09:00–19:00 · Asia/Karachi
+      - generic [ref=f24e88]:
+        - generic [ref=f24e89]:
+          - generic [ref=f24e90]: Work email
+          - textbox "Work email" [ref=f24e91]: bilal@raseed.local
+        - generic [ref=f24e92]:
+          - generic [ref=f24e93]: Password
+          - textbox "Password" [ref=f24e94]: booker123
+        - button "Sign in" [ref=f24e95] [cursor=pointer]
+        - paragraph [ref=f24e96]: Trouble signing in? Ask your supervisor to reset your password.
+    - generic [ref=f24e98]:
+      - paragraph [ref=f24e99]: Continue as
+      - button [ref=f24e100] [cursor=pointer]:
+        - generic [ref=f24e101]: OfficeDashboard, orders, invoices
+      - button [active] [ref=f24e102] [cursor=pointer]:
+        - generic [ref=f24e103]: BookerRoute, capture, collections
+      - paragraph [ref=f24e104]: Phone layout · route first

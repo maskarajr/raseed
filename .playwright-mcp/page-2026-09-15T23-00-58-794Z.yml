@@ -1,0 +1,98 @@
+- generic [active] [ref=f27e1]:
+  - generic [ref=f27e3]:
+    - generic [ref=f27e4]:
+      - generic [ref=f27e5]: Raseed
+      - generic [ref=f27e6]: Booker
+    - generic [ref=f27e7]:
+      - link "Back" [ref=f27e8] [cursor=pointer]:
+        - /url: /booker
+        - text: ←
+      - generic [ref=f27e9]: New order
+      - generic [ref=f27e10]: Step 2 of 3
+    - generic [ref=f27e12]:
+      - generic "Step 2 of 3" [ref=f27e63]
+      - generic [ref=f27e17]:
+        - paragraph [ref=f27e64]: Step 2 · Add products
+        - textbox "Search SKU or name…" [ref=f27e66]
+        - generic [ref=f27e67]:
+          - generic [ref=f27e68]:
+            - generic [ref=f27e69]:
+              - text: Basmati Rice 5kg
+              - generic [ref=f27e70]: Rs 2,100 · bag
+            - generic [ref=f27e71]:
+              - button "−" [ref=f27e72] [cursor=pointer]
+              - generic [ref=f27e73]: "0"
+              - button "+" [ref=f27e74] [cursor=pointer]
+          - generic [ref=f27e75]:
+            - generic [ref=f27e76]:
+              - text: Cooking Oil 5L
+              - generic [ref=f27e77]: Rs 2,800 · tin
+            - generic [ref=f27e78]:
+              - button "−" [ref=f27e79] [cursor=pointer]
+              - generic [ref=f27e80]: "0"
+              - button "+" [ref=f27e81] [cursor=pointer]
+          - generic [ref=f27e82]:
+            - generic [ref=f27e83]:
+              - text: Lifebuoy Soap (6-pack)
+              - generic [ref=f27e84]: Rs 540 · pack
+            - generic [ref=f27e85]:
+              - button "−" [ref=f27e86] [cursor=pointer]
+              - generic [ref=f27e87]: "0"
+              - button "+" [ref=f27e88] [cursor=pointer]
+          - generic [ref=f27e89]:
+            - generic [ref=f27e90]:
+              - text: Olpers Milk 1L (12-pack)
+              - generic [ref=f27e91]: Rs 2,640 · carton
+            - generic [ref=f27e92]:
+              - button "−" [ref=f27e93] [cursor=pointer]
+              - generic [ref=f27e94]: "0"
+              - button "+" [ref=f27e95] [cursor=pointer]
+          - generic [ref=f27e96]:
+            - generic [ref=f27e97]:
+              - text: Sooper Biscuits (24 ticky)
+              - generic [ref=f27e98]: Rs 720 · carton
+            - generic [ref=f27e99]:
+              - button "−" [ref=f27e100] [cursor=pointer]
+              - generic [ref=f27e101]: "0"
+              - button "+" [ref=f27e102] [cursor=pointer]
+          - generic [ref=f27e103]:
+            - generic [ref=f27e104]:
+              - text: Sugar 1kg
+              - generic [ref=f27e105]: Rs 150 · pcs
+            - generic [ref=f27e106]:
+              - button "−" [ref=f27e107] [cursor=pointer]
+              - generic [ref=f27e108]: "0"
+              - button "+" [ref=f27e109] [cursor=pointer]
+          - generic [ref=f27e110]:
+            - generic [ref=f27e111]:
+              - text: Tapal Danedar Tea 950g
+              - generic [ref=f27e112]: Rs 1,450 · pack
+            - generic [ref=f27e113]:
+              - button "−" [ref=f27e114] [cursor=pointer]
+              - generic [ref=f27e115]: "0"
+              - button "+" [ref=f27e116] [cursor=pointer]
+          - generic [ref=f27e117]:
+            - generic [ref=f27e118]:
+              - text: Wheat Flour (Atta) 10kg
+              - generic [ref=f27e119]: Rs 1,250 · bag
+            - generic [ref=f27e120]:
+              - button "−" [ref=f27e121] [cursor=pointer]
+              - generic [ref=f27e122]: "0"
+              - button "+" [ref=f27e123] [cursor=pointer]
+      - generic [ref=f27e22]:
+        - generic [ref=f27e23]:
+          - generic [ref=f27e24]: 0 items
+          - generic [ref=f27e25]: Rs 0
+        - generic [ref=f27e26]:
+          - button "Back" [ref=f27e124] [cursor=pointer]
+          - button "Continue" [disabled] [ref=f27e125]
+    - navigation [ref=f27e28]:
+      - link "Home" [ref=f27e29] [cursor=pointer]:
+        - /url: /booker
+      - link "Orders" [ref=f27e32] [cursor=pointer]:
+        - /url: /booker/orders
+      - link "New" [ref=f27e35] [cursor=pointer]:
+        - /url: /booker/orders/new
+      - link "Account" [ref=f27e38] [cursor=pointer]:
+        - /url: /booker/account
+  - alert [ref=f27e41]

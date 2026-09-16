@@ -27,7 +27,7 @@ export default async function BookerLayout({
   children: React.ReactNode;
 }) {
   const session = await getSession();
-  if (!session) return children;
+  if (!session) redirect("/login");
   if (session.role !== "booker") redirect("/office");
 
   return (

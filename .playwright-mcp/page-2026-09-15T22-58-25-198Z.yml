@@ -1,0 +1,26 @@
+- generic [active] [ref=f15e1]:
+  - main [ref=f15e2]:
+    - generic [ref=f15e3]:
+      - generic [ref=f15e4]:
+        - generic [ref=f15e5]: R
+        - generic [ref=f15e6]: Raseed
+      - generic [ref=f15e7]:
+        - heading "Sign in to the office" [level=1] [ref=f15e8]
+        - paragraph [ref=f15e9]: Office hours 09:00–19:00 · Asia/Karachi
+      - generic [ref=f15e10]:
+        - generic [ref=f15e11]:
+          - generic [ref=f15e12]: Work email
+          - textbox "Work email" [ref=f15e13]
+        - generic [ref=f15e14]:
+          - generic [ref=f15e15]: Password
+          - textbox "Password" [ref=f15e16]
+        - button "Sign in" [ref=f15e17] [cursor=pointer]
+        - paragraph [ref=f15e18]: Trouble signing in? Ask your supervisor to reset your password.
+    - generic [ref=f15e20]:
+      - paragraph [ref=f15e21]: Continue as
+      - button [ref=f15e22] [cursor=pointer]:
+        - generic [ref=f15e23]: OfficeDashboard, orders, invoices
+      - button [ref=f15e24] [cursor=pointer]:
+        - generic [ref=f15e25]: BookerRoute, capture, collections
+      - paragraph [ref=f15e26]: Desktop app · full rail
+  - alert [ref=f15e27]

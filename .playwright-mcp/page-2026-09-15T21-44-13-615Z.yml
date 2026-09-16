@@ -1,0 +1,42 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e4]:
+    - heading "Error 1033" [level=1] [ref=f1e5]
+    - generic [ref=f1e6]: "Ray ID: a3bacfbc48466ac6 •"
+    - generic [ref=f1e7]: 2026-09-15 21:44:13 UTC
+    - heading "Cloudflare Tunnel error" [level=2] [ref=f1e8]
+  - generic [ref=f1e9]:
+    - generic [ref=f1e10]:
+      - heading "What happened?" [level=2] [ref=f1e11]
+      - paragraph [ref=f1e12]:
+        - text: You've requested a page on a website (raseed.alifera.xyz) that is on the
+        - link "Cloudflare" [ref=f1e13] [cursor=pointer]:
+          - /url: https://www.cloudflare.com/5xx-error-landing/
+        - text: network. The host (raseed.alifera.xyz) is configured as a Cloudflare Tunnel, and Cloudflare is currently unable to resolve it.
+    - generic [ref=f1e14]:
+      - heading "What can I do?" [level=2] [ref=f1e15]
+      - paragraph [ref=f1e16]:
+        - strong [ref=f1e17]: "If you are a visitor of this website:"
+        - text: Please try again in a few minutes.
+      - paragraph [ref=f1e18]:
+        - strong [ref=f1e19]: "If you are the owner of this website:"
+        - text: Ensure that cloudflared is running and can reach the network. You may wish to enable
+        - link "load balancing" [ref=f1e20] [cursor=pointer]:
+          - /url: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/routing-to-tunnel/lb/
+        - text: for your tunnel.
+  - generic [ref=f1e22]:
+    - text: Was this page helpful?
+    - button "Yes" [ref=f1e23] [cursor=pointer]
+    - button "No" [ref=f1e24] [cursor=pointer]
+  - paragraph [ref=f1e26]:
+    - generic [ref=f1e27]:
+      - text: "Cloudflare Ray ID:"
+      - strong [ref=f1e28]: a3bacfbc48466ac6
+    - text: •
+    - generic [ref=f1e29]:
+      - text: "Your IP:"
+      - button "Click to reveal" [ref=f1e30] [cursor=pointer]
+      - text: •
+    - generic [ref=f1e31]:
+      - text: Performance & security by
+      - link "Cloudflare" [ref=f1e32] [cursor=pointer]:
+        - /url: https://www.cloudflare.com/5xx-error-landing

@@ -10,7 +10,7 @@ export default async function OfficeLayout({
   children: React.ReactNode;
 }) {
   const session = await getSession();
-  if (!session) return children;
+  if (!session) redirect("/login");
   if (session.role === "booker") redirect("/booker");
 
   return (
