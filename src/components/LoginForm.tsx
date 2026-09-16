@@ -31,7 +31,7 @@ export function LoginForm() {
 
   return (
     <div className="login-wrap">
-      <main className="login">
+      <main className="login" style={{ minHeight: "100vh" }}>
         <div className="login-l" style={{ gap: 18 }}>
           <div className="rbrand" style={{ padding: 0 }}>
             <BrandMark compact className="rmark" />
