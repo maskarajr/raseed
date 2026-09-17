@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "postinstall": "prisma generate",
+    "postinstall": "node scripts/ensure-next-postcss.mjs && prisma generate",
     "start": "next start",
     "lint": "next lint",
     "seed": "prisma db seed",
@@ -47,11 +47,12 @@
     "@prisma/adapter-libsql": "7.10.0",
     "deepmerge-ts": "8.0.2",
     "mysql2": "3.24.4",
-    "esbuild": "0.25.12"
+    "esbuild": "0.25.12",
+    "postcss": "8.5.28"
   },
   "allowScripts": {
-    "esbuild": true,
     "prisma": true,
-    "@prisma/engines": true
+    "@prisma/engines": true,
+    "esbuild": true
   }
 }
