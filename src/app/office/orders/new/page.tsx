@@ -26,15 +26,11 @@ export default function NewOrderPage() {
   const [bookerId, setBookerId] = useState("");
   const [bookers, setBookers] = useState<{ id: string; name: string }[]>([]);
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [advance, setAdvance] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
 
   const subtotal = cart.reduce((s, l) => s + l.qty * l.unitPrice, 0);
-  const suggested = Math.min(10000, subtotal);
-  const cashNow = Math.max(0, Number(advance || suggested) || 0);
-  const collectLater = Math.max(0, subtotal - cashNow);
   const itemCount = cart.reduce((s, l) => s + l.qty, 0);
 
   async function submit() {
@@ -55,7 +51,6 @@ export default function NewOrderPage() {
             qty: l.qty,
             unitPrice: l.unitPrice,
           })),
-          advance: cashNow,
         }),
       });
       setResult({ code: res.order.code, warnings: res.warnings });
@@ -110,10 +105,6 @@ export default function NewOrderPage() {
               customer={customer}
               cart={cart}
               subtotal={subtotal}
-              cashNow={cashNow}
-              collectLater={collectLater}
-              advance={advance}
-              setAdvance={setAdvance}
             />
           )}
         </div>
@@ -432,22 +423,14 @@ function ReviewStep({
   customer,
   cart,
   subtotal,
-  cashNow,
-  collectLater,
-  advance,
-  setAdvance,
 }: {
   customer: Customer;
   cart: CartLine[];
   subtotal: number;
-  cashNow: number;
-  collectLater: number;
-  advance: string;
-  setAdvance: (v: string) => void;
 }) {
   return (
     <>
-      <p className="ptitle-s">Step 3 · Advance and submit</p>
+      <p className="ptitle-s">Step 3 · Review and submit</p>
       <div className="pcard">
         <div className="prow">
           <span>{customer.name}</span>
@@ -469,28 +452,13 @@ function ReviewStep({
             <Money value={subtotal} />
           </span>
         </div>
-        <div className="lfield" style={{ marginTop: 8 }}>
-          <label>Cash advance taken now</label>
-          <input
-            className="linput"
-            inputMode="numeric"
-            value={advance}
-            onChange={(e) => setAdvance(e.target.value)}
-            placeholder="0"
-          />
-        </div>
         <div className="prow">
           <span className="pname">Collect on delivery</span>
           <span className="num" style={{ fontWeight: 600 }}>
-            <Money value={collectLater} />
+            <Money value={subtotal} />
           </span>
         </div>
       </div>
-      {cashNow > 0 && cashNow > subtotal ? (
-        <div className="warnbox" style={{ marginTop: 10 }}>
-          Advance cannot exceed the order total.
-        </div>
-      ) : null}
     </>
   );
 }

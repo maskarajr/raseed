@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { json } from "@/server/http";
 import { clearSessionCookie } from "@/server/auth/session";
 

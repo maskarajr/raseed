@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { requireRole } from "@/server/auth/requireRole";
 import { json } from "@/server/http";
 import { officeHomeSummary } from "@/server/services/officeHome";

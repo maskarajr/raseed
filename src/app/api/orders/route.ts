@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/server/auth/requireRole";
@@ -66,7 +67,6 @@ export const POST = requireRole(
     notes: input.notes,
     items: input.items,
     submit: input.submit ?? false,
-    advance: input.advance,
   });
   return json(result, 201);
 });
