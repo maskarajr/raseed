@@ -237,13 +237,13 @@ progress dots; the step body; a sticky footer CTA.
 **Steps**
 1. **Pick the shop** — searchable customer list.
 2. **Add products** — qty steppers, soft stock warning (`Warnbox`), running line total.
-3. **Advance and submit** — review with the large total; `Advance` and `Collect on delivery`
-   rows; submit.
+3. **Review and submit** — review with the large total; cash on delivery — collect later on
+   the invoice.
 **Actions** — `Continue` advances; the last step's button becomes `Submit order`; back
 navigates steps; submit is disabled until a line has qty > 0.
-**Acceptance** — soft stock warning never blocks; review math is
-`total = Σ(qty×price)`, `advance = min(10,000, total)`, `balance = total − advance`; the step
-title is "Advance and submit" and no copy implies installments or credit.
+**Acceptance** — soft stock warning never blocks; review math is `total = Σ(qty×price)` with
+no advance; the step title is "Review and submit" and no copy implies installments, credit,
+or cash advance.
 
 ## `/booker/account` — Account
 `frame-booker-account`
@@ -261,7 +261,7 @@ title is "Advance and submit" and no copy implies installments or credit.
 
 | Overlay | Frame | Spec |
 |---|---|---|
-| Record payment | `frame-overlay-payment`, inline `#sheet-payment` | Modal sheet. `Record payment · INV-2291`; type options **Part payment / Cash advance / Full settlement**; `Amount collected`; method (Cash / Cheque / …); `Cancel` + `Record payment`. Toast on submit reports the new balance. |
+| Record payment | `frame-overlay-payment`, inline `#sheet-payment` | Modal sheet. `Record payment · INV-2291`; type options **Part payment / Full settlement**; `Amount collected`; method (Cash / Cheque / …); `Cancel` + `Record payment`. Toast on submit reports the new balance. |
 | Log return | `frame-overlay-return`, inline `#sheet-return` | Modal sheet. `Log return · INV-2294`; per-line returned qty; restock note; `Return value`; `Cancel` + `Log return`. Toast reports stock restocked, pending office approval. |
 | New product | `frame-overlay-new-product`, drawer in `frame-office-products` | Drawer. `New product` fields (SKU, description, pack, pricing, reorder level); `Cancel` + `Create product`. |
 

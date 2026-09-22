@@ -106,17 +106,15 @@ close -> overlay closes + scrim releases
 **Totals (derived)**
 ```
 total   = Σ(qty × price)
-advance = min(10,000, total)     // a cash advance suggestion, editable
-balance = total − advance
 ```
-- The review step shows the large total, the advance, and the balance.
+- Review step shows the large total. Collection happens later on the invoice (COD).
 - Submit is disabled while `items == 0`.
 
 **Steps**
 ```
 step 0  Pick the shop       // searchable customers
 step 1  Add products        // qty, soft stock warning, running total
-step 2  Advance and submit  // review, advance + collect on delivery
+step 2  Review and submit   // review totals; cash on delivery — no advance
 ```
 - Progress dots: current `--fg`, done a 45% `--fg` tint, upcoming `--border`.
 - The footer button reads `Continue` until the last step, then `Submit order`.
@@ -188,9 +186,10 @@ and reachable before invoicing.
 An invoice carries exactly two money figures: **collected to date** and **balance due**. The
 UI labels the second `To collect`.
 
-**Payments** — cash advance or partial. There is no installment plan, no credit term, no due
-date, no credit limit. Valid payment types: `Part payment`, `Cash advance`, `Full settlement`.
-Any copy that implies a payment schedule is a defect.
+**Payments** — collect on the invoice only (part or full). There is no cash advance on the
+order, no installment plan, no credit term, no due date, no credit limit. Valid payment
+types: `Part payment`, `Full settlement`. Any copy that implies a payment schedule or credit
+is a defect.
 
 **Returns** — a per-line return reduces the balance and restocks the godown; it is logged
 against the invoice and held for office approval.
@@ -226,7 +225,7 @@ These are required for ship; the click-through board does not implement them.
 3. No raw hex outside the token layer; no gradients; no emoji as icons.
 4. At most two green marks visible per screen, overlays included.
 5. Filters: reset chip works, terms are disjoint, empty state and count track the result.
-6. Capture wizard: submit disabled at zero items; totals/advance/balance derive correctly.
+6. Capture wizard: submit disabled at zero items; total = Σ(qty×price); no advance field.
 7. Overlays: scrim closes, focus is trapped and restored, base dims.
 8. Print route has no chrome and its amounts reconcile with the invoice.
 9. Keyboard pass over login, each list, each overlay, and the wizard.
