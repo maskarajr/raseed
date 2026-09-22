@@ -386,10 +386,10 @@ Step 3 · Advance and submit → review with the large total, advance/collect ro
 - `QtyStepper` (`.qty-ctl`): ± buttons around a mono value; a zero row gets `.qty-row.is-zero`
   (50% opacity). Stock is a **soft** warning — it never blocks the add.
 - The primary submit is disabled until at least one line has quantity > 0.
-- Review math: `total = Σ(qty × price)`; `advance = min(10,000, total)`;
-  `balance = total − advance`. The advance is a suggestion the booker can raise or lower; it
-  is cash, never a credit facility.
-- Copy: step 3 is "Advance and submit". Never "Payment plan", "Installment", or "Credit".
+- Review math: `total = Σ(qty × price)`. No cash-advance field. Collect part or full on the
+  invoice after COD delivery.
+- Copy: step 3 is "Review and submit". Never "Payment plan", "Installment", "Credit", or
+  "Cash advance".
 
 Reference: `frame-booker-capture`.
 

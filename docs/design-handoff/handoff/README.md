@@ -105,7 +105,7 @@ CTA and safe-area padding.
 2. **Status is a pill from the five pairs only.** No invented tone, no coloured rows, no coloured body text. One label maps to one tone across both surfaces. Outstanding money is always `To collect` (`warn`); `bad` is only `Cancelled` / `Out of stock`.
 3. **Green appears at most twice per screen** — the brand mark plus one primary action. Active nav, active filter chips, selected options, wizard dots and switches use `--fg` tints, never green.
 4. **The booker owns the loop:** visit → capture order → office confirms and invoices → booker delivers and collects cash. Every booker screen shows collected vs booked.
-5. **Payments are cash advance or partial. Never credit.** No installments, no credit terms, no due dates, no credit limits. An invoice carries two numbers only: collected to date and balance due. Copy implying a payment timeline is a defect.
+5. **Orders are COD. Collect on the invoice (part or full). Never credit, never cash advance.** No installments, no credit terms, no due dates, no credit limits. An invoice carries two numbers only: collected to date and balance due. Copy implying a payment timeline or an advance on submit is a defect.
 6. **Light canvas is the default.** Rails, top bars and tables on `--surface`; working area on `--bg`. The dark set is an opt-in token block, never a fork of the light one — see §6.
 7. **Numbers right, labels left, nothing wraps inside a table cell.** Do not re-enable wrapping to make a column fit; use `.tbl-wrap` for horizontal scroll on narrow tables instead.
 

@@ -105,7 +105,7 @@ This logs in as booker and office, drives the entire happy path against the real
 - **Soft stock warning**: ordering more than available returns a non-blocking warning; submission is never blocked.
 - **Invoicing**: confirming an order lets office generate an invoice — creates the invoice, sets the order `invoiced`, and deducts stock (`sale` ledger reason) in one transaction.
 - **Returns**: office logs product + qty against an invoice → restock (`return` reason) + invoice total/balance/status adjust down + ledger row, all in one transaction.
-- **Payments**: cash/credit payments update `amountPaid`/`balance`/`paymentStatus`; the record-payment sheet defaults to the outstanding balance, partial payments are allowed, and a single payment cannot exceed the remaining balance. Leaving a balance unpaid is valid — the **Balance due** figure is itself the credit signal (no separate credit badge). Invoice totals show **Subtotal · Returns (−) · Paid · Balance due**, where `Balance due = line totals − returns − payments`.
+- **Payments**: cash on delivery. Collect on the invoice only (part or full) — never credit, never a cash advance on the order. Payments update `amountPaid`/`balance`/`paymentStatus`; the record-payment sheet defaults to the outstanding balance; a single payment cannot exceed the remaining balance. **Balance due** / **To collect** is outstanding collection, not a credit sale. Invoice totals: **Subtotal · Returns (−) · Paid · Balance due**, where `Balance due = line totals − returns − payments`.
 
 ## Making it reachable to bookers (remote access)
 

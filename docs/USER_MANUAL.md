@@ -30,7 +30,7 @@ The correct surface is chosen automatically by your role. To sign out, use the *
 - **Invoice** — created from a confirmed order. Deducting stock happens at this step.
 - **Return** — a customer sends items back. Logged against an invoice: stock is restocked and the invoice balance drops.
 - **Payment** — cash received against an invoice.
-- **Balance due** — `Subtotal − Returns − Payments`. This is the amount the shop still owes. A shop with an unpaid balance is effectively a credit sale — there is no separate "credit" label.
+- **Balance due** — `Subtotal − Returns − Payments`. Amount still to collect on the invoice (COD). Not a credit sale.
 - **Settled** — an order settles **automatically** the moment its invoice balance reaches **Rs 0** (through payments and/or returns). There is no manual "settle" button.
 
 **Status pills** always show a colored chip **and** a text label:
@@ -151,7 +151,7 @@ The invoices list shows Total, Paid, **Balance due**, and payment status. Open o
 3. Method is **Cash** (v1 is cash-only).
 4. Click **Record payment**. Balance updates; when it hits Rs 0 the order becomes **Settled** automatically.
 
-Leaving a balance unpaid is fine — that is a credit sale, tracked by the Balance due figure.
+A remaining balance stays **To collect** until part or full cash is recorded on the invoice. There is no credit sale and no cash advance on the order.
 
 ### Log a return
 1. Click **Log return**. The sheet is titled **Log returns — Invoice #…**.
@@ -245,6 +245,6 @@ Pick a **From**/**To** date range and click **Apply**. You get:
 - **How do I set a new stock total?** You don't type a total — record the change (delta) on the **Stock** page so the ledger stays accurate. To go from 20 to 70, enter `+50`.
 - **What does "reorder level" do?** It only flags a product **Low** when stock falls to or below it. It's a reminder to buy more; it doesn't order anything.
 - **Why is stock negative?** An over-sold order was invoiced. The stock warning never blocks invoicing; record a purchase to bring it positive.
-- **How do I do a credit sale?** Just invoice and leave the balance unpaid (or take a partial payment). The **Balance due** is the credit signal.
+- **Can I sell on credit?** No. Orders are cash on delivery. Collect part or full on the invoice only. Unpaid **Balance due** is still to collect, not credit.
 - **Why isn't there a "settled" button?** Orders settle automatically the instant the invoice balance hits Rs 0 (via payments and/or returns).
 - **Can a booker create a shop?** Yes — during step 1 of a new order via **Can't find? Add a new shop**. Office can also add shops under **Customers**.

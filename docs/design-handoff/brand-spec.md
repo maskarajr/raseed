@@ -51,9 +51,10 @@ Mono carries every number, ID, date and route — tabular, never proportional.
 1. **The booker owns the loop, not just the order.** Route visit → capture order → after the office
    invoices, **deliver and collect the cash**. Collection is the booker's measure, so every booker
    screen shows collected-vs-booked, and a shop that owes money is flagged before a new order is taken.
-2. **Money in is cash advance or partial — never credit.** No installments, no credit terms, no due
-   dates, no credit limits. An invoice carries two numbers only: **collected to date** and **balance
-   due**. Copy that implies a payment timeline is a defect.
+2. **Money in is collect-on-invoice (part or full) — never credit, never cash advance.** No
+   installments, no credit terms, no due dates, no credit limits. An invoice carries two
+   numbers only: **collected to date** and **balance due**. Copy that implies a payment
+   timeline or an advance at order submit is a defect.
 3. **Fulfilment follows the invoice.** Office confirms → invoices → booker delivers → cash collected.
    Returned goods restock the godown and reduce the balance.
 
