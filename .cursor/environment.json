@@ -2,10 +2,5 @@
   "name": "Raseed",
   "user": "ubuntu",
   "install": "./scripts/cloud-agent-install.sh",
-  "terminals": [
-    {
-      "name": "dev-server",
-      "command": "npm run dev"
-    }
-  ]
+  "start": "npm run dev"
 }
