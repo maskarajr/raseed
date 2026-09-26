@@ -135,18 +135,26 @@ export default function NewOrderPage() {
   );
 }
 
+const STEP_LABELS = ["Shop", "Products", "Review"] as const;
+
 function Steps({ step }: { step: 1 | 2 | 3 }) {
   return (
-    <div className="wiz-dots" aria-label={`Step ${step} of 3`}>
-      {([1, 2, 3] as const).map((n) => (
-        <div
-          key={n}
-          className={`wiz-dot${n === step ? " is-on" : ""}${n < step ? " is-done" : ""}`}
-        />
-      ))}
+    <div className="wsteps" aria-label={`Step ${step} of 3`}>
+      {STEP_LABELS.map((lab, i) => {
+        const n = (i + 1) as 1 | 2 | 3;
+        const cls = `wstep${n === step ? " is-on" : ""}${n < step ? " is-done" : ""}`;
+        return (
+          <div className={cls} key={lab}>
+            <span className="wstep-bar" style={{ ["--i" as string]: i }}></span>
+            <span className="wstep-lab">{lab}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
+
+type CustomerRow = Customer & { outstanding?: number; toCollect?: number };
 
 function CustomerStep({
   selected,
@@ -156,12 +164,12 @@ function CustomerStep({
   onSelect: (c: Customer) => void;
 }) {
   const [search, setSearch] = useState("");
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [showCreate, setShowCreate] = useState(false);
 
   async function load(q: string) {
     const query = q ? `?search=${encodeURIComponent(q)}` : "";
-    const { customers: rows } = await api<{ customers: Customer[] }>(
+    const { customers: rows } = await api<{ customers: CustomerRow[] }>(
       `/api/customers${query}`,
     );
     setCustomers(rows);
@@ -186,24 +194,40 @@ function CustomerStep({
         />
       </div>
       <div className="stack" style={{ gap: 8 }}>
-        {customers.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => onSelect(c)}
-            className={`opt${selected?.id === c.id ? " is-on" : ""}`}
-          >
-            <span className="avatar">{initials(c.name)}</span>
-            <span>
-              <span className="pname">{c.name}</span>
-              <br />
-              <span className="pmeta">
-                {c.area ?? "—"}
-                {c.phone ? ` · ${c.phone}` : ""}
+        {customers.map((c) => {
+          const owes = c.outstanding ?? c.toCollect ?? 0;
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onSelect(c)}
+              className={`opt${selected?.id === c.id ? " is-on" : ""}`}
+            >
+              <span className="avatar">{initials(c.name)}</span>
+              <span className="grow">
+                <span className="pname">{c.name}</span>
+                <br />
+                <span className="pmeta">
+                  {c.area ?? "—"}
+                  {c.phone ? ` · ${c.phone}` : ""}
+                </span>
               </span>
-            </span>
-          </button>
-        ))}
+              <span className="shop-owes">
+                {owes > 0 ? (
+                  <>
+                    <span className="status s-warn">To collect</span>
+                    <span className="num"><Money value={owes} /></span>
+                  </>
+                ) : (
+                  <>
+                    <span className="status s-neu">Active</span>
+                    <span className="num"><Money value={0} /></span>
+                  </>
+                )}
+              </span>
+            </button>
+          );
+        })}
       </div>
       <button
         type="button"
@@ -429,12 +453,10 @@ function ReviewStep({
             <Money value={subtotal} />
           </span>
         </div>
-        <div className="prow">
-          <span className="pname">Collect on delivery</span>
-          <span className="num" style={{ fontWeight: 600 }}>
-            <Money value={subtotal} />
-          </span>
-        </div>
+      </div>
+      <div className="balance">
+        <span>Collect on delivery</span>
+        <span className="num"><Money value={subtotal} /></span>
       </div>
     </>
   );

@@ -547,6 +547,25 @@ html{scroll-behavior:smooth}
 .pstop-go{color:var(--muted);flex:none}
 .is-live .phero-bar span{animation:od-growx .9s var(--ease-out) both;animation-delay:.28s}
 
+/* ============================================================================
+   v3.2-A · capture wizard step bar + shop-owes  (frame-booker-capture) — P1-1
+   Replaces .wiz-dots with the board .wsteps; flags what a shop owes before the
+   order via .shop-owes; .balance callout on review. The pre-existing
+   `.is-live .wstep-bar` motion rule now has real markup to animate.
+   ========================================================================= */
+.wsteps{display:flex;gap:8px;margin-bottom:14px}
+.wstep{flex:1;display:flex;flex-direction:column;gap:5px}
+.wstep-bar{height:3px;border-radius:999px;background:var(--border)}
+.wstep-lab{font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;color:var(--muted)}
+.wstep.is-done .wstep-bar{background:color-mix(in oklch,var(--fg) 45%,var(--border))}
+.wstep.is-on .wstep-bar{background:var(--fg)}
+.wstep.is-on .wstep-lab{color:var(--fg);font-weight:600}
+.shop-owes{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none;text-align:right}
+.shop-owes .num{font-size:12px;color:var(--muted)}
+.balance{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--warn-bg);color:var(--warn-fg);border-radius:10px;padding:10px 12px;margin-top:10px}
+.balance .num{font-size:15px;font-weight:600}
+
 /* --- v3 · money metrics: one strip, no orphan "Rs" --- */
 .pstats.money{grid-template-columns:repeat(3,1fr);gap:0;background:var(--surface);
   border:1px solid var(--border);border-radius:14px;box-shadow:var(--sh-1);
