@@ -7,7 +7,7 @@ import { Money } from "@/components/Money";
 import { CountUp } from "@/components/CountUp";
 import { StatusPill } from "@/components/badges";
 import { BookerChrome } from "@/components/BookerChrome";
-import { startOfTodayKarachi, startOfWeekKarachi } from "@/lib/day";
+import { startOfTodayKarachi } from "@/lib/day";
 
 type OrderRow = {
   id: string;
@@ -36,14 +36,10 @@ export default function BookerHome() {
   }, []);
 
   const todayStart = startOfTodayKarachi().getTime();
-  const weekStart = startOfWeekKarachi().getTime();
   const todayOrders = orders.filter(
     (o) => new Date(o.createdAt).getTime() >= todayStart,
   );
   const todayBooked = todayOrders.reduce((s, o) => s + o.subtotal, 0);
-  const weekBooked = orders
-    .filter((o) => new Date(o.createdAt).getTime() >= weekStart)
-    .reduce((s, o) => s + o.subtotal, 0);
   const collectedAmt = orders
     .filter(
       (o) =>
@@ -57,91 +53,75 @@ export default function BookerHome() {
       ? Math.min(100, Math.round((collectedAmt / todayBooked) * 100))
       : 0;
   const first = name?.split(" ")[0] ?? "Booker";
-  const nextStops = orders
-    .filter((o) => {
-      if (CLOSED.includes(o.status)) return false;
-      if (o.invoice?.paymentStatus === "paid") return false;
-      if (o.invoice != null && (o.invoice.balance ?? 1) <= 0) return false;
-      return true;
-    })
-    .slice(0, 3);
+  const openStops = orders.filter((o) => {
+    if (CLOSED.includes(o.status)) return false;
+    if (o.invoice?.paymentStatus === "paid") return false;
+    if (o.invoice != null && (o.invoice.balance ?? 1) <= 0) return false;
+    return true;
+  });
+  const nextStops = openStops.slice(0, 5);
+  const stopsLeft = openStops.length;
+  const toCollect = openStops.filter((o) => (o.invoice?.balance ?? 0) > 0).length;
+  const routeLabel = orders.find((o) => o.customer.area)?.customer.area
+    ? `${orders.filter((o) => new Date(o.createdAt).getTime() >= todayStart).length} shops today`
+    : `${stopsLeft} stops open`;
+
+  const stopState = (o: OrderRow): { n: string; pill: string } => {
+    if (o.invoice?.paymentStatus === "paid" || (o.invoice != null && (o.invoice.balance ?? 1) <= 0))
+      return { n: "ok", pill: "settled" };
+    if (o.status === "confirmed" || o.status === "invoiced") return { n: "warm", pill: "to collect" };
+    return { n: "info", pill: "scheduled" };
+  };
 
   return (
     <BookerChrome title={`Salaam, ${first}`}>
       {error && <p className="muted">{error}</p>}
-      <div className="pcard">
-        <p className="ptitle-s">Today's orders</p>
-        <div className="rowb" style={{ marginTop: 6, alignItems: "flex-end" }}>
-          <span className="pbig num"><CountUp value={todayOrders.length} /></span>
-          <span style={{ textAlign: "right" }}>
-            <span className="num" style={{ fontSize: 15, display: "block" }}>
-              <Money value={todayBooked} />
-            </span>
-            <span className="pmeta">Week <Money value={weekBooked} /></span>
-          </span>
+      <div className="phero">
+        <div className="rowb">
+          <p className="phero-lab">Collected today</p>
+          <span className="phero-route">{routeLabel}</span>
         </div>
-      </div>
-      <div className="pcard">
-        <div className="rowb" style={{ marginBottom: 6 }}>
-          <p className="ptitle-s">Collections</p>
-          <span className="pmeta">vs booked</span>
-        </div>
+        <p className="phero-val num"><CountUp value={collectedAmt} money /></p>
+        <div className="phero-bar"><span style={{ width: `${pct}%` }}></span></div>
         <div className="rowb" style={{ marginTop: 8 }}>
-          <span className="pname">
-            <Money value={collectedAmt} /> collected
-          </span>
-          <StatusPill status="on track" />
+          <span className="phero-meta">{pct}% of <Money value={todayBooked} /> booked</span>
+          <span className="phero-meta"><Money value={Math.max(0, todayBooked - collectedAmt)} /> to go</span>
         </div>
-        <div
-          style={{
-            height: 6,
-            background: "var(--border)",
-            borderRadius: 999,
-            marginTop: 10,
-          }}
-        >
-          <div
-            style={{
-              height: 6,
-              width: `${pct}%`,
-              background: "var(--accent)",
-              borderRadius: 999,
-            }}
-          />
-        </div>
-        <p className="pmeta" style={{ marginTop: 6 }}>
-          {pct}% of <Money value={todayBooked} />
-        </p>
       </div>
+
+      <div className="pstats">
+        <div className="pstat"><p className="pstat-lab">Orders</p><p className="pstat-val num"><CountUp value={todayOrders.length} /></p></div>
+        <div className="pstat"><p className="pstat-lab">Stops left</p><p className="pstat-val num"><CountUp value={stopsLeft} /></p></div>
+        <div className="pstat"><p className="pstat-lab">To collect</p><p className="pstat-val num"><CountUp value={toCollect} /></p></div>
+      </div>
+
       <div className="row" style={{ gap: 10 }}>
-        <Link
-          href="/booker/orders/new"
-          className="btn-primary grow"
-          style={{ justifyContent: "center" }}
-        >
+        <Link href="/booker/orders/new" className="btn-primary grow" style={{ justifyContent: "center" }}>
           New order
         </Link>
-        <Link href="/booker/orders" className="btn-sec">
-          Collect
-        </Link>
+        <Link href="/booker/orders" className="btn-sec">Collect</Link>
       </div>
+
       <div className="pcard" style={{ flex: "1 0 auto" }}>
-        <p className="ptitle-s" style={{ marginBottom: 4 }}>
-          Next stops
-        </p>
-        {nextStops.map((o) => (
-          <Link key={o.id} href="/booker/orders" className="prow">
-            <span>
-              <span className="pname">{o.customer.name}</span>
-              <br />
-              <span className="pmeta">{o.customer.area ?? o.code}</span>
-            </span>
-            <StatusPill status={o.status} />
-          </Link>
-        ))}
-        {nextStops.length === 0 && (
-          <p className="tbl-empty">No open stops.</p>
-        )}
+        <div className="rowb" style={{ marginBottom: 2 }}>
+          <p className="ptitle-s">Next stops</p>
+          <span className="pmeta">Ordered by route</span>
+        </div>
+        {nextStops.length === 0 && <p className="tbl-empty">No open stops.</p>}
+        {nextStops.map((o, i) => {
+          const st = stopState(o);
+          return (
+            <div className="pstop" key={o.id}>
+              <span className={`pstop-n ${st.n}`}>{i + 1}</span>
+              <span className="grow">
+                <Link href="/booker/orders" className="pname">{o.customer.name}</Link>
+                <br />
+                <span className="pmeta">{o.customer.area ?? o.code}</span>
+              </span>
+              <StatusPill status={st.pill} />
+            </div>
+          );
+        })}
       </div>
     </BookerChrome>
   );

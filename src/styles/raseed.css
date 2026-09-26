@@ -521,6 +521,32 @@ html{scroll-behavior:smooth}
 .is-live .pipe-dot{animation:od-pop .42s var(--ease-spring) both;animation-delay:calc(var(--i,0)*70ms)}
 .is-live .pipe-line{animation:od-growx .5s var(--ease-out) both;animation-delay:calc(var(--i,0)*70ms)}
 
+/* ============================================================================
+   v3.2-A · booker PWA home  (frame-booker-home) — audit P0-2
+   Ink hero (.phero) + numbered route stops (.pstop/.pstop-n). Reuses
+   .pstats/.pstat/.pstat-lab/.pstat-val, .pname, .pmeta, .ptitle-s, .status.
+   ========================================================================= */
+.phero{background:var(--fg);color:var(--surface);border-radius:14px;padding:16px}
+.phero-lab{font-family:var(--font-mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+  color:color-mix(in oklch,var(--surface) 62%,transparent)}
+.phero-route{font-family:var(--font-mono);font-size:10px;letter-spacing:.05em;
+  color:color-mix(in oklch,var(--surface) 62%,transparent)}
+.phero-val{font-family:var(--font-display);font-size:37px;line-height:1;letter-spacing:-.028em;
+  font-weight:600;margin:9px 0 13px}
+.phero-bar{height:7px;border-radius:999px;background:color-mix(in oklch,var(--surface) 22%,transparent);
+  overflow:hidden}
+.phero-bar span{display:block;height:100%;border-radius:999px;background:var(--surface);transform-origin:left}
+.phero-meta{font-family:var(--font-mono);font-size:10px;color:color-mix(in oklch,var(--surface) 70%,transparent)}
+.pstop{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border)}
+.pstop:last-child{border-bottom:0}
+.pstop-n{width:24px;height:24px;border-radius:999px;background:var(--fg-soft);color:var(--fg);
+  display:grid;place-items:center;font-family:var(--font-mono);font-size:11px;flex:none}
+.pstop-n.warm{background:var(--warn-bg);color:var(--warn-fg)}
+.pstop-n.ok{background:var(--ok-bg);color:var(--ok-fg)}
+.pstop-n.info{background:var(--info-bg);color:var(--info-fg)}
+.pstop-go{color:var(--muted);flex:none}
+.is-live .phero-bar span{animation:od-growx .9s var(--ease-out) both;animation-delay:.28s}
+
 /* --- v3 · money metrics: one strip, no orphan "Rs" --- */
 .pstats.money{grid-template-columns:repeat(3,1fr);gap:0;background:var(--surface);
   border:1px solid var(--border);border-radius:14px;box-shadow:var(--sh-1);
