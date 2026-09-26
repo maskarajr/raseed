@@ -8,6 +8,7 @@
     "build": "prisma generate && next build",
     "postinstall": "node scripts/ensure-next-postcss.mjs && prisma generate",
     "start": "next start",
+    "preview": "node scripts/preview-v3.cjs",
     "lint": "next lint",
     "seed": "prisma db seed",
     "e2e": "tsx scripts/e2e.ts",
