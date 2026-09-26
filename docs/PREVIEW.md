@@ -1,45 +1,68 @@
 # v3 Preview — canonical URL & how to run (read before reviewing)
 
 **This is the single source of truth for where the v3 design preview lives.**
-Follow it so the preview and the main checkout are never confused again.
+Follow it so the preview and the main/dev server are never confused or
+mutually destructive.
 
-## Ports (fixed, do not improvise)
+## The one rule that matters: dev and preview use SEPARATE build dirs
 
-| Surface | Port | URL | What it serves |
-|---------|------|-----|----------------|
-| **v3 preview (this worktree)** | **3055** | http://localhost:3055 | Production build of branch `v3-alive-20260926` |
-| Main checkout `dev` | 3000 | http://localhost:3000 | The `raseed` main folder (NOT the v3 preview) |
+The earlier "unstyled page" bug happened because `npm run dev` and a running
+production preview both rewrote the same `.next` folder: the dev server
+regenerated `.next` and deleted the exact CSS file the preview was serving
+(its HTML still pointed at `f15e1fc8….css`, which no longer existed on disk ->
+HTTP 500 -> no styles).
 
-> Root cause of the earlier "looks like v2" scare: `:3000` was serving the main
-> folder's stale prod build while the v3 worktree dev server had died and held
-> no port. **Review the v3 work only on `:3055`.**
+Fixed by giving the preview its own isolated output directory:
 
-## Run the preview (durable)
+| Command | Port | Build dir | Safe to run while the other runs? |
+|---------|------|-----------|-----------------------------------|
+| `npm run dev` (main checkout / this worktree) | **3000** | `.next` | Yes |
+| `npm run preview` (durable v3 preview) | **3055** | **`.next-preview`** | Yes |
 
-From this worktree root (`raseed-wt-v3`):
+They can no longer clobber each other. `.next-preview` is git-ignored.
+
+## Canonical preview URL
+
+```
+http://localhost:3055     login: owner@raseed.local / owner123
+```
+
+`http://localhost:3000` is the dev/main checkout — **do not** judge the v3
+preview there.
+
+## Run the preview (durable + self-healing)
+
+From the `raseed-wt-v3` worktree root:
 
 ```bash
-npm run preview            # ensures a build exists, then serves on :3055
+npm run preview            # serves .next-preview on :3055, builds if missing
 npm run preview -- 3100    # optional: override the port
 ```
 
-The script (`scripts/preview-v3.cjs`):
-- serves `next start` (stable **production** server, not a dev process);
-- **auto-respawns** the server if it exits (up to 10x with backoff), so it does
-  not silently die;
-- prints branch / commit / build id / port at startup and logs to `preview-v3.log`.
+`scripts/preview-v3.cjs` will:
+- build into the isolated `.next-preview` **only if no build exists**;
+- serve via `next start` (stable production server, not a dev process);
+- **wait for readiness and verify the referenced stylesheet returns HTTP 200**;
+  if the CSS is missing/stale it rebuilds once and respawns;
+- auto-respawn `next start` if it exits unexpectedly (up to 10x, backoff),
+  logging to `preview-v3.log`;
+- if another healthy preview already owns the port, retire gracefully instead
+  of crash-looping (so two copies never fight).
 
-To keep it alive after you close your shell (Windows):
+Keep it alive after you close the shell (Windows):
 
 ```bat
 start cmd /c npm run preview
 ```
 
+Override build dir/port via env: `PREVIEW_DIST=.next-preview PREVIEW_PORT=3055 npm run preview`.
+
 ## Before the owner retests
 
-1. `git -C raseed-wt-v3 rev-parse --abbrev-ref HEAD` must show `v3-alive-20260926`.
-2. Confirm the startup banner build id matches `.next/BUILD_ID`.
-3. Open http://localhost:3055 and log in (`owner@raseed.local` / `owner123`).
-4. If the owner's OS has **reduce motion** enabled, the v3 motion layer is
-   suppressed by design — check OS accessibility settings before judging the
-   visual delta.
+1. Banner must show `branch v3-alive-20260926`, `dist .next-preview`, `port 3055`.
+2. Confirm log line `READY — styled preview live` (means the CSS self-check passed).
+3. Open http://localhost:3055, hard refresh (Ctrl+Shift+R), log in.
+4. If the owner's OS has **reduce motion** ON, the v3 motion layer is suppressed
+   by design — check OS accessibility settings before judging the visual delta.
+5. If it ever looks unstyled again, screenshot it and treat that as a defect
+   (but note dev/preview are now isolated, so the prior cause is gone).

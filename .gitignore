@@ -28,3 +28,5 @@ prisma/dev.db-journal
 .playwright-mcp/
 qc-*.png
 preview-v3.log
+
+.next-preview/
