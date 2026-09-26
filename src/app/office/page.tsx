@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
+import { CountUp } from "@/components/CountUp";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { StatusPill } from "@/components/badges";
 import { formatTodayKarachi } from "@/lib/day";
@@ -138,13 +139,18 @@ export default function OfficeDashboard() {
           </Link>
         </>
       }
+      trailing={
+        <span className="live">
+          <i></i>Live
+        </span>
+      }
     >
       {error && <p className="muted">{error}</p>}
       <div className="kpis">
         <div className="kpi">
           <p className="klab">Booked today</p>
           <p className="kval">
-            <Money value={kpis.bookedToday} />
+            <CountUp value={kpis.bookedToday} money />
           </p>
           <p className="kdelta">
             {kpis.ordersToday} orders · {vsY >= 0 ? "+" : ""}
@@ -154,13 +160,13 @@ export default function OfficeDashboard() {
         <div className="kpi">
           <p className="klab">Outstanding</p>
           <p className="kval">
-            <Money value={kpis.outstanding} />
+            <CountUp value={kpis.outstanding} money />
           </p>
           <p className="kdelta">{kpis.outstandingCount} invoices open</p>
         </div>
         <div className="kpi">
           <p className="klab">Awaiting confirmation</p>
-          <p className="kval num">{kpis.awaitingConfirm}</p>
+          <p className="kval num"><CountUp value={kpis.awaitingConfirm} /></p>
           <p className="kdelta">
             {kpis.oldestAwaitingMins
               ? `Oldest ${kpis.oldestAwaitingMins} min`
@@ -169,7 +175,7 @@ export default function OfficeDashboard() {
         </div>
         <div className="kpi">
           <p className="klab">Low stock SKUs</p>
-          <p className="kval num">{kpis.lowStock}</p>
+          <p className="kval num"><CountUp value={kpis.lowStock} /></p>
           <p className="kdelta">{kpis.outOfStock} out of stock</p>
         </div>
       </div>

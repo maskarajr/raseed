@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
+import { CountUp } from "@/components/CountUp";
 import { StatusPill } from "@/components/badges";
 import { BookerChrome } from "@/components/BookerChrome";
 import { statusUi } from "@/lib/status";
@@ -68,6 +69,15 @@ export default function BookerOrdersPage() {
     );
   }).length;
 
+  const booked = orders.reduce((s, o) => s + o.subtotal, 0);
+  const toCollect = orders.reduce(
+    (s, o) => s + (o.invoice && o.invoice.balance > 0 ? o.invoice.balance : 0),
+    0,
+  );
+  const collected = Math.max(0, booked - toCollect);
+  const collectedPct =
+    booked > 0 ? Math.min(100, Math.round((collected / booked) * 100)) : 0;
+
   const filtered = useMemo(() => {
     return orders.filter((o) => {
       const ui = bookerOrderLabel(o);
@@ -79,6 +89,29 @@ export default function BookerOrdersPage() {
 
   return (
     <BookerChrome title="My orders" backHref="/booker" meta={`${todayCount} today`}>
+      <div className="pstats money">
+        <div className="pstat">
+          <p className="pstat-lab">Booked</p>
+          <p className="pstat-val num">
+            <CountUp value={booked} money />
+          </p>
+        </div>
+        <div className="pstat">
+          <p className="pstat-lab">Collected</p>
+          <p className="pstat-val num">
+            <CountUp value={collected} money />
+          </p>
+        </div>
+        <div className="pstat">
+          <p className="pstat-lab">To collect</p>
+          <p className="pstat-val num">
+            <CountUp value={toCollect} money />
+          </p>
+        </div>
+        <div className="pstats-bar" aria-hidden="true">
+          <span style={{ width: `${collectedPct}%` }} />
+        </div>
+      </div>
       <div className="chips">
         {CHIPS.map((c) => (
           <button

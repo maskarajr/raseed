@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/server/auth/session";
 import { OfficeNav } from "@/components/OfficeNav";
 import { BrandMark } from "@/components/BrandMark";
-import { initials } from "@/lib/person";
+import { RailUser } from "@/components/RailUser";
 
 export default async function OfficeLayout({
   children,
@@ -24,16 +24,10 @@ export default async function OfficeLayout({
         <OfficeNav variant="main" />
         <div className="rfoot">
           <OfficeNav variant="foot" />
-          <div className="row" style={{ gap: 9, padding: "10px 9px 0" }}>
-            <span className="avatar">{initials(session.name)}</span>
-            <span>
-              <span className="pname">{session.name}</span>
-              <br />
-              <span className="pmeta">
-                {session.role === "owner" ? "Owner" : "Office"}
-              </span>
-            </span>
-          </div>
+          <RailUser
+            name={session.name}
+            role={session.role === "owner" ? "Owner" : "Office"}
+          />
         </div>
       </aside>
       <div className="main">{children}</div>

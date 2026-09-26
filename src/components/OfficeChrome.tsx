@@ -6,6 +6,7 @@ export function OfficeChrome({
   subtitle,
   status,
   actions,
+  trailing,
   children,
 }: {
   title: string;
@@ -13,6 +14,8 @@ export function OfficeChrome({
   subtitle?: string;
   status?: ReactNode;
   actions?: ReactNode;
+  /** Rendered at the far end of the appbar (v3: the Live chip). */
+  trailing?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -30,6 +33,7 @@ export function OfficeChrome({
           {!kicker && subtitle ? <p className="psub">{subtitle}</p> : null}
         </div>
         {actions ? <div className="acts">{actions}</div> : null}
+        {trailing}
       </header>
       <div className="content">{children}</div>
     </>

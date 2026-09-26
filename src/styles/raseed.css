@@ -302,6 +302,181 @@ p{margin:0;text-wrap:pretty}
 .pilllg{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:12px;font-family:var(--font-mono)}
 
 /* ============================================================================
+   v3 additions — baseline classes the ops board defines but the app had not
+   needed yet (stock movements card, booker money strip, rail user block).
+   Copied from raseed-ops-v3.html (18 Sep), board-only scaffolding excluded.
+   ========================================================================= */
+.card2.is-fill{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+.stat-list{display:flex;flex-direction:column}
+.stat-line{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--border)}
+.stat-line:last-child{border-bottom:0}
+.stat-line .l{font-size:13px}
+.stat-line .v{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:550}
+.feed{display:flex;flex-direction:column}
+.feed-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.feed-row:last-child{border-bottom:0}
+.feed-dot{width:7px;height:7px;border-radius:999px;background:var(--fg);margin-top:6px;flex:none}
+.feed-dot.warm{background:var(--warm)}
+.feed-t{font-size:13px}
+.feed-m{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:2px}
+.pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pstat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.pstat-lab{font-family:var(--font-mono);font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.pstat-val{font-family:var(--font-display);font-size:22px;line-height:1.05;letter-spacing:-.02em;font-weight:600;margin-top:4px}
+
+/* --- Rail user block (v3) ---------------------------------------------------- */
+.ruser-wrap{position:relative;margin-top:4px;display:flex;align-items:center;gap:6px}
+.ruser{display:flex;align-items:center;gap:9px;flex:1;min-width:0;padding:7px 8px;border-radius:10px;text-align:left;overflow:hidden}
+.ruser .avatar{width:30px;height:30px}
+.ruser-tx{min-width:0;overflow:hidden}
+.ruser .pname,.ruser .pmeta{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ruser:hover{background:var(--fg-soft)}
+.rsignout{display:inline-flex;align-items:center;flex:none;height:34px;padding:0 9px;border-radius:9px;
+  border:1px solid var(--border);background:var(--surface);color:var(--muted)}
+.rsignout:hover,.rsignout:focus-visible{color:var(--bad-fg);border-color:color-mix(in srgb,var(--bad-fg) 32%,var(--border))}
+.rsignout-t{max-width:0;opacity:0;overflow:hidden;white-space:nowrap;font-size:13px;font-weight:550;transform:translateX(-4px)}
+
+/* ============================================================
+   v3 · ALIVE — one motion language
+   depth + micro-transitions + entrance choreography
+   Extracted from raseed-ops-v3.html; board-only selectors
+   (frame, dash, spark, col-bar, pipe, phero, bnav) dropped.
+   ============================================================ */
+:root{
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --ease-io:cubic-bezier(.4,0,.2,1);
+  --t-fast:.13s; --t:.2s; --t-slow:.38s;
+  --sh-1:0 1px 2px rgba(20,24,28,.05), 0 1px 1px rgba(20,24,28,.04);
+  --sh-2:0 2px 6px rgba(20,24,28,.06), 0 18px 38px -24px rgba(20,24,28,.42);
+  --sh-3:0 3px 8px rgba(20,24,28,.07), 0 30px 64px -32px rgba(20,24,28,.5);
+}
+html{scroll-behavior:smooth}
+
+/* --- keyframes (single vocabulary: transform + opacity only) --- */
+@keyframes od-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes od-pop{0%{opacity:0;transform:scale(.72)}60%{opacity:1;transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes od-grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes od-growx{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes od-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.68)}}
+@keyframes od-ping{0%{transform:scale(.7);opacity:.6}80%,100%{transform:scale(2.7);opacity:0}}
+
+/* --- depth --- */
+.card2,.kpi,.pcard,.pstat{box-shadow:var(--sh-1)}
+.card2,.kpi,.pcard,.pstat{
+  transition:transform .22s var(--ease-out),box-shadow .22s var(--ease-out),
+             border-color .22s var(--ease-out),background-color .22s var(--ease-out)}
+.card2:hover,.kpi:hover,.pcard:hover,.pstat:hover{
+  transform:translateY(-2px);box-shadow:var(--sh-2);
+  border-color:color-mix(in oklch,var(--border) 48%,var(--fg))}
+
+/* --- buttons --- */
+.btn-primary,.btn-sec,.btn-ghost{
+  transition:transform var(--t-fast) var(--ease-out),background-color .18s var(--ease-out),
+             border-color .18s var(--ease-out),color .18s var(--ease-out),box-shadow .18s var(--ease-out)}
+.btn-primary{box-shadow:0 1px 2px rgba(11,110,79,.3),0 10px 22px -14px rgba(11,110,79,.62)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 2px 5px rgba(11,110,79,.32),0 15px 30px -14px rgba(11,110,79,.68)}
+.btn-primary:active{transform:translateY(1px) scale(.985);box-shadow:0 1px 2px rgba(11,110,79,.32)}
+.btn-primary:disabled,.btn-primary:disabled:hover,.btn-primary:disabled:active{
+  transform:none;box-shadow:none}
+.btn-sec:hover,.btn-ghost:hover{transform:translateY(-1px)}
+.btn-sec:active,.btn-ghost:active{transform:translateY(1px) scale(.985)}
+
+/* --- selection controls --- */
+.chip,.seg-item,.opt,.qty-btn,.ritem,.ptab{
+  transition:transform var(--t-fast) var(--ease-out),background-color .18s var(--ease-out),
+             border-color .18s var(--ease-out),color .18s var(--ease-out),box-shadow .18s var(--ease-out)}
+.chip:active,.seg-item:active,.opt:active{transform:scale(.95)}
+.chip.is-on{animation:od-pop .3s var(--ease-spring) both}
+.seg-item.is-on{animation:od-pop .28s var(--ease-spring) both}
+.opt.is-on{animation:od-pop .32s var(--ease-spring) both}
+.ritem:active{transform:scale(.985)}
+.ritem.is-on{box-shadow:0 8px 18px -12px rgba(20,24,28,.6)}
+.ruser{transition:background-color .17s var(--ease-out)}
+.rsignout{transition:background-color .17s var(--ease-out),border-color .17s var(--ease-out),color .17s var(--ease-out),transform var(--t-fast) var(--ease-out)}
+.rsignout-t{transition:max-width .28s var(--ease-out),margin-left .28s var(--ease-out),opacity .16s var(--ease-out),transform .28s var(--ease-out)}
+.rsignout:hover .rsignout-t,.rsignout:focus-visible .rsignout-t{max-width:64px;margin-left:6px;opacity:1;transform:none}
+.rsignout:active{transform:scale(.96)}
+.ptab:active{transform:scale(.9)}
+.ptab.is-on .ic{animation:od-pop .34s var(--ease-spring) both}
+
+/* --- switch: sprung knob --- */
+.switch{transition:background-color .24s var(--ease-out),border-color .24s var(--ease-out)}
+.switch::after{transition:left .32s var(--ease-spring)}
+
+/* --- rows: hover wash --- */
+.tbl tbody tr,.prow,.stat-line,.feed-row,.tl-item{
+  transition:background-color .17s var(--ease-out)}
+.prow:hover,.stat-line:hover,.feed-row:hover{background:var(--fg-soft)}
+
+/* --- row edit: hover-revealed pencil in the leading gutter --- */
+.tbl .act{width:34px;padding-left:8px;padding-right:0}
+.rowedit{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:0;background:none;border-radius:6px;color:var(--muted);cursor:pointer;opacity:0;
+  transition:opacity .16s var(--ease-out),background-color .16s var(--ease-out),color .16s var(--ease-out)}
+.tbl tbody tr:hover .rowedit,.rowedit:focus-visible{opacity:1}
+.rowedit:hover{background:var(--border);color:var(--fg)}
+.rowedit:focus-visible{outline:2px solid var(--fg);outline-offset:1px}
+@media (hover:none){.rowedit{opacity:1}}
+
+/* --- sheets / drawers / toast --- */
+.scrim{transition:opacity .28s var(--ease-out)}
+.sheet{transition:transform .4s var(--ease-out)}
+.sheet-d{transition:transform .4s var(--ease-out),opacity .3s var(--ease-out)}
+.drawer{transition:transform .4s var(--ease-out)}
+.toast{transition:opacity .28s var(--ease-out),transform .34s var(--ease-spring)}
+
+/* --- wizard --- */
+.wiz-step{animation:od-rise .36s var(--ease-out) both}
+.qty-btn:active{transform:scale(.84)}
+.qty-val{transition:color .2s var(--ease-out)}
+.qty-val.pop{animation:od-pop .26s var(--ease-spring) both}
+
+/* --- status: the one outstanding pill breathes --- */
+.s-warn::before,.feed-dot.warm{animation:od-pulse 2.4s var(--ease-io) infinite}
+
+/* --- live chip --- */
+.live{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--ok-fg);background:var(--ok-bg);
+  border-radius:999px;padding:3px 10px;flex:none}
+.live i{position:relative;width:6px;height:6px;border-radius:999px;background:currentColor;flex:none}
+.live i::after{content:'';position:absolute;inset:0;border-radius:999px;background:currentColor;
+  animation:od-ping 1.9s var(--ease-out) infinite}
+
+/* ============================================================
+   entrance choreography — gated on .is-live (set by AliveMotion)
+   so content is never hidden if observation fails. IN APP: the
+   board gated per .frame; the app gates per scroll container
+   (.content / .pbody) and staggers via --i set by AliveMotion.
+   ============================================================ */
+.is-live.content > *,
+.is-live.pbody > *{
+  animation:od-rise .5s var(--ease-out) both;animation-delay:calc(var(--i,0)*55ms)}
+.is-live .kpis > *,.is-live .pstats > *{
+  animation:od-rise .5s var(--ease-out) both;animation-delay:calc(var(--i,0)*62ms)}
+.is-live .tl-dot{animation:od-pop .44s var(--ease-spring) both;animation-delay:calc(var(--i,0)*62ms)}
+.is-live .wstep-bar{transform-origin:left;animation:od-growx .5s var(--ease-out) both}
+
+/* --- v3 · money metrics: one strip, no orphan "Rs" --- */
+.pstats.money{grid-template-columns:repeat(3,1fr);gap:0;background:var(--surface);
+  border:1px solid var(--border);border-radius:14px;box-shadow:var(--sh-1);
+  transition:transform .22s var(--ease-out),box-shadow .22s var(--ease-out),
+             border-color .22s var(--ease-out)}
+.pstats.money:hover{transform:translateY(-2px);box-shadow:var(--sh-2);
+  border-color:color-mix(in oklch,var(--border) 48%,var(--fg))}
+.pstats.money .pstat{background:none;border:0;border-radius:0;box-shadow:none;
+  padding:11px 9px 8px;position:relative;min-width:0}
+.pstats.money .pstat:hover{transform:none;box-shadow:none}
+.pstats.money .pstat + .pstat::before{content:"";position:absolute;left:0;top:11px;bottom:10px;
+  width:1px;background:var(--border)}
+.pstats.money .pstat-val{font-size:15px;letter-spacing:-.03em;white-space:nowrap}
+.pstats-bar{grid-column:1/-1;height:4px;margin:0 9px 11px;border-radius:999px;
+  background:var(--border);overflow:hidden}
+.pstats-bar > span{display:block;height:100%;border-radius:999px;background:var(--fg);
+  transform-origin:left}
+.is-live .pstats.money > .pstats-bar{animation:none}
+.is-live .pstats-bar > span{animation:od-growx .8s var(--ease-out) both;animation-delay:.32s}
+
+/* ============================================================================
    Production additions
    Not present in the click-through board (it was reviewed with a mouse, and the
    approved baseline has no keyboard pass). Required before ship.
@@ -312,5 +487,7 @@ p{margin:0;text-wrap:pretty}
   border-radius:var(--radius);
 }
 @media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}
+  html{scroll-behavior:auto}
+  *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important;
+    animation-delay:0s !important}
 }

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
 import { OfficeChrome } from "@/components/OfficeChrome";
-import { LogoutButton } from "@/components/LogoutButton";
 import { StatusPill } from "@/components/badges";
 import { useToast } from "@/components/Toast";
 
@@ -140,7 +139,6 @@ export default function SettingsPage() {
             </span>
             <StatusPill status="active" />
           </div>
-          <LogoutButton />
         </div>
         <div className="card2">
           <div className="card2-h">

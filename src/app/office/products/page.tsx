@@ -7,6 +7,7 @@ import { Money } from "@/components/Money";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { StatusPill } from "@/components/badges";
 import { SideSheet } from "@/components/SideSheet";
+import { Icon } from "@/components/Icon";
 import { stockTone } from "@/lib/status";
 
 const CATS = ["All", "Rice", "Oil", "Grocery", "Pulses"] as const;
@@ -91,6 +92,7 @@ export default function ProductsPage() {
           <table className="tbl store">
             <thead>
               <tr>
+                <th className="act"></th>
                 <th>SKU</th>
                 <th>Product</th>
                 <th>Unit</th>
@@ -103,11 +105,17 @@ export default function ProductsPage() {
               {filtered.map((p) => {
                 const st = stockTone(p.stockQty, p.reorderLevel);
                 return (
-                  <tr
-                    key={p.id}
-                    style={{ cursor: "pointer" }}
-                    onClick={() => setEditing(p)}
-                  >
+                  <tr key={p.id}>
+                    <td className="act">
+                      <button
+                        type="button"
+                        className="rowedit"
+                        aria-label={`Edit ${p.name}`}
+                        onClick={() => setEditing(p)}
+                      >
+                        <Icon name="edit" />
+                      </button>
+                    </td>
                     <td className="sku">{p.sku}</td>
                     <td>{p.name}</td>
                     <td>{p.unit}</td>

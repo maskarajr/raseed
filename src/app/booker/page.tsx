@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
+import { CountUp } from "@/components/CountUp";
 import { StatusPill } from "@/components/badges";
 import { BookerChrome } from "@/components/BookerChrome";
 import { startOfTodayKarachi, startOfWeekKarachi } from "@/lib/day";
@@ -71,7 +72,7 @@ export default function BookerHome() {
       <div className="pcard">
         <p className="ptitle-s">Today's orders</p>
         <div className="rowb" style={{ marginTop: 6, alignItems: "flex-end" }}>
-          <span className="pbig num">{todayOrders.length}</span>
+          <span className="pbig num"><CountUp value={todayOrders.length} /></span>
           <span style={{ textAlign: "right" }}>
             <span className="num" style={{ fontSize: 15, display: "block" }}>
               <Money value={todayBooked} />

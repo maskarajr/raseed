@@ -1,5 +1,6 @@
 "use client";
 
+import { QtyVal } from "@/components/QtyVal";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Customer, Product } from "@/generated/prisma/client";
@@ -95,7 +96,7 @@ export default function NewOrderPage() {
       <div className="wiz">
         <Steps step={step} />
         {error && <p className="muted">{error}</p>}
-        <div className="wiz-step">
+        <div className="wiz-step" key={step}>
           {step === 1 && (
             <CustomerStep selected={customer} onSelect={setCustomer} />
           )}
@@ -396,7 +397,7 @@ function LinesStep({
                 >
                   −
                 </button>
-                <span className="qty-val">{n}</span>
+                <QtyVal n={n} />
                 <button
                   type="button"
                   className="qty-btn"
