@@ -3,6 +3,7 @@ import Script from "next/script";
 import "./globals.css";
 import "@/styles/raseed.css";
 import { Providers } from "@/components/Providers";
+import { fontDisplay, fontMono } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: "Raseed",
@@ -47,7 +48,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en-PK">
+    <html lang="en-PK" className={`${fontDisplay.variable} ${fontMono.variable}`}>
       <body>
         <Script
           id="raseed-pwa-capture"

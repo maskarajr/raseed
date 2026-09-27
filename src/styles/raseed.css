@@ -40,10 +40,11 @@
   --accent-hover:color-mix(in oklch, var(--accent) 88%, black);
   --scrim:color-mix(in oklch, var(--fg) 42%, transparent);
   --knob:var(--surface);
-  /* type */
-  --font-display:'Iowan Old Style','Charter',Georgia,'Times New Roman',serif;
-  --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
-  --font-mono:ui-monospace,'JetBrains Mono','SF Mono',Menlo,monospace;
+  /* type — v3 webfont decision B (FONT-MAPPING.md): --font-display and
+     --font-mono are supplied by next/font/local on <html> (src/lib/fonts.ts:
+     Source Serif 4 / IBM Plex Mono + Figmi's fallback chain). No hand-written
+     family stack here so the loaded face always wins. */
+  --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Roboto,sans-serif;
   /* scale */
   --fs-meta:13px; --radius:10px; --radius-lg:16px;
 }
@@ -110,7 +111,7 @@ p{margin:0;text-wrap:pretty}
 .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 .muted{color:var(--muted)}
 .meta{font-family:var(--font-mono);font-size:var(--fs-meta);color:var(--muted)}
-.h3s{font-family:var(--font-display);font-size:16px;font-weight:650;letter-spacing:-.005em}
+.h3s{font-family:var(--font-display);font-size:16px;font-weight:600;letter-spacing:-.005em}
 .eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
 .row{display:flex;align-items:center;gap:12px}
 .rowb{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -330,7 +331,7 @@ p{margin:0;text-wrap:pretty}
 .stat-line{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--border)}
 .stat-line:last-child{border-bottom:0}
 .stat-line .l{font-size:13px}
-.stat-line .v{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:550}
+.stat-line .v{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:500}
 .feed{display:flex;flex-direction:column}
 .feed-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);align-items:flex-start}
 .feed-row:last-child{border-bottom:0}
