@@ -202,7 +202,10 @@ async function main() {
     check(login.status === 200, `sana login returns 200 (got ${login.status})`);
     check(login.data?.user?.role === "booker", "sana session role is 'booker'");
     const { status } = await other.req("GET", `/api/orders/${orderId}`);
-    check(status === 403, `other booker cannot read this order (got ${status})`);
+    check(
+      status === 404,
+      `other booker's read of this order returns 404, not 403 (no existence leak) (got ${status})`,
+    );
   }
 
   // ---------------------------------------------------------------
@@ -801,6 +804,96 @@ async function main() {
     check(
       reAdv.status === 400,
       `settled prepaid cannot be re-advanced to out_for_delivery (got ${reAdv.status})`,
+    );
+  }
+  // ---------------------------------------------------------------
+  section("13. Draft edit (PATCH /api/orders/[id])");
+  {
+    // A booker creates a DRAFT (submit:false): subtotal 150 (100+50), advance 50.
+    const d1 = await booker.req<{
+      order: { id: string; subtotal: number };
+    }>("POST", "/api/orders", {
+      customerId,
+      submit: false,
+      advance: 50,
+      items: [
+        { productId: prodA, qty: 1, unitPrice: priceA },
+        { productId: prodB, qty: 1, unitPrice: priceB },
+      ],
+    });
+    check(
+      d1.status === 201 && d1.data.order.subtotal === 150,
+      `draft created via submit:false (got ${d1.status}/${d1.data.order?.subtotal})`,
+    );
+    const draftId = d1.data.order.id;
+
+    // Own-booker EDIT: wholesale-replace to 1 line (subtotal 200), set notes,
+    // omit advance -> the draft's existing advance is preserved.
+    const e1 = await booker.req<{
+      order: {
+        subtotal: number;
+        advance: number;
+        notes: string | null;
+        status: string;
+        items: unknown[];
+      };
+    }>("PATCH", `/api/orders/${draftId}`, {
+      items: [{ productId: prodA, qty: 2, unitPrice: priceA }],
+      notes: "edited by booker",
+    });
+    check(e1.status === 200, `draft edit returns 200 (got ${e1.status})`);
+    check(
+      e1.data.order.status === "draft",
+      `edit keeps status 'draft' (got ${e1.data.order.status})`,
+    );
+    check(
+      e1.data.order.subtotal === 200,
+      `subtotal recomputed server-side 150->200 (got ${e1.data.order.subtotal})`,
+    );
+    check(
+      Array.isArray(e1.data.order.items) && e1.data.order.items.length === 1,
+      `items wholesale-replaced to 1 line (got ${e1.data.order.items?.length})`,
+    );
+    check(
+      e1.data.order.advance === 50,
+      `advance preserved when omitted (got ${e1.data.order.advance})`,
+    );
+    check(
+      e1.data.order.notes === "edited by booker",
+      `notes updated (got ${JSON.stringify(e1.data.order.notes)})`,
+    );
+
+    // Guard: advance > (new) subtotal rejected 400 (and rolled back).
+    const badAdv = await booker.req("PATCH", `/api/orders/${draftId}`, {
+      items: [{ productId: prodA, qty: 1, unitPrice: priceA }],
+      advance: 99999,
+    });
+    check(
+      badAdv.status === 400,
+      `advance > subtotal rejected (got ${badAdv.status})`,
+    );
+
+    // Guard: non-draft orders are NOT editable (orderId is settled by now).
+    const nonDraft = await office.req("PATCH", `/api/orders/${orderId}`, {
+      items: [{ productId: prodA, qty: 1, unitPrice: priceA }],
+    });
+    check(
+      nonDraft.status === 400,
+      `non-draft edit rejected 400 (got ${nonDraft.status})`,
+    );
+
+    // Tenant guard: another booker editing this draft => 404 (no existence leak).
+    const sana2 = makeClient();
+    await sana2.req("POST", "/api/auth/login", {
+      email: "sana@raseed.local",
+      password: "booker123",
+    });
+    const cross = await sana2.req("PATCH", `/api/orders/${draftId}`, {
+      items: [{ productId: prodA, qty: 1, unitPrice: priceA }],
+    });
+    check(
+      cross.status === 404,
+      `cross-booker draft edit returns 404 (got ${cross.status})`,
     );
   }
   // ---------------------------------------------------------------

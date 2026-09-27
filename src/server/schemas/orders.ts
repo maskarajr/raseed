@@ -20,6 +20,15 @@ export const createOrderSchema = z.object({
   submit: z.boolean().default(false),
 });
 
+// Draft-only edit (Privy seq211): replace items / notes / advance while the
+// order is still a draft. Nothing else mutates through this endpoint. Server
+// recomputes subtotal from items and re-clamps advance (see editDraftOrder).
+export const editDraftOrderSchema = z.object({
+  items: z.array(orderItemSchema).min(1),
+  notes: z.string().max(500).optional(),
+  advance: z.number().int().min(0).optional(),
+});
+
 // Statuses reachable via the generic status endpoint (office advancing an
 // invoiced order through delivery). `settled` is intentionally excluded — it is
 // balance-driven (reached only when the invoice balance hits 0 via payment),

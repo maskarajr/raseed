@@ -128,6 +128,90 @@ export async function createOrder(input: CreateOrderInput) {
   });
 }
 
+// Draft-only edit (Privy seq211). Replaces items / notes / advance while an
+// order is still a draft. This is the ONLY remaining order mutation the draft
+// lifecycle needed — Submit/Discard/cancel already exist server-side.
+//
+// Contract:
+// - actor: the owning booker OR office/owner; a foreign/nonexistent id returns
+//   the IDENTICAL 404 (Figmi's no-existence-leak rule, same as GET [id]).
+// - only status == 'draft' is editable; any later state is rejected (400).
+// - items revalidated (qty>0 via schema, product must exist + be active) and
+//   subtotal RECOMPUTED server-side; advance re-clamped to <= subtotal.
+// - runs in a single $transaction (repo invariant: every order write is atomic).
+export type EditDraftInput = {
+  items: OrderItemInput[];
+  notes?: string;
+  advance?: number;
+};
+
+export async function editDraftOrder(
+  session: SessionUser,
+  orderId: string,
+  input: EditDraftInput,
+) {
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({ where: { id: orderId } });
+    if (!order || (session.role === "booker" && order.bookerId !== session.id)) {
+      throw new ApiError(404, "Order not found");
+    }
+    if (order.status !== "draft") {
+      throw new ApiError(
+        400,
+        `Only draft orders can be edited (current: ${order.status})`,
+      );
+    }
+
+    const productIds = input.items.map((i) => i.productId);
+    const products = await tx.product.findMany({
+      where: { id: { in: productIds } },
+    });
+    const productMap = new Map(products.map((p) => [p.id, p]));
+
+    let subtotal = 0;
+    for (const item of input.items) {
+      const product = productMap.get(item.productId);
+      if (!product) {
+        throw new ApiError(404, `Product not found: ${item.productId}`);
+      }
+      if (!product.active) {
+        throw new ApiError(400, `Product is inactive: ${product.sku}`);
+      }
+      subtotal += item.qty * item.unitPrice;
+    }
+
+    // Advance is optional on edit: omit -> keep the current draft's advance.
+    const advance = input.advance ?? order.advance;
+    if (advance > subtotal) {
+      throw new ApiError(
+        400,
+        `Advance (Rs ${advance}) exceeds order total (Rs ${subtotal})`,
+      );
+    }
+
+    // Replace the line set wholesale.
+    await tx.orderItem.deleteMany({ where: { orderId: order.id } });
+    await tx.orderItem.createMany({
+      data: input.items.map((i) => ({
+        orderId: order.id,
+        productId: i.productId,
+        qty: i.qty,
+        unitPrice: i.unitPrice,
+      })),
+    });
+
+    return tx.order.update({
+      where: { id: order.id },
+      data: {
+        subtotal,
+        advance,
+        notes: input.notes ?? order.notes,
+      },
+      include: { items: { include: { product: { select: { sku: true, name: true } } } }, customer: true },
+    });
+  });
+}
+
 // Enforces valid lifecycle transitions server-side. Does NOT handle the
 // invoiced transition (that goes through the invoice service, which also
 // deducts stock).
