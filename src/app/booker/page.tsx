@@ -36,8 +36,11 @@ export default function BookerHome() {
   }, []);
 
   const todayStart = startOfTodayKarachi().getTime();
+  // Spec §3: drafts are not route metrics — exclude until submitted.
   const todayOrders = orders.filter(
-    (o) => new Date(o.createdAt).getTime() >= todayStart,
+    (o) =>
+      o.status !== "draft" &&
+      new Date(o.createdAt).getTime() >= todayStart,
   );
   const todayBooked = todayOrders.reduce((s, o) => s + o.subtotal, 0);
   // Privy coherence item (seq85): advance is real cash in the booker's
@@ -55,6 +58,7 @@ export default function BookerHome() {
       : 0;
   const first = name?.split(" ")[0] ?? "Booker";
   const openStops = orders.filter((o) => {
+    if (o.status === "draft") return false;
     if (CLOSED.includes(o.status)) return false;
     if (o.invoice?.paymentStatus === "paid") return false;
     if (o.invoice != null && (o.invoice.balance ?? 1) <= 0) return false;
@@ -71,10 +75,12 @@ export default function BookerHome() {
   const routeLabel = `Route ${routeNo ?? "—"} · ${todayOrders.length} shops`;
   const hasRouteToday = todayOrders.length > 0;
 
+  // Spec §4 freeze: "To collect" is an invoice fact (balance > 0), not a raw
+  // status; confirmed/out_for_delivery without a balance read Scheduled.
   const stopState = (o: OrderRow): { n: string; pill: string } => {
     if (o.invoice?.paymentStatus === "paid" || (o.invoice != null && (o.invoice.balance ?? 1) <= 0))
       return { n: "ok", pill: "settled" };
-    if (o.status === "confirmed" || o.status === "invoiced") return { n: "warm", pill: "to collect" };
+    if ((o.invoice?.balance ?? 0) > 0) return { n: "warm", pill: "to collect" };
     return { n: "", pill: "scheduled" };
   };
 

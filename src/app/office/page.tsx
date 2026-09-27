@@ -163,7 +163,9 @@ export default function OfficeDashboard() {
   const pcount = (st: string) =>
     data.pipeline?.find((p) => p.status === st)?.count ?? 0;
   const pipeSteps: { lab: string; n: number; now?: boolean }[] = [
-    { lab: "Scheduled", n: pcount("draft") },
+    // §4 freeze: Scheduled means confirmed | out_for_delivery — the draft
+    // stage keeps its own name in the pipeline.
+    { lab: "Draft", n: pcount("draft") },
     {
       lab: "Awaiting confirm",
       n: data.pipeline ? pcount("submitted") : kpis.awaitingConfirm,

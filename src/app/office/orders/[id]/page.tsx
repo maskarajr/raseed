@@ -155,6 +155,15 @@ export default function OrderDetailPage() {
           >
             Reassign booker
           </button>
+          {order.status === "draft" && (
+            <button
+              className="btn-primary"
+              disabled={busy}
+              onClick={() => act(`/api/orders/${order.id}/submit`)}
+            >
+              Submit
+            </button>
+          )}
           {order.status === "submitted" && (
             <button
               className="btn-primary"

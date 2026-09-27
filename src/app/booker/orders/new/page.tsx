@@ -20,6 +20,7 @@ type CartLine = {
 type SubmitResult = {
   code: string;
   warnings: { sku: string; requested: number; available: number }[];
+  draft?: boolean;
 };
 
 type CustomerRow = Customer & { outstanding?: number; toCollect?: number };
@@ -37,7 +38,7 @@ export default function NewOrderPage() {
   const itemCount = cart.reduce((s, l) => s + l.qty, 0);
   const clampedAdvance = Math.max(0, Math.min(Math.floor(advance) || 0, subtotal));
 
-  async function submit() {
+  async function submit(asDraft = false) {
     setError(null);
     setSubmitting(true);
     try {
@@ -49,7 +50,7 @@ export default function NewOrderPage() {
         method: "POST",
         body: JSON.stringify({
           customerId: customer!.id,
-          submit: true,
+          submit: !asDraft,
           // C1 contract (ad270af): advance is server-revalidated against the
           // summed subtotal (400 'Advance (Rs A) exceeds order total (Rs T)').
           advance: clampedAdvance,
@@ -60,7 +61,7 @@ export default function NewOrderPage() {
           })),
         }),
       });
-      setResult({ code: res.order.code, warnings: res.warnings });
+      setResult({ code: res.order.code, warnings: res.warnings, draft: asDraft });
       setSubmitting(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Submit failed");
@@ -131,13 +132,22 @@ export default function NewOrderPage() {
               </button>
             )}
             {step === 3 && (
-              <button
-                className="btn-primary grow"
-                disabled={submitting}
-                onClick={submit}
-              >
-                {submitting ? "Submitting…" : "Place order"}
-              </button>
+              <>
+                <button
+                  className="btn-sec"
+                  disabled={submitting || cart.length === 0}
+                  onClick={() => submit(true)}
+                >
+                  Save as draft
+                </button>
+                <button
+                  className="btn-primary grow"
+                  disabled={submitting || cart.length === 0}
+                  onClick={() => submit()}
+                >
+                  {submitting ? "Submitting…" : "Place order"}
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -521,8 +531,14 @@ function SuccessScreen({ result }: { result: SubmitResult }) {
   return (
     <BookerChrome title="New order" backHref="/booker">
       <div className="pcard stack">
-        <p className="h3s">Order {result.code} submitted</p>
-        <p className="muted">The office will confirm and invoice it.</p>
+        <p className="h3s">
+          Order {result.code} {result.draft ? "saved as draft" : "submitted"}
+        </p>
+        <p className="muted">
+          {result.draft
+            ? "It stays yours until you submit it — find it under the Draft chip."
+            : "The office will confirm and invoice it."}
+        </p>
         {result.warnings.length > 0 && (
           <div className="warnbox">
             Low stock noted (non-blocking):{" "}

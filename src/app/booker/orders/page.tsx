@@ -7,8 +7,8 @@ import { Money } from "@/components/Money";
 import { CountUp } from "@/components/CountUp";
 import { StatusPill } from "@/components/badges";
 import { BookerChrome } from "@/components/BookerChrome";
-import { statusUi } from "@/lib/status";
 import { PaymentSheet } from "@/components/PaymentSheet";
+import { orderLabel } from "@/lib/orderLabel";
 import { startOfTodayKarachi, endOfTodayKarachi } from "@/lib/day";
 
 type OrderRow = {
@@ -32,23 +32,6 @@ const CHIPS = [
   { label: "To collect", term: "to collect" },
   { label: "Collected", term: "collected" },
 ];
-
-function bookerOrderLabel(o: OrderRow): { label: string; status: string } {
-  if (
-    o.status === "settled" ||
-    o.invoice?.paymentStatus === "paid" ||
-    (o.invoice != null && o.invoice.balance <= 0)
-  ) {
-    return { label: "Collected", status: "settled" };
-  }
-  if (o.invoice && o.invoice.balance > 0) {
-    return { label: "To collect", status: "unpaid" };
-  }
-  if (o.status === "confirmed" || o.status === "invoiced") {
-    return { label: "Scheduled", status: "scheduled" };
-  }
-  return { label: statusUi(o.status).label, status: o.status };
-}
 
 export default function BookerOrdersPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
@@ -80,7 +63,7 @@ export default function BookerOrdersPage() {
 
   const filtered = useMemo(() => {
     return orders.filter((o) => {
-      const ui = bookerOrderLabel(o);
+      const ui = orderLabel(o);
       const hay = `${o.code} ${o.customer.name} ${ui.label}`.toLowerCase();
       if (term && !hay.includes(term)) return false;
       return true;
@@ -127,7 +110,7 @@ export default function BookerOrdersPage() {
       {error && <p className="muted">{error}</p>}
       <div className="stack" style={{ gap: 10 }}>
         {filtered.map((o) => {
-          const ui = bookerOrderLabel(o);
+          const ui = orderLabel(o);
           const canCollect = Boolean(o.invoice && o.invoice.balance > 0);
           return (
             <div key={o.id} className="pcard" data-row>
@@ -142,7 +125,7 @@ export default function BookerOrdersPage() {
                       : ""}
                   </span>
                 </span>
-                <StatusPill status={ui.status} label={ui.label} />
+                <StatusPill label={ui.label} tone={ui.tone} />
               </div>
               <div className="rowb" style={{ marginTop: 10 }}>
                 <span className="num" style={{ fontSize: 15 }}>
@@ -157,7 +140,7 @@ export default function BookerOrdersPage() {
                     Collect
                   </button>
                 ) : (
-                  <Link href="/booker/orders" className="btn-sec btn-sm">
+                  <Link href={`/booker/orders/${o.id}`} className="btn-sec btn-sm">
                     Open
                   </Link>
                 )}
