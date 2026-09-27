@@ -16,6 +16,9 @@ export type CreateOrderInput = {
   notes?: string;
   items: OrderItemInput[];
   submit: boolean;
+  // Who is driving the create. Office/owner may book any shop on any booker's
+  // behalf; a booker is restricted to their own (see the guard below).
+  actor?: Pick<SessionUser, "id" | "role">;
 };
 
 export type StockWarning = {
@@ -36,6 +39,17 @@ export async function createOrder(input: CreateOrderInput) {
     const booker = await tx.user.findUnique({ where: { id: input.bookerId } });
     if (!booker || booker.role !== "booker") {
       throw new ApiError(400, "Invalid booker for order");
+    }
+
+    // Booker scoping on the write path, mirroring the read path: a booker may
+    // book their own shops (and unassigned ones, which they then own via the
+    // capture flow), never another booker's.
+    if (
+      input.actor?.role === "booker" &&
+      customer.bookerId &&
+      customer.bookerId !== input.actor.id
+    ) {
+      throw new ApiError(403, "Forbidden: shop belongs to another booker");
     }
 
     if (input.items.length === 0) {

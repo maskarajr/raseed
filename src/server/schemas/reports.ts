@@ -7,6 +7,10 @@ const dateString = z
 export const salesReportQuerySchema = z.object({
   from: dateString.optional(),
   to: dateString.optional(),
+  // "7d" adds the zero-filled booked/collected series for the dashboard hero
+  // sparkline. Kept as an explicit opt-in so the default report payload (and
+  // its cost) is unchanged for existing callers.
+  range: z.enum(["7d"]).optional(),
 });
 
 export type SalesReportQuery = z.infer<typeof salesReportQuerySchema>;

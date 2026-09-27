@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { startOfTodayKarachi, endOfTodayKarachi } from "@/lib/day";
+import { ORDER_STATUSES, type OrderStatus } from "@/lib/enums";
 
 export async function officeHomeSummary() {
   const start = startOfTodayKarachi();
@@ -13,6 +14,7 @@ export async function officeHomeSummary() {
     submittedOrders,
     products,
     collectedToday,
+    stageCounts,
   ] = await Promise.all([
     prisma.order.findMany({
       where: {
@@ -67,6 +69,13 @@ export async function officeHomeSummary() {
       where: { createdAt: { gte: start, lt: end } },
       _sum: { amount: true },
     }),
+    // One aggregation powers the board's lifecycle pipeline. Cancelled is a
+    // real column on the board, so it is included rather than filtered out.
+    prisma.order.groupBy({
+      by: ["status"],
+      _count: { _all: true },
+      _sum: { subtotal: true },
+    }),
   ]);
 
   const bookedToday = todayOrders.reduce((s, o) => s + o.subtotal, 0);
@@ -84,6 +93,20 @@ export async function officeHomeSummary() {
       )
     : 0;
 
+  // Board order, always all eight stages, so the frontend never has to guess
+  // which stages are missing.
+  const countByStatus = new Map(
+    stageCounts.map((s) => [s.status, s] as const),
+  );
+  const pipeline = ORDER_STATUSES.map((status: OrderStatus) => {
+    const row = countByStatus.get(status);
+    return {
+      status,
+      count: row?._count._all ?? 0,
+      value: row?._sum.subtotal ?? 0,
+    };
+  });
+
   return {
     kpis: {
       bookedToday,
@@ -97,6 +120,7 @@ export async function officeHomeSummary() {
       lowStock: lowStockRows.length,
       outOfStock,
     },
+    pipeline,
     submitted: submittedOrders.map((o) => ({
       id: o.id,
       code: o.code,

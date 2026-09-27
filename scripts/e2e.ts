@@ -384,6 +384,179 @@ async function main() {
   }
 
   // ---------------------------------------------------------------
+  section("11. v3.2 API contracts + booker scoping");
+  {
+    const bilal = makeClient();
+    const sana = makeClient();
+    await bilal.req("POST", "/api/auth/login", {
+      email: "bilal@raseed.local",
+      password: "booker123",
+    });
+    const sanaLogin = await sana.req<{ user: { id: string } }>(
+      "POST",
+      "/api/auth/login",
+      { email: "sana@raseed.local", password: "booker123" },
+    );
+    const sanaId = sanaLogin.data.user.id;
+
+    type ShopRow = { id: string; name: string; bookerId: string | null };
+
+    // GET /api/customers is scoped to the calling booker's own shops.
+    const mine = await bilal.req<{ customers: ShopRow[] }>("GET", "/api/customers");
+    check(mine.status === 200, `booker customers call succeeds (got ${mine.status})`);
+    const foreignShops = mine.data.customers.filter(
+      (c) => c.bookerId !== mine.data.customers[0]?.bookerId,
+    );
+    check(
+      mine.data.customers.length > 0 && foreignShops.length === 0,
+      `every shop a booker sees belongs to them (${mine.data.customers.length} rows, ${foreignShops.length} foreign)`,
+    );
+
+    const theirs = await sana.req<{ customers: ShopRow[] }>("GET", "/api/customers");
+    const shared = theirs.data.customers.filter((c) =>
+      mine.data.customers.some((m) => m.id === c.id),
+    );
+    check(
+      shared.length === 0,
+      `two bookers' shop lists do not overlap (${shared.length} shared)`,
+    );
+
+    // Office still sees everything, unassigned shops included.
+    const allShops = await office.req<{
+      customers: { bookerId: string | null }[];
+    }>("GET", "/api/customers");
+    check(
+      allShops.data.customers.length >=
+        mine.data.customers.length + theirs.data.customers.length,
+      `office sees at least the union of both bookers' shops (${
+        allShops.data.customers.length
+      } vs ${mine.data.customers.length}+${theirs.data.customers.length})`,
+    );
+    check(
+      allShops.data.customers.some((c) => c.bookerId === null),
+      "an unassigned shop is still visible to office",
+    );
+
+    // A booker capturing a shop cannot hand it to a colleague.
+    const captured = await bilal.req<{
+      customer: { id: string; bookerId: string | null };
+    }>("POST", "/api/customers", {
+      name: `E2E Captured ${stamp}`,
+      phone: "0300-0000000",
+      area: "E2E",
+      route: "9",
+      bookerId: sanaId,
+    });
+    check(
+      captured.status === 201,
+      `booker can capture a shop (got ${captured.status})`,
+    );
+    check(
+      captured.data.customer.bookerId !== sanaId,
+      "a captured shop is not assignable to another booker",
+    );
+
+    // A booker cannot raise an order against a colleague's shop.
+    const sanaShop = theirs.data.customers.find((c) => c.bookerId === sanaId);
+    if (sanaShop) {
+      const cross = await bilal.req("POST", "/api/orders", {
+        customerId: sanaShop.id,
+        items: [{ productId: prodA, qty: 1, unitPrice: priceA }],
+        submit: false,
+      });
+      check(
+        cross.status === 403,
+        `booking a colleague's shop is rejected with 403 (got ${cross.status})`,
+      );
+    } else {
+      check(false, "sana has an assigned shop to test against");
+    }
+
+    // Repeating confirm must not move stock a second time.
+    const stockBefore = (await getProduct(office, prodA)).stockQty;
+    const again = await office.req("POST", `/api/orders/${orderId}/confirm`);
+    check(
+      again.status === 400,
+      `repeat confirm rejected with 400 (got ${again.status})`,
+    );
+    const stockAfter = (await getProduct(office, prodA)).stockQty;
+    check(
+      stockAfter === stockBefore,
+      `repeat confirm left stock untouched (${stockBefore} -> ${stockAfter})`,
+    );
+
+    // Lifecycle pipeline block for the office dashboard.
+    const home = await office.req<{
+      kpis: { bookedToday: number; collectedToday: number };
+      pipeline: { status: string; count: number; value: number }[];
+    }>("GET", "/api/office/home");
+    check(
+      Array.isArray(home.data.pipeline) && home.data.pipeline.length === 8,
+      `pipeline carries all 8 stages (got ${home.data.pipeline?.length})`,
+    );
+    check(
+      home.data.pipeline.every(
+        (p) => typeof p.count === "number" && typeof p.value === "number",
+      ),
+      "pipeline entries carry numeric count and value",
+    );
+    check(
+      home.data.pipeline.reduce((s, p) => s + p.count, 0) > 0,
+      "pipeline is populated with real counts",
+    );
+
+    // 7-day booked/collected series behind the hero sparkline.
+    const ranged = await office.req<{
+      series?: { day: string; booked: number; collected: number; orders: number }[];
+    }>("GET", "/api/reports?range=7d");
+    const series = ranged.data.series ?? [];
+    check(
+      series.length === 7,
+      `range=7d returns exactly 7 buckets (got ${series.length})`,
+    );
+    check(
+      series.every(
+        (d) =>
+          /^\d{4}-\d{2}-\d{2}$/.test(d.day) &&
+          typeof d.booked === "number" &&
+          typeof d.collected === "number" &&
+          typeof d.orders === "number",
+      ),
+      "series buckets carry an ISO day label plus numeric booked/collected/orders",
+    );
+    let ascending = series.length === 7;
+    for (let i = 1; i < series.length; i++) {
+      if (series[i].day <= series[i - 1].day) ascending = false;
+    }
+    check(ascending, "series buckets are strictly ascending (zero-filled, oldest first)");
+    const today = series[series.length - 1];
+    check(
+      !!today && today.booked === home.data.kpis.bookedToday,
+      `sparkline's last bucket equals bookedToday (${today?.booked} vs ${home.data.kpis.bookedToday})`,
+    );
+    check(
+      !!today && today.collected === home.data.kpis.collectedToday,
+      `sparkline's last bucket equals collectedToday (${today?.collected} vs ${home.data.kpis.collectedToday})`,
+    );
+
+    // Existing callers must not see a changed payload.
+    const plain = await office.req<Record<string, unknown>>("GET", "/api/reports");
+    check(
+      !("series" in plain.data),
+      "GET /api/reports without range keeps its original keys",
+    );
+
+    // Numbered route stops on the booker home need the shop route per order.
+    const listed = await office.req<{
+      orders: { customer: { route?: string | null } }[];
+    }>("GET", "/api/orders");
+    check(
+      listed.data.orders.length > 0 &&
+        listed.data.orders.every((o) => "route" in o.customer),
+      "orders list carries customer.route",
+    );
+  }
+  // ---------------------------------------------------------------
   console.log(`\n================ SUMMARY ================`);
   console.log(`  PASSED: ${pass}`);
   console.log(`  FAILED: ${fail}`);
