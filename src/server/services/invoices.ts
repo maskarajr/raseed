@@ -4,6 +4,7 @@ import { ApiError } from "@/server/http";
 import { applyStockMovements } from "./stock";
 import { deriveInvoiceState } from "./invoiceMath";
 import { nextInvoiceCode } from "./codes";
+import { settleOrderIfPaid } from "./settle";
 
 // Generate an invoice from a confirmed order. Creates the invoice, moves the
 // order to `invoiced`, and deducts stock via the stock service (reason
@@ -81,8 +82,13 @@ export async function generateInvoice(session: SessionUser, orderId: string) {
       data: { status: "invoiced" },
     });
 
-    // Deliberately NO settleOrderIfPaid here: a prepaid order must remain
-    // `invoiced` until physical delivery is confirmed (Privy, seq follow-up).
+    // Option A (owner seq176): a fully-prepaid order must read as collected at
+    // invoice time. settleOrderIfPaid is the SAME canonical balance-driven path
+    // payments/returns use — it is a no-op unless balance == 0 AND the order is
+    // in a settleable state (invoiced is settleable), so a partial order stays
+    // `invoiced` and only settles later when its balance actually reaches 0.
+    await settleOrderIfPaid(tx, order.id, balance);
+
     return invoice;
   }, { timeout: 20000 });
 }

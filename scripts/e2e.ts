@@ -728,8 +728,32 @@ async function main() {
       `cash-advance collection accepted, balance -> ${2000 - partAdv - 300} (got ${chipPay.status}/${chipPay.data?.invoice?.balance})`,
     );
 
-    // C1 prepaid-full — no auto-settle at invoice; settles on physical delivery.
-    const fullAdv = 3000;
+    // G2 deliveredAt stamping is exercised on a NON-prepaid order (balance > 0),
+    // so the delivered transition is tested without settle masking it.
+    await office.req("POST", `/api/orders/${oPid}/status`, {
+      status: "out_for_delivery",
+    });
+    const delivP = await office.req<{ order: { status: string } }>(
+      "POST",
+      `/api/orders/${oPid}/status`,
+      { status: "delivered" },
+    );
+    check(
+      delivP.data.order.status === "delivered",
+      `balance>0 order reaches 'delivered' (not settled) (got ${delivP.data.order.status})`,
+    );
+    const invPRead = await office.req<{
+      invoice: { deliveredAt: string | null };
+    }>("GET", `/api/invoices/${invP.data.invoice.id}`);
+    check(
+      invPRead.data.invoice.deliveredAt !== null,
+      `deliveredAt stamped on the delivered transition (got ${JSON.stringify(invPRead.data.invoice.deliveredAt)})`,
+    );
+
+    // Option A (owner seq176): a FULLY-PREPAID order must settle at INVOICE time
+    // (read Collected immediately), not after delivery. Multi-line + a duplicate
+    // product also exercises applyStockMovements' running-balance path.
+    const fullAdv = 5000;
     const oF = await booker.req<{
       order: { id: string };
       balanceDue: number;
@@ -737,7 +761,10 @@ async function main() {
       customerId: custId,
       submit: true,
       advance: fullAdv,
-      items: [{ productId: prodP, qty: 3, unitPrice: priceP }],
+      items: [
+        { productId: prodP, qty: 3, unitPrice: priceP },
+        { productId: prodP, qty: 2, unitPrice: priceP },
+      ],
     });
     const oFid = oF.data.order.id;
     check(
@@ -763,27 +790,17 @@ async function main() {
       `/api/orders/${oFid}`,
     );
     check(
-      ordF1.data.order.status === "invoiced",
-      `PREPAID order does NOT auto-settle at invoicing — stays 'invoiced' (got ${ordF1.data.order.status})`,
+      ordF1.data.order.status === "settled",
+      `OPTION A: prepaid order lands 'settled' at invoice, not 'invoiced' (got ${ordF1.data.order.status})`,
     );
-    await office.req("POST", `/api/orders/${oFid}/status`, {
+    // Honesty guard: settled is terminal — a settled prepaid order must not be
+    // re-advanced through delivery (proves no double lifecycle).
+    const reAdv = await office.req("POST", `/api/orders/${oFid}/status`, {
       status: "out_for_delivery",
     });
-    const deliv = await office.req<{ order: { status: string } }>(
-      "POST",
-      `/api/orders/${oFid}/status`,
-      { status: "delivered" },
-    );
     check(
-      deliv.data.order.status === "settled",
-      `prepaid order settles when office confirms physical delivery (got ${deliv.data.order.status})`,
-    );
-    const invFRead = await office.req<{
-      invoice: { deliveredAt: string | null };
-    }>("GET", `/api/invoices/${invF.data.invoice.id}`);
-    check(
-      invFRead.data.invoice.deliveredAt !== null,
-      `deliveredAt stamped on the delivered transition (got ${JSON.stringify(invFRead.data.invoice.deliveredAt)})`,
+      reAdv.status === 400,
+      `settled prepaid cannot be re-advanced to out_for_delivery (got ${reAdv.status})`,
     );
   }
   // ---------------------------------------------------------------
