@@ -124,14 +124,7 @@ export default function OrderDetailPage() {
     <OfficeChrome
       title={order.code}
       kicker={`Orders / ${order.code}`}
-      status={
-        <>
-          <StatusPill status={order.status} />
-          {order.invoice ? (
-            <StatusPill status={order.invoice.paymentStatus} />
-          ) : null}
-        </>
-      }
+      status={<StatusPill status={order.status} />}
       actions={
         <>
           <button
