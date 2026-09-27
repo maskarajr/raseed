@@ -13,15 +13,18 @@ type InvoiceDetail = {
   balance: number;
   paymentStatus: string;
   createdAt: string;
+  deliveredAt: string | null;
   order: {
     code: string;
     subtotal: number;
-    booker: { name: string };
+    booker: { name: string; phone?: string };
     customer: {
       name: string;
       phone: string;
       area: string | null;
       address: string | null;
+      route: string | null;
+      ntn: string | null;
     };
     items: {
       id: string;
@@ -33,11 +36,28 @@ type InvoiceDetail = {
   returns: { id: string; amount: number }[];
 };
 
+type Issuer = {
+  businessName?: string;
+  issuerAddress?: string;
+  issuerPhone?: string;
+  issuerNtn?: string;
+  issuerStrn?: string;
+};
+
+function dayKarachi(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-PK", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Karachi",
+  });
+}
+
 export default function InvoicePrintPage() {
   const { id } = useParams<{ id: string }>();
   const [inv, setInv] = useState<InvoiceDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [biz, setBiz] = useState<{ businessName?: string } | null>(null);
+  const [biz, setBiz] = useState<Issuer | null>(null);
 
   useEffect(() => {
     fetch(`/api/invoices/${id}`, { credentials: "same-origin" })
@@ -49,7 +69,7 @@ export default function InvoicePrintPage() {
       .catch((e) => setError(e.message));
     fetch("/api/settings", { credentials: "same-origin" })
       .then((r) => r.json())
-      .then((d) => setBiz({ businessName: d.businessName }))
+      .then((d) => setBiz(d as Issuer))
       .catch(() => setBiz(null));
   }, [id]);
 
@@ -62,6 +82,21 @@ export default function InvoicePrintPage() {
   if (!inv) return <p className="muted" style={{ padding: 32 }}>Loading…</p>;
 
   const returnsTotal = inv.returns.reduce((s, r) => s + r.amount, 0);
+  const cust = inv.order.customer;
+  const addrLine = [cust.area, cust.address].filter(Boolean).join(", ");
+  const billedSub = [
+    cust.route ? `Route ${cust.route}` : null,
+    cust.ntn ? `NTN ${cust.ntn}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const issuerContact = [biz?.issuerAddress, biz?.issuerPhone].filter(Boolean).join(" · ");
+  const issuerReg = [
+    biz?.issuerNtn ? `NTN ${biz.issuerNtn}` : null,
+    biz?.issuerStrn ? `Strn ${biz.issuerStrn}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div className="doc">
@@ -71,6 +106,8 @@ export default function InvoicePrintPage() {
             <BrandMark className="mk" />
             <p className="doc-t">{biz?.businessName ?? "Raseed"}</p>
           </div>
+          {issuerContact && <p className="meta" style={{ marginTop: 8 }}>{issuerContact}</p>}
+          {issuerReg && <p className="meta">{issuerReg}</p>}
         </div>
         <div style={{ textAlign: "right" }}>
           <p className="pilllg" style={{ background: "var(--neu-bg)", color: "var(--neu-fg)" }}>
@@ -78,29 +115,25 @@ export default function InvoicePrintPage() {
           </p>
           <p className="num" style={{ fontSize: 20, marginTop: 8 }}>{inv.code}</p>
           <p className="meta">
-            Issued{" "}
-            {new Date(inv.createdAt).toLocaleDateString("en-PK", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-              timeZone: "Asia/Karachi",
-            })}
+            Issued {dayKarachi(inv.createdAt)}
+            {inv.deliveredAt ? ` · Delivered ${dayKarachi(inv.deliveredAt)}` : ""}
           </p>
         </div>
       </div>
       <div className="row" style={{ gap: 40 }}>
         <div>
           <p className="ptitle-s">Billed to</p>
-          <p className="pname" style={{ marginTop: 6 }}>{inv.order.customer.name}</p>
+          <p className="pname" style={{ marginTop: 6 }}>{cust.name}</p>
           <p className="meta">
-            {inv.order.customer.area ?? ""} {inv.order.customer.address ?? ""}
+            {addrLine || "—"}
             <br />
-            {inv.order.customer.phone}
+            {billedSub || cust.phone}
           </p>
         </div>
         <div>
           <p className="ptitle-s">Booker</p>
           <p className="pname" style={{ marginTop: 6 }}>{inv.order.booker.name}</p>
+          {inv.order.booker.phone && <p className="meta">{inv.order.booker.phone}</p>}
         </div>
         <div>
           <p className="ptitle-s">Collection</p>
@@ -111,27 +144,26 @@ export default function InvoicePrintPage() {
       <table className="tbl">
         <thead>
           <tr>
-            <th>#</th>
-            <th>Item</th>
+            <th>SKU</th>
+            <th>Description</th>
             <th className="r">Qty</th>
-            <th className="r">Unit</th>
+            <th className="r">Rate</th>
             <th className="r">Amount</th>
           </tr>
         </thead>
         <tbody>
-          {inv.order.items.map((i, idx) => (
+          {inv.order.items.map((i) => (
             <tr key={i.id}>
-              <td>{idx + 1}</td>
+              <td><span className="sku">{i.product.sku}</span></td>
               <td>
-                <span className="sku">{i.product.sku}</span> {i.product.name}
+                {i.product.name}
+                {i.product.unit ? ` · ${i.product.unit}` : ""}
               </td>
-              <td className="num r">
-                {i.qty} {i.product.unit}
-              </td>
-              <td className="money">
+              <td className="num r">{i.qty}</td>
+              <td className="money r">
                 <Money value={i.unitPrice} />
               </td>
-              <td className="money">
+              <td className="money r">
                 <Money value={i.qty * i.unitPrice} />
               </td>
             </tr>
@@ -163,7 +195,7 @@ export default function InvoicePrintPage() {
         style={{ marginTop: "auto", borderTop: "1px solid var(--border)", paddingTop: 12 }}
       >
         Goods remain the property of {biz?.businessName ?? "Raseed"} until paid in
-        full. Queries within 7 days of receipt. · Currency PKR · Page 1 of 1
+        full. Queries within 7 days of receipt. · Page 1 of 1
       </p>
       <div className="no-print" style={{ textAlign: "center" }}>
         <button className="btn-primary" onClick={() => window.print()}>

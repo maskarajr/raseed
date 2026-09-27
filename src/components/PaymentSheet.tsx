@@ -87,6 +87,7 @@ export function PaymentSheet({
             {(
               [
                 ["part", "Part payment"],
+                ["advance", "Cash advance"],
                 ["full", "Full settlement"],
               ] as const
             ).map(([id, label]) => (

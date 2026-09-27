@@ -28,12 +28,14 @@ export default function NewOrderPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [customer, setCustomer] = useState<CustomerRow | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
+  const [advance, setAdvance] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
 
   const subtotal = cart.reduce((s, l) => s + l.qty * l.unitPrice, 0);
   const itemCount = cart.reduce((s, l) => s + l.qty, 0);
+  const clampedAdvance = Math.max(0, Math.min(Math.floor(advance) || 0, subtotal));
 
   async function submit() {
     setError(null);
@@ -42,11 +44,15 @@ export default function NewOrderPage() {
       const res = await api<{
         order: { code: string };
         warnings: SubmitResult["warnings"];
+        balanceDue?: number;
       }>("/api/orders", {
         method: "POST",
         body: JSON.stringify({
           customerId: customer!.id,
           submit: true,
+          // C1 contract (ad270af): advance is server-revalidated against the
+          // summed subtotal (400 'Advance (Rs A) exceeds order total (Rs T)').
+          advance: clampedAdvance,
           items: cart.map((l) => ({
             productId: l.product.id,
             qty: l.qty,
@@ -85,6 +91,8 @@ export default function NewOrderPage() {
               customer={customer}
               cart={cart}
               subtotal={subtotal}
+              advance={clampedAdvance}
+              onAdvanceChange={setAdvance}
             />
           )}
         </div>
@@ -427,16 +435,18 @@ function ReviewStep({
   customer,
   cart,
   subtotal,
+  advance,
+  onAdvanceChange,
 }: {
   customer: CustomerRow;
   cart: CartLine[];
   subtotal: number;
+  advance: number;
+  onAdvanceChange: (n: number) => void;
 }) {
-  // G1 display half (qa-v3-design-fidelity-final): advance capture awaits
-  // owner decision C — no input, and advance never enters the payload. The
-  // row renders the zero the contract actually carries, so balance == total
-  // until C ships; known seam, flagged in the PR note.
-  const advance = 0;
+  // C1 advance capture (owner seq83, Breevie ad270af): the entered advance
+  // rides the create payload; the server revalidates against its own summed
+  // subtotal and returns balanceDue = subtotal - advance.
   const balance = subtotal - advance;
   const owes = customer.outstanding ?? customer.toCollect ?? 0;
   return (
@@ -468,9 +478,21 @@ function ReviewStep({
           </span>
         </div>
         <div className="prow">
-          <span>Cash advance taken now</span>
-          <span className="num" data-rev-advance>
-            <Money value={advance} />
+          <label htmlFor="adv-input">Cash advance taken now</label>
+          <span className="adv-ctl">
+            <span className="pmeta">Rs</span>
+            <input
+              id="adv-input"
+              className="adv-num num"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={subtotal}
+              step={1}
+              value={advance}
+              data-rev-advance
+              onChange={(e) => onAdvanceChange(Number(e.target.value) || 0)}
+            />
           </span>
         </div>
       </div>
@@ -482,7 +504,7 @@ function ReviewStep({
           </span>
         </div>
       )}
-      {owes > 0 && (
+      {owes > 0 && balance > 0 && (
         <div className="warnbox">
           <Icon name="warn" className="ic ic-sm" />
           <span>

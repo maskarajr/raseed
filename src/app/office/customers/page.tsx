@@ -7,6 +7,7 @@ type Shop = {
   phone: string;
   area: string | null;
   route: string | null;
+  ntn?: string | null;
   active: boolean;
   outstanding: number;
   booker: { name: string } | null;
@@ -137,6 +138,7 @@ function CustomerSheet({
   const [phone, setPhone] = useState(customer?.phone ?? "");
   const [area, setArea] = useState(customer?.area ?? "");
   const [route, setRoute] = useState(customer?.route ?? "");
+  const [ntn, setNtn] = useState(customer?.ntn ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -150,6 +152,7 @@ function CustomerSheet({
         phone,
         area: area || (isEdit ? null : undefined),
         route: route || (isEdit ? null : undefined),
+        ntn: ntn.trim() || (isEdit ? null : undefined),
       });
       if (isEdit) {
         await api(`/api/customers/${customer!.id}`, { method: "PATCH", body });
@@ -200,6 +203,16 @@ function CustomerSheet({
             className="linput"
             value={route}
             onChange={(e) => setRoute(e.target.value)}
+          />
+        </div>
+        <div className="lfield">
+          <label>NTN</label>
+          <input
+            className="linput"
+            value={ntn}
+            maxLength={40}
+            placeholder="e.g. 4218873-6"
+            onChange={(e) => setNtn(e.target.value)}
           />
         </div>
         {error && <p className="muted">{error}</p>}

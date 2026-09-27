@@ -12,6 +12,10 @@ type Settings = {
   officeHours: string;
   bookersSeeOutstanding: boolean;
   offlineCapture: boolean;
+  issuerAddress: string;
+  issuerPhone: string;
+  issuerNtn: string;
+  issuerStrn: string;
 };
 
 export default function SettingsPage() {
@@ -23,6 +27,10 @@ export default function SettingsPage() {
     officeHours: "09:00 – 19:00",
     bookersSeeOutstanding: true,
     offlineCapture: true,
+    issuerAddress: "",
+    issuerPhone: "",
+    issuerNtn: "",
+    issuerStrn: "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -88,6 +96,61 @@ export default function SettingsPage() {
                 onChange={(e) => setS({ ...s, officeHours: e.target.value })}
               />
             </div>
+          </div>
+        </div>
+        <div className="card2">
+          <div className="card2-h">
+            <h2 className="h3s">Invoice issuer</h2>
+            <span className="pmeta">Printed on the tax invoice</span>
+          </div>
+          <div className="stack">
+            <div className="lfield">
+              <label>Address</label>
+              <input
+                className="linput"
+                value={s.issuerAddress}
+                maxLength={300}
+                placeholder="Plot 14, SITE Area, Karachi"
+                onChange={(e) => setS({ ...s, issuerAddress: e.target.value })}
+              />
+            </div>
+            <div className="row" style={{ alignItems: "flex-start", gap: 12 }}>
+              <div className="lfield grow">
+                <label>Phone</label>
+                <input
+                  className="linput"
+                  value={s.issuerPhone}
+                  maxLength={40}
+                  placeholder="021 3456 7890"
+                  onChange={(e) => setS({ ...s, issuerPhone: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="row" style={{ alignItems: "flex-start", gap: 12 }}>
+              <div className="lfield grow">
+                <label>NTN</label>
+                <input
+                  className="linput"
+                  value={s.issuerNtn}
+                  maxLength={40}
+                  placeholder="1129983-4"
+                  onChange={(e) => setS({ ...s, issuerNtn: e.target.value })}
+                />
+              </div>
+              <div className="lfield grow">
+                <label>Strn</label>
+                <input
+                  className="linput"
+                  value={s.issuerStrn}
+                  maxLength={40}
+                  placeholder="0789-1123"
+                  onChange={(e) => setS({ ...s, issuerStrn: e.target.value })}
+                />
+              </div>
+            </div>
+            <p className="meta">
+              Empty fields are omitted on the printed sheet; never fabricated.
+            </p>
           </div>
         </div>
         <div className="card2">

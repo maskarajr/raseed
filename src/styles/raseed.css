@@ -236,6 +236,11 @@ p{margin:0;text-wrap:pretty}
 .pbig{font-family:var(--font-display);font-size:30px;line-height:1.1;letter-spacing:-.02em;font-weight:600}
 .prow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
 .prow:last-child{border-bottom:0}
+/* C1 step-3 advance input row. */
+.prow label{font-size:14px;color:var(--fg)}
+.adv-ctl{display:inline-flex;align-items:center;gap:6px}
+.adv-num{width:110px;text-align:right;border:1px solid var(--border);border-radius:8px;padding:6px 8px;font:inherit;background:var(--surface)}
+.adv-num:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
 
 /* --- Overlays: scrim, bottom sheet, office modal sheet, drawer --------------- */
 /* IN APP: the board anchored these to a frame (position:absolute); the app
