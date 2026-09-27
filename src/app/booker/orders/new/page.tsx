@@ -412,8 +412,8 @@ function LinesStep({
       </div>
       {low.length > 0 && (
         <div className="warnbox" style={{ marginTop: 12 }}>
-          {low[0]!.name} is low at the godown: only {low[0]!.stockQty}{" "}
-          available.
+          {low[0]!.name}: {low[0]!.stockQty} left — below reorder. A soft warning
+          never blocks the order.
         </div>
       )}
     </>

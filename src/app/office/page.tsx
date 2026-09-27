@@ -16,13 +16,6 @@ type SeriesPoint = {
   due?: number;
 };
 
-type Pipeline = {
-  scheduled: number;
-  awaiting: number;
-  confirmed: number;
-  invoiced: number;
-};
-
 type HomeResponse = {
   kpis: {
     bookedToday: number;
@@ -35,6 +28,7 @@ type HomeResponse = {
     oldestAwaitingMins: number;
     lowStock: number;
     outOfStock: number;
+    bookersToday?: number;
   };
   submitted: {
     id: string;
@@ -47,8 +41,8 @@ type HomeResponse = {
     items: number;
   }[];
   outstandingInvoices: { id: string; code: string; customer: string; balance: number }[];
-  // Breevie contract (optional until landed — rendered with graceful fallback).
-  pipeline?: Pipeline;
+  // Breevie contract: lifecycle pipeline as per-status counts.
+  pipeline?: { status: string; count: number }[];
   series?: SeriesPoint[];
 };
 
@@ -96,10 +90,22 @@ export default function OfficeDashboard() {
   useEffect(() => {
     setToday(formatTodayKarachi());
     load();
-    // 7-day Karachi-day series: prefer reports contract; ignore if not yet shipped.
-    api<{ series?: SeriesPoint[] }>("/api/reports")
+    // 7-day Karachi-day series lives on the reports contract (?range=7d);
+    // Breevie ships it only for that range. Map {day,booked,collected} to the
+    // spark/chart shape (due = booked - collected).
+    api<{ series?: { day: string; booked: number; collected: number }[] }>(
+      "/api/reports?range=7d",
+    )
       .then((r) => {
-        if (r.series?.length) setSeries(r.series);
+        if (r.series?.length)
+          setSeries(
+            r.series.map((p) => ({
+              label: p.day,
+              booked: p.booked,
+              collected: p.collected,
+              due: Math.max(0, p.booked - p.collected),
+            })),
+          );
       })
       .catch(() => {});
   }, [load]);
@@ -150,24 +156,28 @@ export default function OfficeDashboard() {
   const collectedSum = s.reduce((a, p) => a + (p.collected ?? 0), 0);
   const collectedPct = bookedSum > 0 ? ((collectedSum / bookedSum) * 100).toFixed(1) : "0.0";
 
-  // Pipeline: real contract counts if Breevie landed home.pipeline, else derive
-  // the one stage we truly know (awaiting confirmation).
-  const pipe: Pipeline = data.pipeline ?? {
-    scheduled: 0,
-    awaiting: kpis.awaitingConfirm,
-    confirmed: 0,
-    invoiced: 0,
-  };
+  // Pipeline: Breevie ships per-status counts on home.pipeline. Map to the
+  // board's four lifecycle stages; awaiting-confirm is the "now" step. Falls
+  // back to the awaiting KPI if the array is absent.
+  const pcount = (st: string) =>
+    data.pipeline?.find((p) => p.status === st)?.count ?? 0;
   const pipeSteps: { lab: string; n: number; now?: boolean }[] = [
-    { lab: "Scheduled", n: pipe.scheduled },
-    { lab: "Awaiting confirm", n: pipe.awaiting, now: true },
-    { lab: "Confirmed", n: pipe.confirmed },
-    { lab: "Invoiced", n: pipe.invoiced },
+    { lab: "Scheduled", n: pcount("draft") },
+    {
+      lab: "Awaiting confirm",
+      n: data.pipeline ? pcount("submitted") : kpis.awaitingConfirm,
+      now: true,
+    },
+    { lab: "Confirmed", n: pcount("confirmed") },
+    { lab: "Invoiced", n: pcount("invoiced") },
   ];
 
   const onRoadBooked = kpis.bookedToday;
   const onRoadCollected = kpis.collectedToday;
   const onRoadPct = onRoadBooked > 0 ? Math.round((onRoadCollected / onRoadBooked) * 100) : 0;
+  const bookersToday =
+    (kpis as { bookersToday?: number }).bookersToday ??
+    new Set(data.submitted.map((o) => o.booker)).size;
 
   const awaiting = data.submitted
     .slice()
@@ -291,7 +301,7 @@ export default function OfficeDashboard() {
           <div className="card2">
             <div className="rowb" style={{ marginBottom: 8 }}>
               <p className="ptitle-s">On the road</p>
-              <p className="meta">{onRoadPct}% collected</p>
+              <p className="meta">{bookersToday} bookers · {onRoadPct}% collected</p>
             </div>
             <div className="stat-list">
               <div className="stat-line"><span className="l">Booked</span><span className="v"><Money value={onRoadBooked} /></span></div>

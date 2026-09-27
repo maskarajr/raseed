@@ -70,7 +70,7 @@ export default function BookerHome() {
     if (o.invoice?.paymentStatus === "paid" || (o.invoice != null && (o.invoice.balance ?? 1) <= 0))
       return { n: "ok", pill: "settled" };
     if (o.status === "confirmed" || o.status === "invoiced") return { n: "warm", pill: "to collect" };
-    return { n: "info", pill: "scheduled" };
+    return { n: "", pill: "scheduled" };
   };
 
   return (
@@ -116,7 +116,7 @@ export default function BookerHome() {
               <span className="grow">
                 <Link href="/booker/orders" className="pname">{o.customer.name}</Link>
                 <br />
-                <span className="pmeta">{o.customer.area ?? o.code}</span>
+                <span className="pmeta">{o.customer.area ?? ""}</span>
               </span>
               <StatusPill status={st.pill} />
             </div>
