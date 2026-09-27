@@ -115,7 +115,7 @@ export default function BookerHome() {
         </div>
         {nextStops.length === 0 && (
           <p className="tbl-empty">
-            {hasRouteToday ? "No open stops." : "No route assigned for today."}
+            {hasRouteToday ? "Every stop is collected." : "No route assigned for today."}
           </p>
         )}
         {nextStops.map((o, i) => {

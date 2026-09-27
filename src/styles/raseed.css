@@ -111,6 +111,8 @@ p{margin:0;text-wrap:pretty}
 .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 .muted{color:var(--muted)}
 .meta{font-family:var(--font-mono);font-size:var(--fs-meta);color:var(--muted)}
+/* Figmi minor: the 13px muted label size (board inline) as a real class. */
+.smlabel{font-size:13px}
 .h3s{font-family:var(--font-display);font-size:16px;font-weight:600;letter-spacing:-.005em}
 .eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
 .row{display:flex;align-items:center;gap:12px}
@@ -134,15 +136,18 @@ p{margin:0;text-wrap:pretty}
 .ritem.is-on{background:var(--fg);color:var(--surface)}
 .rfoot{margin-top:auto;border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:2px}
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
-.appbar{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap}
+.appbar{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .acts{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .ptitle{font-family:var(--font-display);font-size:22px;font-weight:600;letter-spacing:-.015em}
 .psub{font-size:12px;color:var(--muted);margin-top:2px}
 /* .content is the app's scroll container; overflow-x:hidden prevents table bleed */
-.content{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+/* G6 (decision B, binding per Privy's approved set): office density adopts
+   the board numbers verbatim (.content 18/22+14, .card2 15, .card2-h 10,
+   .tbl td 7/10, .tl-item 9, .appbar gap 20, .totals 6 / .trow.grand 7). */
+.content{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding:18px 22px;display:flex;flex-direction:column;gap:14px}
 .pad{display:flex;flex-direction:column;gap:16px;min-height:0;flex:1}
-.card2{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
-.card2-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.card2{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px}
+.card2-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
 .content > .card2.grow{flex:1 0 auto}
 
 /* --- Controls ---------------------------------------------------------------- */
@@ -172,7 +177,7 @@ p{margin:0;text-wrap:pretty}
 /* --- Data display ------------------------------------------------------------ */
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
 .tbl th{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;text-align:left;padding:0 10px 9px;border-bottom:1px solid var(--border)}
-.tbl td{padding:10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl td{padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
 .tbl tbody tr:hover{background:var(--fg-soft)}
 .tbl tbody tr[hidden]{display:none}
 .r{text-align:right}
@@ -205,11 +210,11 @@ p{margin:0;text-wrap:pretty}
 .dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
 .dl dt{font-size:11px;color:var(--muted);font-family:var(--font-mono);letter-spacing:.08em;text-transform:uppercase}
 .dl dd{margin:4px 0 0;font-size:14px}
-.totals{display:flex;flex-direction:column;gap:8px;max-width:280px;margin-left:auto}
+.totals{display:flex;flex-direction:column;gap:6px;max-width:280px;margin-left:auto}
 .trow{display:flex;justify-content:space-between;gap:16px;font-size:13px}
-.trow.grand{border-top:1px solid var(--fg);padding-top:9px;font-size:15px;font-weight:600}
+.trow.grand{border-top:1px solid var(--fg);padding-top:7px;font-size:15px;font-weight:600}
 .timeline{display:flex;flex-direction:column;gap:0}
-.tl-item{display:flex;gap:10px;padding-bottom:14px;position:relative}
+.tl-item{display:flex;gap:10px;padding-bottom:9px;position:relative}
 .tl-item::before{content:'';position:absolute;left:5px;top:14px;bottom:0;width:1px;background:var(--border)}
 .tl-item:last-child::before{display:none}
 .tl-dot{width:11px;height:11px;border-radius:999px;border:2px solid var(--border);background:var(--surface);margin-top:3px;flex:none}

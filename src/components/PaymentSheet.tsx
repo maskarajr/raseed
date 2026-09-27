@@ -74,7 +74,7 @@ export function PaymentSheet({
     >
       <form onSubmit={save} className="stack" style={{ gap: 9 }}>
         <div className="rowb">
-          <span className="muted" style={{ fontSize: 13 }}>To collect</span>
+          <span className="muted smlabel">To collect</span>
           <span className="money" style={{ fontSize: 15, fontWeight: 600 }}>
             <Money value={balance} />
           </span>
