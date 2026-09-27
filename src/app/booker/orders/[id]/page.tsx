@@ -172,11 +172,7 @@ export default function BookerOrderDetailPage() {
               {collectedPct}% of <Money value={inv.total} /> in
             </span>
             <span className="phero-meta">
-              {order.advance > 0
-                ? "Advance taken"
-                : balance > 0
-                  ? "Cash on delivery"
-                  : "Fully paid"}
+              {order.advance > 0 ? "Paid — advance" : "Cash on delivery"}
             </span>
           </div>
         </div>

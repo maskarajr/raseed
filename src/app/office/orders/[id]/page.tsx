@@ -18,6 +18,7 @@ type OrderDetail = {
   status: string;
   notes: string | null;
   subtotal: number;
+  advance?: number;
   createdAt: string;
   customer: {
     name: string;
@@ -231,8 +232,8 @@ export default function OrderDetailPage() {
             <div>
               <dt>Fulfilment</dt>
               <dd>
-                {order.invoice?.paymentStatus === "paid"
-                  ? "Collected"
+                {(order.advance ?? 0) > 0
+                  ? "Paid — advance"
                   : "Cash on delivery"}
               </dd>
             </div>
