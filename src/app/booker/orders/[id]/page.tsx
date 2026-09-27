@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
@@ -250,15 +251,13 @@ export default function BookerOrderDetailPage() {
             {busy ? "Submitting…" : "Submit"}
           </button>
           <div className="row" style={{ gap: 10 }}>
-            <button
-              type="button"
+            <Link
+              href={`/booker/orders/${order.id}/edit`}
               className="btn-sec grow"
               style={{ justifyContent: "center" }}
-              disabled
-              title="Draft editing arrives with the PATCH endpoint"
             >
               Edit
-            </button>
+            </Link>
             <button
               type="button"
               className="btn-sec grow"
