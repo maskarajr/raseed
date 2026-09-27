@@ -1,4 +1,4 @@
-type IconName =
+export type IconName =
   | "home"
   | "chart"
   | "orders"
@@ -9,9 +9,13 @@ type IconName =
   | "ledger"
   | "gear"
   | "plus"
+  | "minus"
   | "edit"
   | "logout"
-  | "search";
+  | "search"
+  | "x"
+  | "phone"
+  | "warn";
 
 const PATHS: Record<IconName, string[]> = {
   home: ["M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"],
@@ -26,12 +30,21 @@ const PATHS: Record<IconName, string[]> = {
   ledger: ["M6 4h12v16H6zM9 8h6M9 12h6M9 16h3"],
   gear: ["M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM4 12h2m12 0h2M12 4v2m0 12v2"],
   plus: ["M12 5v14M5 12h14"],
+  minus: ["M5 12h14"],
   edit: ["M12 20h9", "M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"],
   logout: [
     "M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3",
     "M10 16l-4-4 4-4M6 12h9",
   ],
   search: ["m20 20-3.5-3.5"],
+  x: ["M6 6l12 12M18 6 6 18"],
+  // Board #i-phone is a rounded rect + speaker line; drawn as paths so Icon's
+  // path-only renderer can emit it without special-casing elements.
+  phone: [
+    "M9.4 2h5.2a2.4 2.4 0 0 1 2.4 2.4v15.2a2.4 2.4 0 0 1-2.4 2.4H9.4A2.4 2.4 0 0 1 7 19.6V4.4A2.4 2.4 0 0 1 9.4 2z",
+    "M11 18.5h2",
+  ],
+  warn: ["M12 3 2 20h20z", "M12 10v4M12 17.5v.5"],
 };
 
 export function Icon({

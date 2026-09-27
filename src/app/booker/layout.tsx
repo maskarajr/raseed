@@ -38,7 +38,9 @@ export default async function BookerLayout({
       <div className="pwa">
         <div className="pstatus">
           <span className="row" style={{ gap: 6 }}>
-            <BrandMark compact className="rmark rmark-sm" />
+            <span className="rmark rmark-sm">
+              <BrandMark compact className="mk" />
+            </span>
             Raseed
           </span>
           <span>Booker</span>

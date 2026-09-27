@@ -7,6 +7,7 @@ import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { SideSheet } from "@/components/SideSheet";
+import { Icon } from "@/components/Icon";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { PaymentSheet } from "@/components/PaymentSheet";
 import { initials } from "@/lib/person";
@@ -367,7 +368,7 @@ function ReturnSheet({
 
   return (
     <SideSheet title={`Log returns — Invoice #${invoice.code}`} onClose={onClose}>
-      <div className="stack" style={{ gap: 12 }}>
+      <div className="stack" style={{ gap: 10 }}>
         {lines.map((l) => {
             const qty = qtys[l.productId] ?? 0;
             const disabled = l.max === 0;
@@ -387,9 +388,9 @@ function ReturnSheet({
                       className="qty-btn"
                       disabled={disabled || qty <= 0}
                       onClick={() => setQty(l.productId, qty - 1, l.max)}
-                      aria-label={`decrease ${l.sku}`}
+                      aria-label={`Decrease ${l.sku}`}
                     >
-                      −
+                      <Icon name="minus" className="ic ic-sm" />
                     </button>
                     <span className="qty-val">{qty}</span>
                     <button
@@ -397,9 +398,9 @@ function ReturnSheet({
                       className="qty-btn"
                       disabled={disabled || qty >= l.max}
                       onClick={() => setQty(l.productId, qty + 1, l.max)}
-                      aria-label={`increase ${l.sku}`}
+                      aria-label={`Increase ${l.sku}`}
                     >
-                      +
+                      <Icon name="plus" className="ic ic-sm" />
                     </button>
                 </span>
               </div>

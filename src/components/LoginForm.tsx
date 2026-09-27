@@ -5,12 +5,13 @@ import { api } from "@/lib/client";
 import type { Role } from "@/lib/enums";
 import { PwaInstallCta } from "@/components/PwaInstallCta";
 import { BrandMark } from "@/components/BrandMark";
+import { Icon, type IconName } from "@/components/Icon";
 
 type Desk = "office" | "booker";
 
-const DESKS: { id: Desk; name: string; desc: string; hint: string }[] = [
-  { id: "office", name: "Office", desc: "Dashboard, orders, invoices", hint: "Desktop app · full rail" },
-  { id: "booker", name: "Booker", desc: "Route, capture, collections", hint: "Phone layout · route first" },
+const DESKS: { id: Desk; name: string; desc: string; hint: string; icon: IconName }[] = [
+  { id: "office", name: "Office", desc: "Dashboard, orders, invoices", hint: "Desktop app · full rail", icon: "chart" },
+  { id: "booker", name: "Booker", desc: "Route, capture, collections", hint: "Phone layout · route first", icon: "phone" },
 ];
 
 export function LoginForm() {
@@ -129,6 +130,7 @@ export function LoginForm() {
                     className={`opt role-opt${on ? " is-on" : ""}`}
                     onClick={() => setDesk(d.id)}
                   >
+                    <Icon name={d.icon} />
                     <span>
                       <span className="pname">{d.name}</span>
                       <br />

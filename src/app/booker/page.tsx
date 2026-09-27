@@ -15,7 +15,7 @@ type OrderRow = {
   status: string;
   subtotal: number;
   createdAt: string;
-  customer: { name: string; area: string | null };
+  customer: { name: string; area: string | null; route: string | null };
   invoice: { paymentStatus: string; balance?: number } | null;
 };
 
@@ -50,7 +50,7 @@ export default function BookerHome() {
     .reduce((s, o) => s + o.subtotal, 0);
   const pct =
     todayBooked > 0
-      ? Math.min(100, Math.round((collectedAmt / todayBooked) * 100))
+      ? Math.min(100, Math.floor((collectedAmt / todayBooked) * 100))
       : 0;
   const first = name?.split(" ")[0] ?? "Booker";
   const openStops = orders.filter((o) => {
@@ -62,9 +62,13 @@ export default function BookerHome() {
   const nextStops = openStops.slice(0, 5);
   const stopsLeft = openStops.length;
   const toCollect = openStops.filter((o) => (o.invoice?.balance ?? 0) > 0).length;
-  const routeLabel = orders.find((o) => o.customer.area)?.customer.area
-    ? `${orders.filter((o) => new Date(o.createdAt).getTime() >= todayStart).length} shops today`
-    : `${stopsLeft} stops open`;
+  // G3/G4 (qa-v3-design-fidelity-final): the hero is route-conditional — a
+  // zero-day must not render an ink hero claiming Rs 0 of Rs 0. Route chip is
+  // the board's identity line `Route {n} · {N} shops`; pct floor-truncates.
+  const routeNo =
+    todayOrders.find((o) => o.customer.route)?.customer.route ?? null;
+  const routeLabel = `Route ${routeNo ?? "—"} · ${todayOrders.length} shops`;
+  const hasRouteToday = todayOrders.length > 0;
 
   const stopState = (o: OrderRow): { n: string; pill: string } => {
     if (o.invoice?.paymentStatus === "paid" || (o.invoice != null && (o.invoice.balance ?? 1) <= 0))
@@ -76,18 +80,20 @@ export default function BookerHome() {
   return (
     <BookerChrome title={`Salaam, ${first}`}>
       {error && <p className="muted">{error}</p>}
-      <div className="phero">
-        <div className="rowb">
-          <p className="phero-lab">Collected today</p>
-          <span className="phero-route">{routeLabel}</span>
+      {hasRouteToday && (
+        <div className="phero">
+          <div className="rowb">
+            <p className="phero-lab">Collected today</p>
+            <span className="phero-route">{routeLabel}</span>
+          </div>
+          <p className="phero-val num"><CountUp value={collectedAmt} money /></p>
+          <div className="phero-bar"><span style={{ width: `${pct}%` }}></span></div>
+          <div className="rowb" style={{ marginTop: 8 }}>
+            <span className="phero-meta">{pct}% of <Money value={todayBooked} /> booked</span>
+            <span className="phero-meta"><Money value={Math.max(0, todayBooked - collectedAmt)} /> to go</span>
+          </div>
         </div>
-        <p className="phero-val num"><CountUp value={collectedAmt} money /></p>
-        <div className="phero-bar"><span style={{ width: `${pct}%` }}></span></div>
-        <div className="rowb" style={{ marginTop: 8 }}>
-          <span className="phero-meta">{pct}% of <Money value={todayBooked} /> booked</span>
-          <span className="phero-meta"><Money value={Math.max(0, todayBooked - collectedAmt)} /> to go</span>
-        </div>
-      </div>
+      )}
 
       <div className="pstats">
         <div className="pstat"><p className="pstat-lab">Orders</p><p className="pstat-val num"><CountUp value={todayOrders.length} /></p></div>
@@ -107,7 +113,11 @@ export default function BookerHome() {
           <p className="ptitle-s">Next stops</p>
           <span className="pmeta">Ordered by route</span>
         </div>
-        {nextStops.length === 0 && <p className="tbl-empty">No open stops.</p>}
+        {nextStops.length === 0 && (
+          <p className="tbl-empty">
+            {hasRouteToday ? "No open stops." : "No route assigned for today."}
+          </p>
+        )}
         {nextStops.map((o, i) => {
           const st = stopState(o);
           return (
@@ -116,7 +126,10 @@ export default function BookerHome() {
               <span className="grow">
                 <Link href="/booker/orders" className="pname">{o.customer.name}</Link>
                 <br />
-                <span className="pmeta">{o.customer.area ?? ""}</span>
+                <span className="pmeta">
+                  {o.customer.area ??
+                    (o.customer.route ? `Route ${o.customer.route}` : "")}
+                </span>
               </span>
               <StatusPill status={st.pill} />
             </div>

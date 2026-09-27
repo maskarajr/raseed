@@ -44,7 +44,9 @@ export function BrandMark({
 export function BrandLockup() {
   return (
     <span className="rbrand">
-      <BrandMark compact className="rmark" />
+      <span className="rmark">
+        <BrandMark compact className="mk" />
+      </span>
       Raseed
     </span>
   );

@@ -7,6 +7,7 @@ import type { Customer, Product } from "@/generated/prisma/client";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { BookerChrome } from "@/components/BookerChrome";
+import { Icon } from "@/components/Icon";
 import { SideSheet } from "@/components/SideSheet";
 import { initials } from "@/lib/person";
 
@@ -21,9 +22,11 @@ type SubmitResult = {
   warnings: { sku: string; requested: number; available: number }[];
 };
 
+type CustomerRow = Customer & { outstanding?: number; toCollect?: number };
+
 export default function NewOrderPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [customer, setCustomer] = useState<CustomerRow | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -125,7 +128,7 @@ export default function NewOrderPage() {
                 disabled={submitting}
                 onClick={submit}
               >
-                {submitting ? "Submitting…" : "Submit order"}
+                {submitting ? "Submitting…" : "Place order"}
               </button>
             )}
           </div>
@@ -135,7 +138,7 @@ export default function NewOrderPage() {
   );
 }
 
-const STEP_LABELS = ["Shop", "Products", "Review"] as const;
+const STEP_LABELS = ["Shop", "Products", "Advance"] as const;
 
 function Steps({ step }: { step: 1 | 2 | 3 }) {
   return (
@@ -154,14 +157,12 @@ function Steps({ step }: { step: 1 | 2 | 3 }) {
   );
 }
 
-type CustomerRow = Customer & { outstanding?: number; toCollect?: number };
-
 function CustomerStep({
   selected,
   onSelect,
 }: {
-  selected: Customer | null;
-  onSelect: (c: Customer) => void;
+  selected: CustomerRow | null;
+  onSelect: (c: CustomerRow) => void;
 }) {
   const [search, setSearch] = useState("");
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
@@ -181,7 +182,7 @@ function CustomerStep({
 
   return (
     <>
-      <p className="ptitle-s">Step 1 · Pick the shop</p>
+      <p className="ptitle-s">Pick the shop</p>
       <div className="lfield" style={{ margin: "10px 0" }}>
         <input
           className="linput"
@@ -362,7 +363,7 @@ function LinesStep({
 
   return (
     <>
-      <p className="ptitle-s">Step 2 · Add products</p>
+      <p className="ptitle-s">Add products</p>
       <div className="lfield" style={{ margin: "10px 0" }}>
         <input
           className="linput"
@@ -393,17 +394,19 @@ function LinesStep({
                 <button
                   type="button"
                   className="qty-btn"
+                  aria-label={`Decrease ${p.name}`}
                   onClick={() => setQty(p, Math.max(0, n - 1))}
                 >
-                  −
+                  <Icon name="minus" className="ic ic-sm" />
                 </button>
                 <QtyVal n={n} />
                 <button
                   type="button"
                   className="qty-btn"
+                  aria-label={`Increase ${p.name}`}
                   onClick={() => setQty(p, n + 1)}
                 >
-                  +
+                  <Icon name="plus" className="ic ic-sm" />
                 </button>
               </span>
             </div>
@@ -425,17 +428,28 @@ function ReviewStep({
   cart,
   subtotal,
 }: {
-  customer: Customer;
+  customer: CustomerRow;
   cart: CartLine[];
   subtotal: number;
 }) {
+  // G1 display half (qa-v3-design-fidelity-final): advance capture awaits
+  // owner decision C — no input, and advance never enters the payload. The
+  // row renders the zero the contract actually carries, so balance == total
+  // until C ships; known seam, flagged in the PR note.
+  const advance = 0;
+  const balance = subtotal - advance;
+  const owes = customer.outstanding ?? customer.toCollect ?? 0;
   return (
     <>
-      <p className="ptitle-s">Step 3 · Review and submit</p>
+      <p className="ptitle-s">Advance and submit</p>
       <div className="pcard">
         <div className="prow">
           <span>{customer.name}</span>
-          <span className="pmeta">{customer.area ?? "—"}</span>
+          <span className="pmeta">
+            {customer.route
+              ? `Route ${customer.route}`
+              : (customer.area ?? "—")}
+          </span>
         </div>
         {cart.map((l) => (
           <div key={l.product.id} className="prow">
@@ -453,11 +467,30 @@ function ReviewStep({
             <Money value={subtotal} />
           </span>
         </div>
+        <div className="prow">
+          <span>Cash advance taken now</span>
+          <span className="num" data-rev-advance>
+            <Money value={advance} />
+          </span>
+        </div>
       </div>
-      <div className="balance">
-        <span>Collect on delivery</span>
-        <span className="num"><Money value={subtotal} /></span>
-      </div>
+      {balance > 0 && (
+        <div className="balance">
+          <span>Collect on delivery</span>
+          <span className="num" data-rev-balance>
+            <Money value={balance} />
+          </span>
+        </div>
+      )}
+      {owes > 0 && (
+        <div className="warnbox">
+          <Icon name="warn" className="ic ic-sm" />
+          <span>
+            {customer.name} already owes <Money value={owes} />. Take the
+            advance now; the rest is collected when the invoice is delivered.
+          </span>
+        </div>
+      )}
     </>
   );
 }

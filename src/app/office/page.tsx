@@ -6,6 +6,7 @@ import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { CountUp } from "@/components/CountUp";
 import { OfficeChrome } from "@/components/OfficeChrome";
+import { Icon } from "@/components/Icon";
 import { formatTodayKarachi } from "@/lib/day";
 import { useToast } from "@/components/Toast";
 
@@ -184,17 +185,49 @@ export default function OfficeDashboard() {
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
     .slice(0, 5);
 
+  // G8 (qa-v3-design-fidelity-final), Privy ruling seq-48 item 3: Export is
+  // client-side CSV over exactly what the dashboard payload already holds —
+  // the rendered 7-day series. No new backend; Range/30d stay out of scope.
+  function exportCsv() {
+    const rows = [
+      ["Day", "Booked", "Collected", "Due"],
+      ...s.map((p) => [
+        p.label ?? "",
+        String(p.booked ?? 0),
+        String(p.collected ?? 0),
+        String(p.due ?? 0),
+      ]),
+    ];
+    const csv = rows
+      .map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(","))
+      .join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `raseed-dashboard-${today || "7d"}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast("Dashboard exported · 7-day series");
+  }
+
   return (
     <OfficeChrome
       title="Dashboard"
       subtitle={`${today || "…"} · office hours 09:00–19:00`}
       actions={
         <>
-          <div className="seg" aria-hidden>
-            <button type="button" className="seg-item is-on" onClick={() => toast("7-day range")}>7 days</button>
-            <button type="button" className="seg-item" onClick={() => toast("30-day range")}>30 days</button>
+          <div className="seg" role="group" aria-label="Date range">
+            <button type="button" className="seg-item is-on" disabled title="Current range">7 days</button>
+            <button type="button" className="seg-item" disabled title="30-day range lands with the reports backend">30 days</button>
           </div>
+          <button type="button" className="btn-sec" onClick={exportCsv}>
+            Export
+          </button>
           <Link href="/office/orders/new" className="btn-primary">
+            <Icon name="plus" className="ic ic-sm" />
             New order
           </Link>
         </>
