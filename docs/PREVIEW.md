@@ -35,12 +35,17 @@ preview there.
 From the `raseed-wt-v3` worktree root:
 
 ```bash
-npm run preview            # serves .next-preview on :3055, builds if missing
+npm run preview            # serves .next-preview on :3055; builds if missing or stale vs HEAD
 npm run preview -- 3100    # optional: override the port
 ```
 
 `scripts/preview-v3.cjs` will:
-- build into the isolated `.next-preview` **only if no build exists**;
+- build into the isolated `.next-preview` **if no build exists OR the build is
+  stale**: every successful build stamps its git HEAD into
+  `.next-preview/BUILD_COMMIT`; at startup (and before each respawn) the
+  launcher compares that stamp with current HEAD and forces a rebuild on
+  mismatch. This closes the "fix committed but preview serves old chunks"
+  blind spot — a 200 from :3055 now implies HEAD-faithful code;
 - serve via `next start` (stable production server, not a dev process);
 - **wait for readiness and verify the referenced stylesheet returns HTTP 200**;
   if the CSS is missing/stale it rebuilds once and respawns;

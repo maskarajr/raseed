@@ -15,6 +15,13 @@
  * the served stylesheet returns 200, and rebuilds once if assets are stale.
  * Uses `next start` (stable prod server) and auto-respawns it on exit.
  *
+ * Freshness contract: a successful build stamps the git HEAD commit into
+ * ${DIST}/BUILD_COMMIT. On startup the current HEAD is compared against that
+ * stamp and a mismatch (or a pre-stamp build with no stamp file) forces a
+ * rebuild BEFORE the server starts. Without this, a committed fix could sit
+ * unserved while the preview answers 200 with old chunks — "verified live"
+ * evidence from the wrong build. (Class of failure: :3000 clobber scare.)
+ *
  * Usage:
  *   npm run preview                 -> port 3055, dist .next-preview, auto-build
  *   npm run preview -- 3100         -> override port
@@ -35,6 +42,8 @@ const ENV = { ...process.env, RASEED_DIST_DIR: DIST };
 
 const sh = (cmd) =>
   spawnSync(cmd, { cwd: ROOT, encoding: "utf8", shell: true }).stdout?.trim() || "?";
+const headCommit = () =>
+  spawnSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).stdout?.trim() || "";
 const log = (msg) => {
   const line = `[preview ${new Date().toISOString()}] ${msg}\n`;
   process.stdout.write(line);
@@ -53,10 +62,34 @@ const httpOnce = (url, method) =>
     req.end();
   });
 
+const buildIdPath = path.join(ROOT, DIST, "BUILD_ID");
+const stampPath = path.join(ROOT, DIST, "BUILD_COMMIT");
+
 function build() {
-  log(`building isolated preview into ${DIST} …`);
+  const stamp = headCommit();
+  log(`building isolated preview into ${DIST} … (git HEAD ${stamp.slice(0, 8) || "?"})`);
   const r = spawnSync("npm", ["run", "build"], { cwd: ROOT, stdio: "inherit", shell: true, env: ENV });
-  return r.status === 0;
+  if (r.status !== 0) return false;
+  try { fs.writeFileSync(stampPath, stamp + "\n"); }
+  catch (e) { log(`WARN: could not stamp BUILD_COMMIT: ${e.message}`); }
+  return true;
+}
+
+// Fresh = a build exists AND its captured commit equals current git HEAD.
+// A leftover build from before stamping existed (no BUILD_COMMIT) is stale by
+// definition: rebuild once to re-stamp it. Outside a git repo, don't block.
+function buildIsFresh() {
+  if (!fs.existsSync(buildIdPath)) return false;
+  const head = headCommit();
+  if (!head) return true;
+  if (!fs.existsSync(stampPath)) {
+    log(`${DIST} has no BUILD_COMMIT stamp (pre-stamp build) -> forcing rebuild`);
+    return false;
+  }
+  const built = fs.readFileSync(stampPath, "utf8").trim();
+  if (built === head) return true;
+  log(`STALE BUILD: stamped ${built.slice(0, 8) || "(empty)"} but HEAD is ${head.slice(0, 8)} -> forcing rebuild`);
+  return false;
 }
 
 async function waitReady() {
@@ -119,6 +152,10 @@ function start() {
       }
       if (restarts >= MAX_RESTARTS) { log(`MAX_RESTARTS=${MAX_RESTARTS}; giving up. Check ${LOG}`); process.exit(1); }
       restarts += 1;
+      if (!buildIsFresh()) {
+        log("server down and build is stale vs HEAD — rebuilding before respawn");
+        if (!build()) log("WARN: rebuild failed; respawning on last known build");
+      }
       const wait = Math.min(1000 * restarts, 10000);
       log(`respawning in ${wait}ms (restart ${restarts}/${MAX_RESTARTS})`);
       setTimeout(start, wait);
@@ -135,17 +172,16 @@ for (const sig of ["SIGINT", "SIGTERM"]) {
   });
 }
 
-const buildIdPath = path.join(ROOT, DIST, "BUILD_ID");
 console.log(`\n=== Raseed v3 PREVIEW ===
   cwd   : ${ROOT}
   branch: ${sh("git rev-parse --abbrev-ref HEAD")}  commit: ${sh("git rev-parse --short HEAD")}
-  dist  : ${DIST} (isolated from dev's .next)   build: ${fs.existsSync(buildIdPath) ? fs.readFileSync(buildIdPath, "utf8").trim() : "(none — will build)"}
+  dist  : ${DIST} (isolated from dev's .next)   build: ${fs.existsSync(buildIdPath) ? fs.readFileSync(buildIdPath, "utf8").trim() : "(none — will build)"}   stamped commit: ${fs.existsSync(stampPath) ? fs.readFileSync(stampPath, "utf8").trim().slice(0, 8) : "(none — will rebuild to stamp)"}
   URL   : http://localhost:${PORT}
   log   : ${LOG}
   rule  : dev server = :3000/.next ; preview = :${PORT}/${DIST}. They never share a build dir.
 `);
 
-if (!fs.existsSync(buildIdPath)) {
+if (!buildIsFresh()) {
   if (!build()) { console.error("[preview] build failed; not starting."); process.exit(1); }
 }
 start();
