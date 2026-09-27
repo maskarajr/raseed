@@ -29,4 +29,5 @@ prisma/dev.db-journal
 qc-*.png
 preview-v3.log
 
+.next
 .next-preview/
