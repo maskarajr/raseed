@@ -16,7 +16,7 @@ type OrderRow = {
   subtotal: number;
   createdAt: string;
   customer: { name: string; area: string | null; route: string | null };
-  invoice: { paymentStatus: string; balance?: number } | null;
+  invoice: { paymentStatus: string; balance?: number; amountPaid?: number } | null;
 };
 
 const CLOSED = ["settled", "cancelled"];
@@ -40,14 +40,15 @@ export default function BookerHome() {
     (o) => new Date(o.createdAt).getTime() >= todayStart,
   );
   const todayBooked = todayOrders.reduce((s, o) => s + o.subtotal, 0);
-  const collectedAmt = orders
-    .filter(
-      (o) =>
-        o.status === "settled" ||
-        o.invoice?.paymentStatus === "paid" ||
-        (o.invoice != null && (o.invoice.balance ?? 1) <= 0),
-    )
-    .reduce((s, o) => s + o.subtotal, 0);
+  // Privy coherence item (seq85): advance is real cash in the booker's
+  // pocket. The hero reads the invoice-derived ledger — invoice.amountPaid is
+  // seeded from order.advance at invoicing (deriveInvoiceState path), so a
+  // prepaid stop counts as collected the moment the advance exists. Capped at
+  // the order subtotal; scoped to today's bookings to match the denominator.
+  const collectedAmt = todayOrders.reduce(
+    (s, o) => s + Math.min(o.subtotal, o.invoice?.amountPaid ?? 0),
+    0,
+  );
   const pct =
     todayBooked > 0
       ? Math.min(100, Math.floor((collectedAmt / todayBooked) * 100))
