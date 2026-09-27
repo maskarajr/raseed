@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { SessionUser } from "@/server/auth/session";
 import { ApiError } from "@/server/http";
-import { applyStockMovement } from "./stock";
+import { applyStockMovements } from "./stock";
 import { deriveInvoiceState } from "./invoiceMath";
 import { nextInvoiceCode } from "./codes";
 
@@ -60,17 +60,21 @@ export async function generateInvoice(session: SessionUser, orderId: string) {
       });
     }
 
-    // Deduct stock for each line via the stock service.
-    for (const item of order.items) {
-      await applyStockMovement(tx, {
+    // Deduct stock for every line via the batched stock-service helper (reason
+    // `sale`). Batched to one product read + per-line writes so multi-line
+    // orders cannot blow past the interactive-transaction timeout on a remote
+    // DB (the P2028 root cause this replaces).
+    await applyStockMovements(
+      tx,
+      order.items.map((item) => ({
         productId: item.productId,
         delta: -item.qty,
-        reason: "sale",
+        reason: "sale" as const,
         createdBy: session.id,
         refType: "invoice",
         refId: invoice.id,
-      });
-    }
+      })),
+    );
 
     await tx.order.update({
       where: { id: order.id },
@@ -80,5 +84,5 @@ export async function generateInvoice(session: SessionUser, orderId: string) {
     // Deliberately NO settleOrderIfPaid here: a prepaid order must remain
     // `invoiced` until physical delivery is confirmed (Privy, seq follow-up).
     return invoice;
-  });
+  }, { timeout: 20000 });
 }

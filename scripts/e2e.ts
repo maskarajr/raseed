@@ -241,6 +241,27 @@ async function main() {
     );
     check(data.invoice.balance === invoiceTotal, "invoice balance equals total (unpaid)");
     check(data.invoice.paymentStatus === "unpaid", "invoice starts 'unpaid'");
+
+    // Refactor guard: the batched invoice stock write must emit exactly one
+    // 'sale' ledger row PER LINE, linked to the invoice, with delta == -qty.
+    const ledA = (
+      await office.req<{
+        entries: { reason: string; refId: string | null; delta: number }[];
+      }>("GET", `/api/stock/ledger?productId=${prodA}`)
+    ).data.entries.filter((e) => e.reason === "sale" && e.refId === invoiceId);
+    const ledB = (
+      await office.req<{
+        entries: { reason: string; refId: string | null; delta: number }[];
+      }>("GET", `/api/stock/ledger?productId=${prodB}`)
+    ).data.entries.filter((e) => e.reason === "sale" && e.refId === invoiceId);
+    check(
+      ledA.length === 1 && ledB.length === 1,
+      `one 'sale' ledger row per invoiced line, linked to invoice (A:${ledA.length} B:${ledB.length})`,
+    );
+    check(
+      ledA[0]?.delta === -3 && ledB[0]?.delta === -5,
+      `sale ledger deltas reflect line quantities (A ${ledA[0]?.delta}, B ${ledB[0]?.delta})`,
+    );
   }
 
   // Re-invoicing must be rejected.
