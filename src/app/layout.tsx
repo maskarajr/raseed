@@ -22,13 +22,20 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Raseed",
   },
+  other: {
+    "interactive-widget": "resizes-content",
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0B6E4F",
+  // Single source of truth with manifest.webmanifest theme_color (#F4F5F7 =
+  // --bg, the first painted screen). viewport-fit=cover makes the existing
+  // env(safe-area-inset-*) padding in raseed.css take effect.
+  themeColor: "#F4F5F7",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export const dynamic = "force-dynamic";

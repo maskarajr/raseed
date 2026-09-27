@@ -298,6 +298,11 @@ p{margin:0;text-wrap:pretty}
   .login-l{padding:40px 24px}
   .login-r{border-left:0;border-top:1px solid var(--border);order:2}
 }
+/* Edge-to-edge on real phones: same 600px rule as .pwa-root — fill the viewport
+   below 600px, keep the 390px centred frame above it. */
+@media (max-width:600px){
+  .login-wrap{width:100%;max-width:none;margin:0}
+}
 
 /* --- Print document ---------------------------------------------------------- */
 .doc{background:var(--surface);margin:0 auto;width:100%;padding:34px 38px;display:flex;flex-direction:column;gap:18px}
