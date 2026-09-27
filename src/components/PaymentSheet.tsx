@@ -35,6 +35,8 @@ export function PaymentSheet({
         return "Full settlement";
       case "part":
         return "Part payment";
+      case "advance":
+        return "Cash advance";
       default: {
         const _exhaustive: never = k;
         return _exhaustive;

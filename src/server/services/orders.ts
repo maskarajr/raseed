@@ -3,6 +3,7 @@ import type { SessionUser } from "@/server/auth/session";
 import { ApiError } from "@/server/http";
 import { canTransition, type OrderStatus } from "@/lib/enums";
 import { nextOrderCode } from "./codes";
+import { settleOrderIfPaid } from "./settle";
 
 export type OrderItemInput = {
   productId: string;
@@ -16,6 +17,9 @@ export type CreateOrderInput = {
   notes?: string;
   items: OrderItemInput[];
   submit: boolean;
+  // Cash advance declared at capture (G1). Already zod-guarded to int >= 0;
+  // the service enforces the upper bound against the server-summed subtotal.
+  advance?: number;
   // Who is driving the create. Office/owner may book any shop on any booker's
   // behalf; a booker is restricted to their own (see the guard below).
   actor?: Pick<SessionUser, "id" | "role">;
@@ -86,6 +90,17 @@ export async function createOrder(input: CreateOrderInput) {
     }
 
     const code = await nextOrderCode(tx);
+
+    // Advance is declared against the SERVER-summed subtotal, never a client-
+    // supplied total. Reject anything above the order value before we persist.
+    const advance = input.advance ?? 0;
+    if (advance > subtotal) {
+      throw new ApiError(
+        400,
+        `Advance (Rs ${advance}) exceeds order total (Rs ${subtotal})`,
+      );
+    }
+
     const order = await tx.order.create({
       data: {
         code,
@@ -94,7 +109,7 @@ export async function createOrder(input: CreateOrderInput) {
         notes: input.notes,
         status: input.submit ? "submitted" : "draft",
         subtotal,
-        advance: 0,
+        advance,
         items: {
           create: input.items.map((i) => ({
             productId: i.productId,
@@ -106,7 +121,10 @@ export async function createOrder(input: CreateOrderInput) {
       include: { items: true, customer: true },
     });
 
-    return { order, warnings };
+    // balanceDue is the collect-on-delivery figure the board's step-3 shows
+    // (`.balance` = total − advance). Server-computed so the client never does
+    // money math; the real ledger still flows through Invoice on generation.
+    return { order, warnings, balanceDue: subtotal - advance };
   });
 }
 
@@ -151,10 +169,36 @@ export async function transitionOrder(
       throw new ApiError(403, "Only office/owner may advance this order");
     }
 
-    return tx.order.update({
+    const updated = await tx.order.update({
       where: { id: orderId },
       data: { status: to },
       include: { items: true, customer: true },
     });
+
+    // Physical delivery is the only place deliveredAt is written (G2 print).
+    // A prepaid order (advance folded into invoice.amountPaid at invoicing)
+    // reaches balance 0 here; settle is driven by the SAME canonical
+    // balance-driven path payments/returns use — never a hand-set status and
+    // never at invoice-gen — so the audit trail (advance Payment + deliveredAt
+    // + settle transition) is complete. An unpaid order stays `delivered`.
+    if (to === "delivered") {
+      const invoice = await tx.invoice.findUnique({
+        where: { orderId },
+        select: { id: true, balance: true },
+      });
+      if (invoice) {
+        await tx.invoice.update({
+          where: { id: invoice.id },
+          data: { deliveredAt: new Date() },
+        });
+        await settleOrderIfPaid(tx, orderId, invoice.balance);
+        return tx.order.findUniqueOrThrow({
+          where: { id: orderId },
+          include: { items: true, customer: true },
+        });
+      }
+    }
+
+    return updated;
   });
 }

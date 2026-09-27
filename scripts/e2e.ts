@@ -557,6 +557,215 @@ async function main() {
     );
   }
   // ---------------------------------------------------------------
+  section("12. v3 advance capture + print fields (C1/C2)");
+  {
+    const priceP = 1000;
+    const prodP = (
+      await office.req<{ product: { id: string } }>("POST", "/api/products", {
+        sku: `E2E-P-${stamp}`,
+        name: "E2E Advance Product",
+        price: priceP,
+        stockQty: 50,
+        reorderLevel: 5,
+      })
+    ).data.product.id;
+
+    // G2 print — customer NTN persists and reads back.
+    const cust = await booker.req<{ customer: { id: string } }>(
+      "POST",
+      "/api/customers",
+      {
+        name: `E2E NTN Shop ${stamp}`,
+        phone: "0300-1111111",
+        area: "NTN",
+        ntn: "1234567-8",
+      },
+    );
+    check(cust.status === 201, `customer with NTN created (got ${cust.status})`);
+    const custId = cust.data.customer.id;
+    const custRead = await office.req<{ customer: { ntn: string | null } }>(
+      "GET",
+      `/api/customers/${custId}`,
+    );
+    check(
+      custRead.data.customer.ntn === "1234567-8",
+      `customer NTN persisted (got ${JSON.stringify(custRead.data.customer.ntn)})`,
+    );
+
+    // G2 print — issuer settings round-trip through the whitelist.
+    const setPatch = await office.req<Record<string, string>>(
+      "PATCH",
+      "/api/settings",
+      {
+        issuerAddress: "12 Test Street, Karachi",
+        issuerPhone: "021-111-2222",
+        issuerNtn: "9988776-5",
+        issuerStrn: "STRN-001",
+      },
+    );
+    check(
+      setPatch.status === 200,
+      `issuer settings PATCH accepted (got ${setPatch.status})`,
+    );
+    const setRead = await office.req<Record<string, string>>(
+      "GET",
+      "/api/settings",
+    );
+    check(
+      setRead.data.issuerAddress === "12 Test Street, Karachi" &&
+        setRead.data.issuerNtn === "9988776-5" &&
+        setRead.data.issuerStrn === "STRN-001",
+      "issuer address/NTN/Strn read back from settings",
+    );
+
+    // C1 error — advance greater than the order total is rejected with 400.
+    const badAdv = await booker.req<{ error?: string }>("POST", "/api/orders", {
+      customerId: custId,
+      submit: false,
+      advance: 10 * priceP, // 10000 > subtotal 2000
+      items: [{ productId: prodP, qty: 2, unitPrice: priceP }],
+    });
+    check(
+      badAdv.status === 400,
+      `advance > total rejected with 400 (got ${badAdv.status})`,
+    );
+    check(
+      /exceeds order total/.test(badAdv.data?.error ?? ""),
+      `400 copy names the overflow (got ${JSON.stringify(badAdv.data?.error)})`,
+    );
+
+    // C1 happy (partial advance) — persisted advance + server-computed balanceDue.
+    const partAdv = 800;
+    const oP = await booker.req<{
+      order: { id: string; subtotal: number; advance: number };
+      balanceDue: number;
+    }>("POST", "/api/orders", {
+      customerId: custId,
+      submit: true,
+      advance: partAdv,
+      items: [{ productId: prodP, qty: 2, unitPrice: priceP }],
+    });
+    check(
+      oP.status === 201,
+      `partial-advance order created (got ${oP.status})`,
+    );
+    check(
+      oP.data.order.subtotal === 2000 && oP.data.order.advance === partAdv,
+      `partial order persists subtotal 2000 + advance ${partAdv}`,
+    );
+    check(
+      oP.data.balanceDue === 2000 - partAdv,
+      `server balanceDue = total - advance = ${2000 - partAdv} (got ${oP.data.balanceDue})`,
+    );
+    const oPid = oP.data.order.id;
+    await office.req("POST", `/api/orders/${oPid}/confirm`);
+    const invP = await office.req<{
+      invoice: {
+        id: string;
+        amountPaid: number;
+        balance: number;
+        paymentStatus: string;
+        deliveredAt: string | null;
+      };
+    }>("POST", `/api/orders/${oPid}/invoice`);
+    check(
+      invP.data.invoice.amountPaid === partAdv,
+      `invoice.amountPaid seeded from advance (${partAdv}, got ${invP.data.invoice.amountPaid})`,
+    );
+    check(
+      invP.data.invoice.balance === 2000 - partAdv &&
+        invP.data.invoice.paymentStatus === "partial",
+      `invoiced partial-advance: balance ${2000 - partAdv}, status partial (got ${invP.data.invoice.balance}/${invP.data.invoice.paymentStatus})`,
+    );
+    const ordP = await office.req<{ order: { status: string } }>(
+      "GET",
+      `/api/orders/${oPid}`,
+    );
+    check(
+      ordP.data.order.status === "invoiced",
+      `partial-advance order stays 'invoiced' (got ${ordP.data.order.status})`,
+    );
+    check(
+      invP.data.invoice.deliveredAt === null,
+      "deliveredAt is null before delivery",
+    );
+
+    // C1 — G9 cash-advance collection now posts (kind=advance accepted).
+    const chipPay = await booker.req<{ invoice: { balance: number } }>(
+      "POST",
+      "/api/payments",
+      {
+        invoiceId: invP.data.invoice.id,
+        amount: 300,
+        mode: "cash",
+        kind: "advance",
+      },
+    );
+    check(
+      chipPay.status === 201 &&
+        chipPay.data.invoice.balance === 2000 - partAdv - 300,
+      `cash-advance collection accepted, balance -> ${2000 - partAdv - 300} (got ${chipPay.status}/${chipPay.data?.invoice?.balance})`,
+    );
+
+    // C1 prepaid-full — no auto-settle at invoice; settles on physical delivery.
+    const fullAdv = 3000;
+    const oF = await booker.req<{
+      order: { id: string };
+      balanceDue: number;
+    }>("POST", "/api/orders", {
+      customerId: custId,
+      submit: true,
+      advance: fullAdv,
+      items: [{ productId: prodP, qty: 3, unitPrice: priceP }],
+    });
+    const oFid = oF.data.order.id;
+    check(
+      oF.data.balanceDue === 0,
+      `fully-prepaid balanceDue = 0 (got ${oF.data.balanceDue})`,
+    );
+    await office.req("POST", `/api/orders/${oFid}/confirm`);
+    const invF = await office.req<{
+      invoice: {
+        id: string;
+        balance: number;
+        paymentStatus: string;
+        deliveredAt: string | null;
+      };
+    }>("POST", `/api/orders/${oFid}/invoice`);
+    check(
+      invF.data.invoice.balance === 0 &&
+        invF.data.invoice.paymentStatus === "paid",
+      `prepaid invoice: balance 0, status paid (got ${invF.data.invoice.balance}/${invF.data.invoice.paymentStatus})`,
+    );
+    const ordF1 = await office.req<{ order: { status: string } }>(
+      "GET",
+      `/api/orders/${oFid}`,
+    );
+    check(
+      ordF1.data.order.status === "invoiced",
+      `PREPAID order does NOT auto-settle at invoicing — stays 'invoiced' (got ${ordF1.data.order.status})`,
+    );
+    await office.req("POST", `/api/orders/${oFid}/status`, {
+      status: "out_for_delivery",
+    });
+    const deliv = await office.req<{ order: { status: string } }>(
+      "POST",
+      `/api/orders/${oFid}/status`,
+      { status: "delivered" },
+    );
+    check(
+      deliv.data.order.status === "settled",
+      `prepaid order settles when office confirms physical delivery (got ${deliv.data.order.status})`,
+    );
+    const invFRead = await office.req<{
+      invoice: { deliveredAt: string | null };
+    }>("GET", `/api/invoices/${invF.data.invoice.id}`);
+    check(
+      invFRead.data.invoice.deliveredAt !== null,
+      `deliveredAt stamped on the delivered transition (got ${JSON.stringify(invFRead.data.invoice.deliveredAt)})`,
+    );
+  }
+  // ---------------------------------------------------------------
   console.log(`\n================ SUMMARY ================`);
   console.log(`  PASSED: ${pass}`);
   console.log(`  FAILED: ${fail}`);

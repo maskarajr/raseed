@@ -69,6 +69,7 @@ export const POST = requireRole(
       address: input.address,
       area: input.area,
       route: input.route,
+      ntn: input.ntn,
       bookerId,
       createdBy: session.id,
     },

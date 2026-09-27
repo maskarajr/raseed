@@ -13,6 +13,10 @@ export const createOrderSchema = z.object({
   bookerId: z.string().min(1).optional(),
   notes: z.string().max(500).optional(),
   items: z.array(orderItemSchema).min(1),
+  // Cash advance taken at capture (G1). Whole PKR, >= 0. Upper bound is the
+  // order subtotal, validated in the service once the subtotal is summed
+  // server-side (never trust a client-supplied total).
+  advance: z.number().int().min(0).default(0),
   submit: z.boolean().default(false),
 });
 
