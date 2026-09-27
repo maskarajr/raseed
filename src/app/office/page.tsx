@@ -301,7 +301,7 @@ export default function OfficeDashboard() {
           <div className="card2">
             <div className="rowb" style={{ marginBottom: 8 }}>
               <p className="ptitle-s">On the road</p>
-              <p className="meta">{bookersToday} bookers · {onRoadPct}% collected</p>
+              <p className="meta">{bookersToday} {bookersToday === 1 ? "booker" : "bookers"} · {onRoadPct}% collected</p>
             </div>
             <div className="stat-list">
               <div className="stat-line"><span className="l">Booked</span><span className="v"><Money value={onRoadBooked} /></span></div>

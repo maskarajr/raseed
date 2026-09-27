@@ -15,6 +15,7 @@ const CATS = ["All", "Rice", "Oil", "Grocery", "Pulses"] as const;
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [search, setSearch] = useState("");
   const [cat, setCat] = useState("");
   const [editing, setEditing] = useState<Product | "new" | null>(null);
@@ -24,9 +25,11 @@ export default function ProductsPage() {
       const { products: rows } = await api<{ products: Product[] }>(
         "/api/products",
       );
-      setProducts(rows);
+      setProducts(rows ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setLoaded(true);
     }
   }
 
@@ -53,7 +56,11 @@ export default function ProductsPage() {
   return (
     <OfficeChrome
       title="Products"
-      subtitle={`${filtered.length} shown · ${active} active SKUs`}
+      subtitle={
+        !loaded
+          ? "Loading…"
+          : `${filtered.length} shown · ${active} active SKUs`
+      }
       actions={
         <button
           className="btn-primary"

@@ -53,12 +53,10 @@ export default function InvoicePrintPage() {
       .catch(() => setBiz(null));
   }, [id]);
 
-  useEffect(() => {
-    if (inv) {
-      const t = setTimeout(() => window.print(), 400);
-      return () => clearTimeout(t);
-    }
-  }, [inv]);
+  // No auto-fire window.print(): a modal print dialog on mount traps the tab
+  // (blocked automation and any subsequent fetch/hydrate on this and later
+  // screens). Per board spec the print action lives on the user's click — the
+  // Print button below — not on page mount.
 
   if (error) return <p className="muted" style={{ padding: 32 }}>{error}</p>;
   if (!inv) return <p className="muted" style={{ padding: 32 }}>Loading…</p>;

@@ -35,14 +35,21 @@ export default function InvoicesPage() {
   const router = useRouter();
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [term, setTerm] = useState("");
   const [search, setSearch] = useState("");
   const [pay, setPay] = useState<InvoiceRow | null>(null);
 
   function load() {
     api<{ invoices: InvoiceRow[] }>("/api/invoices")
-      .then((d) => setInvoices(d.invoices))
-      .catch((e) => setError(e.message));
+      .then((d) => {
+        setInvoices(d.invoices ?? []);
+        setLoaded(true);
+      })
+      .catch((e) => {
+        setError(e.message);
+        setLoaded(true);
+      });
   }
 
   useEffect(() => {
@@ -69,7 +76,11 @@ export default function InvoicesPage() {
   return (
     <OfficeChrome
       title="Invoices"
-      subtitle={`${filtered.length} shown · outstanding ${outstanding.toLocaleString("en-PK")}`}
+      subtitle={
+        !loaded
+          ? "Loading…"
+          : `${filtered.length} shown · outstanding ${outstanding.toLocaleString("en-PK")}`
+      }
       actions={
         <button
           className="btn-primary"
