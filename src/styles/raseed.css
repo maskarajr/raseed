@@ -3,8 +3,10 @@
    ----------------------------------------------------------------------------
    Drop-in stylesheet for the Office desktop app and the Booker PWA.
 
-   Extracted from the approved reference board (../raseed-ops-board.html,
-   sha256 3A7126F0…6C1E). Board-only scaffolding has been removed (frame chrome,
+   Extracted from the approved reference board (../raseed-ops-v3.html, the v3
+   board — NOT the v1 raseed-ops-board.html). Board fidelity is machine-checked
+   by handoff-v3/check-fidelity.py (signature classes vs this file + app markup);
+   run it per slice in CI. Board-only scaffolding has been removed (frame chrome,
    `.board` page layout, zoom/scale, board print rules). Two positioning rules
    differ from the board and are marked IN APP below, because the board anchored
    overlays to a frame while the app anchors them to the viewport.
@@ -38,10 +40,11 @@
   --accent-hover:color-mix(in oklch, var(--accent) 88%, black);
   --scrim:color-mix(in oklch, var(--fg) 42%, transparent);
   --knob:var(--surface);
-  /* type */
-  --font-display:'Iowan Old Style','Charter',Georgia,'Times New Roman',serif;
-  --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
-  --font-mono:ui-monospace,'JetBrains Mono','SF Mono',Menlo,monospace;
+  /* type — v3 webfont decision B (FONT-MAPPING.md): --font-display and
+     --font-mono are supplied by next/font/local on <html> (src/lib/fonts.ts:
+     Source Serif 4 / IBM Plex Mono + Figmi's fallback chain). No hand-written
+     family stack here so the loaded face always wins. */
+  --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,Roboto,sans-serif;
   /* scale */
   --fs-meta:13px; --radius:10px; --radius-lg:16px;
 }
@@ -108,7 +111,9 @@ p{margin:0;text-wrap:pretty}
 .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 .muted{color:var(--muted)}
 .meta{font-family:var(--font-mono);font-size:var(--fs-meta);color:var(--muted)}
-.h3s{font-family:var(--font-display);font-size:16px;font-weight:650;letter-spacing:-.005em}
+/* Figmi minor: the 13px muted label size (board inline) as a real class. */
+.smlabel{font-size:13px}
+.h3s{font-family:var(--font-display);font-size:16px;font-weight:600;letter-spacing:-.005em}
 .eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
 .row{display:flex;align-items:center;gap:12px}
 .rowb{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -118,8 +123,12 @@ p{margin:0;text-wrap:pretty}
 /* --- Office shell ------------------------------------------------------------ */
 .rail{width:232px;flex:none;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:18px 14px 14px}
 .rbrand{display:flex;align-items:center;gap:9px;font-family:var(--font-display);font-size:18px;font-weight:600;letter-spacing:-.01em;padding:2px 6px 0;color:var(--fg)}
-.rmark{width:22px;height:22px;flex:none;display:block;color:var(--accent)}
-.rmark-sm{width:16px;height:16px}
+/* G5 (qa-v3-design-fidelity-final): board .rmark is a green rounded tile with
+   the compact mark in on-accent — restore it verbatim (board raseed-ops-v3.html:81). */
+.rmark{width:22px;height:22px;border-radius:6px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;flex:none}
+.rmark .mk{width:16px;height:16px}
+.rmark-sm{width:16px;height:16px;border-radius:5px}
+.rmark-sm .mk{width:12px;height:12px}
 .rnav{margin-top:22px;display:flex;flex-direction:column;gap:2px}
 .rgroup{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:14px 8px 6px}
 .ritem{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:8px;font-size:14px;color:var(--muted);text-align:left;width:100%}
@@ -127,15 +136,18 @@ p{margin:0;text-wrap:pretty}
 .ritem.is-on{background:var(--fg);color:var(--surface)}
 .rfoot{margin-top:auto;border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:2px}
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
-.appbar{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap}
+.appbar{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .acts{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .ptitle{font-family:var(--font-display);font-size:22px;font-weight:600;letter-spacing:-.015em}
 .psub{font-size:12px;color:var(--muted);margin-top:2px}
 /* .content is the app's scroll container; overflow-x:hidden prevents table bleed */
-.content{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+/* G6 (decision B, binding per Privy's approved set): office density adopts
+   the board numbers verbatim (.content 18/22+14, .card2 15, .card2-h 10,
+   .tbl td 7/10, .tl-item 9, .appbar gap 20, .totals 6 / .trow.grand 7). */
+.content{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;padding:18px 22px;display:flex;flex-direction:column;gap:14px}
 .pad{display:flex;flex-direction:column;gap:16px;min-height:0;flex:1}
-.card2{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
-.card2-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.card2{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px}
+.card2-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
 .content > .card2.grow{flex:1 0 auto}
 
 /* --- Controls ---------------------------------------------------------------- */
@@ -165,7 +177,7 @@ p{margin:0;text-wrap:pretty}
 /* --- Data display ------------------------------------------------------------ */
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
 .tbl th{font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;text-align:left;padding:0 10px 9px;border-bottom:1px solid var(--border)}
-.tbl td{padding:10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl td{padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
 .tbl tbody tr:hover{background:var(--fg-soft)}
 .tbl tbody tr[hidden]{display:none}
 .r{text-align:right}
@@ -198,11 +210,11 @@ p{margin:0;text-wrap:pretty}
 .dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
 .dl dt{font-size:11px;color:var(--muted);font-family:var(--font-mono);letter-spacing:.08em;text-transform:uppercase}
 .dl dd{margin:4px 0 0;font-size:14px}
-.totals{display:flex;flex-direction:column;gap:8px;max-width:280px;margin-left:auto}
+.totals{display:flex;flex-direction:column;gap:6px;max-width:280px;margin-left:auto}
 .trow{display:flex;justify-content:space-between;gap:16px;font-size:13px}
-.trow.grand{border-top:1px solid var(--fg);padding-top:9px;font-size:15px;font-weight:600}
+.trow.grand{border-top:1px solid var(--fg);padding-top:7px;font-size:15px;font-weight:600}
 .timeline{display:flex;flex-direction:column;gap:0}
-.tl-item{display:flex;gap:10px;padding-bottom:14px;position:relative}
+.tl-item{display:flex;gap:10px;padding-bottom:9px;position:relative}
 .tl-item::before{content:'';position:absolute;left:5px;top:14px;bottom:0;width:1px;background:var(--border)}
 .tl-item:last-child::before{display:none}
 .tl-dot{width:11px;height:11px;border-radius:999px;border:2px solid var(--border);background:var(--surface);margin-top:3px;flex:none}
@@ -224,6 +236,14 @@ p{margin:0;text-wrap:pretty}
 .pbig{font-family:var(--font-display);font-size:30px;line-height:1.1;letter-spacing:-.02em;font-weight:600}
 .prow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
 .prow:last-child{border-bottom:0}
+/* Spec C NEW classes (Figmi board values): label/value split inside .pcard. */
+.prow-l{color:var(--muted);font-size:13px}
+.prow-v{font-family:var(--font-mono);color:var(--fg)}
+/* C1 step-3 advance input row. */
+.prow label{font-size:14px;color:var(--fg)}
+.adv-ctl{display:inline-flex;align-items:center;gap:6px}
+.adv-num{width:110px;text-align:right;border:1px solid var(--border);border-radius:8px;padding:6px 8px;font:inherit;background:var(--surface)}
+.adv-num:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
 
 /* --- Overlays: scrim, bottom sheet, office modal sheet, drawer --------------- */
 /* IN APP: the board anchored these to a frame (position:absolute); the app
@@ -266,7 +286,7 @@ p{margin:0;text-wrap:pretty}
 .opt{border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:11px;background:var(--surface);text-align:left;width:100%}
 .opt:hover{border-color:var(--fg)}
 .opt.is-on{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
-.totbar{margin-top:auto;background:var(--surface);border-top:1px solid var(--border);padding:12px 0 0}
+.totbar{margin-top:auto;background:var(--surface);border-top:1px solid var(--border);padding:12px 16px;margin-inline:-16px;margin-bottom:-12px}
 
 /* --- Toast ------------------------------------------------------------------- */
 /* IN APP: fixed to the viewport (the board scoped it to a frame). */
@@ -278,28 +298,41 @@ p{margin:0;text-wrap:pretty}
 .login-l{background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px}
 .login-card{width:100%;max-width:340px;display:flex;flex-direction:column;gap:18px}
 .login-r{background:var(--bg);border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;padding:48px}
+/* v3.2-B · login lockup + role selector (audit P2-1). .rlock/.rl-w is the login
+   brand (19px), not the 16px rail .rbrand. .role-opt reuses the .opt base and
+   adds an INK is-on ring (never green). Selector is presentation-only; the
+   server routes purely by user.role. */
+.rlock{display:inline-flex;align-items:center;gap:9px}
+.rlock .rl-w{font-family:var(--font-display);font-size:19px;font-weight:600;letter-spacing:-.02em;line-height:1}
+.role-opt.is-on{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
 .lfield{display:flex;flex-direction:column;gap:6px}
 .lfield label{font-size:12px;color:var(--muted)}
 .linput{border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;font:inherit;font-size:14px;background:var(--surface);width:100%}
 .linput:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
-.login-h{font-family:var(--font-display);font-size:28px;letter-spacing:-.02em;margin:0}
-.login-h-booker{display:none}
-.login-booker{grid-template-columns:1fr}
-.login-booker .login-l{padding:32px 20px}
+/* G7: board heading is an <h2> at UA bold (Tailwind preflight resets weights,
+   so pin it explicitly). */
+.login-h{font-family:var(--font-display);font-size:28px;font-weight:700;letter-spacing:-.02em;margin:0}
 @media (max-width:820px){
   .login-wrap{max-width:390px;margin:0 auto;min-height:100%;background:var(--bg)}
   .login{grid-template-columns:1fr;height:auto;min-height:100%}
   .login-l{padding:40px 24px}
-  .login-r{display:none}
-  .login-h-office{display:none}
-  .login-h-booker{display:block}
+  .login-r{border-left:0;border-top:1px solid var(--border);order:2}
+}
+/* Edge-to-edge on real phones: same 600px rule as .pwa-root — fill the viewport
+   below 600px, keep the 390px centred frame above it. */
+@media (max-width:600px){
+  .login-wrap{width:100%;max-width:none;margin:0}
 }
 
 /* --- Print document ---------------------------------------------------------- */
-.doc{background:var(--surface);margin:0 auto;width:100%;padding:34px 38px;height:100%;overflow:hidden;display:flex;flex-direction:column;gap:18px}
+.doc{background:var(--surface);margin:0 auto;width:100%;padding:34px 38px;display:flex;flex-direction:column;gap:18px}
 .doc-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--fg);padding-bottom:14px}
 .doc-t{font-family:var(--font-display);font-size:26px;letter-spacing:-.02em}
 .pilllg{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:12px;font-family:var(--font-mono)}
+/* v3.2-B · print letterhead brand lockup (audit P1-2): mark on paper, no tile —
+   a solid green tile floods ink and dulls on greyscale printers. */
+.doc-brand{display:flex;align-items:center;gap:10px}
+.doc-brand .mk{width:28px;height:28px;fill:var(--accent);flex:none}
 
 /* ============================================================================
    v3 additions — baseline classes the ops board defines but the app had not
@@ -311,7 +344,7 @@ p{margin:0;text-wrap:pretty}
 .stat-line{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--border)}
 .stat-line:last-child{border-bottom:0}
 .stat-line .l{font-size:13px}
-.stat-line .v{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:550}
+.stat-line .v{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:500}
 .feed{display:flex;flex-direction:column}
 .feed-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);align-items:flex-start}
 .feed-row:last-child{border-bottom:0}
@@ -448,13 +481,123 @@ html{scroll-behavior:smooth}
    board gated per .frame; the app gates per scroll container
    (.content / .pbody) and staggers via --i set by AliveMotion.
    ============================================================ */
-.is-live.content > *,
+.is-live.content > *:not(.dash),
 .is-live.pbody > *{
   animation:od-rise .5s var(--ease-out) both;animation-delay:calc(var(--i,0)*55ms)}
 .is-live .kpis > *,.is-live .pstats > *{
   animation:od-rise .5s var(--ease-out) both;animation-delay:calc(var(--i,0)*62ms)}
 .is-live .tl-dot{animation:od-pop .44s var(--ease-spring) both;animation-delay:calc(var(--i,0)*62ms)}
 .is-live .wstep-bar{transform-origin:left;animation:od-growx .5s var(--ease-out) both}
+
+/* ============================================================================
+   v3.2-A · dashboard board composition  (frames: frame-office-dashboard)
+   Faithful to raseed-ops-v3.html lines 163-206. Reuses .card2/.is-fill/.h3s/
+   .klab/.num/.meta/.pmeta/.money/.sku/.ptitle-s/.rowb/.stat-list/.stat-line.
+   ========================================================================= */
+.dash{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(292px,1fr);gap:14px;
+  align-items:stretch;flex:1;min-height:0}
+@media (max-width:1040px){.dash{grid-template-columns:minmax(0,1fr)}}
+.dash-main,.dash-rail{display:flex;flex-direction:column;gap:14px;min-width:0;min-height:0}
+.kpi-val-lg{font-family:var(--font-display);font-size:34px;line-height:1;
+  letter-spacing:-.028em;font-weight:600}
+.delta{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);
+  font-size:11px;color:var(--muted)}
+.delta .caret{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;
+  border-bottom:5px solid currentColor;flex:none}
+.delta.down .caret{border-bottom:0;border-top:5px solid currentColor}
+/* 7-day sparkline */
+.spark{display:flex;align-items:flex-end;gap:6px;height:38px}
+.spark i{flex:1;display:block;background:color-mix(in oklch,var(--fg) 30%,transparent);
+  border-radius:4px 4px 2px 2px;transform-origin:bottom}
+.spark i.is-now{background:var(--fg)}
+.spark-lab{display:flex;gap:6px;margin-top:6px}
+.spark-lab span{flex:1;text-align:center;font-family:var(--font-mono);font-size:9px;
+  letter-spacing:.04em;color:var(--muted)}
+.spark-lab span.is-now{color:var(--fg)}
+.kpi-split{margin-top:13px;padding-top:12px;border-top:1px solid var(--border)}
+/* collected-vs-to-collect chart */
+.chart{display:flex;align-items:flex-end;gap:10px;flex:1;min-height:88px}
+.col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.col-bar{width:100%;display:flex;flex-direction:column;justify-content:flex-end;
+  border-radius:6px;overflow:hidden;transform-origin:bottom}
+.col-due{background:var(--warm)}
+.col-got{background:var(--fg)}
+.legend2{display:flex;gap:16px;margin-top:10px}
+.legend2 span{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);
+  font-size:11px;color:var(--muted)}
+.legend2 i{width:10px;height:10px;border-radius:3px;flex:none;display:block}
+/* lifecycle pipeline */
+.pipe{display:flex;align-items:center}
+.pipe-step{display:flex;align-items:center;gap:8px;flex:none}
+.pipe-dot{width:10px;height:10px;border-radius:999px;border:2px solid var(--border);
+  background:var(--surface);flex:none}
+.pipe-step.now .pipe-dot{border-color:var(--fg);background:var(--fg)}
+.pipe-line{flex:1;height:1px;background:var(--border);margin:0 10px;transform-origin:left}
+.pipe-lab{font-family:var(--font-mono);font-size:10px;letter-spacing:.03em;color:var(--muted);
+  white-space:nowrap}
+.pipe-step.now .pipe-lab{color:var(--fg);font-weight:600}
+.pipe-n{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.pipe-step.now .pipe-n{color:var(--fg);font-weight:600}
+/* needs-attention rail */
+.await-list{display:flex;flex-direction:column}
+.await-row{display:flex;align-items:baseline;gap:10px;padding:6px 0;
+  border-bottom:1px solid var(--border);font-size:13px;white-space:nowrap}
+.await-row:last-child{border-bottom:0}
+.await-row .who{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.await-row .money,.await-row .sku{flex:none}
+/* entrance choreography for the new structures (board P2-2, timings adopted
+   from raseed-ops-v3.html: dash stagger 55ms, spark .5s/48ms, col-bar .68s/78ms) */
+.is-live .dash-main > *,.is-live .dash-rail > *{
+  animation:od-rise .5s var(--ease-out) both;animation-delay:calc(var(--i,0)*55ms)}
+.is-live .spark i{animation:od-grow .5s var(--ease-out) both;animation-delay:calc(var(--i,0)*48ms)}
+.is-live .col-bar{animation:od-grow .68s var(--ease-out) both;animation-delay:calc(var(--i,0)*78ms)}
+.is-live .pipe-dot{animation:od-pop .44s var(--ease-spring) both;animation-delay:calc(var(--i,0)*78ms)}
+.is-live .pipe-line{animation:od-growx .5s var(--ease-out) both;animation-delay:calc(var(--i,0)*78ms)}
+
+/* ============================================================================
+   v3.2-A · booker PWA home  (frame-booker-home) — audit P0-2
+   Ink hero (.phero) + numbered route stops (.pstop/.pstop-n). Reuses
+   .pstats/.pstat/.pstat-lab/.pstat-val, .pname, .pmeta, .ptitle-s, .status.
+   ========================================================================= */
+.phero{background:var(--fg);color:var(--surface);border-radius:14px;padding:16px}
+.phero-lab{font-family:var(--font-mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+  color:color-mix(in oklch,var(--surface) 62%,transparent)}
+.phero-route{font-family:var(--font-mono);font-size:10px;letter-spacing:.05em;
+  color:color-mix(in oklch,var(--surface) 62%,transparent)}
+.phero-val{font-family:var(--font-display);font-size:37px;line-height:1;letter-spacing:-.028em;
+  font-weight:600;margin:9px 0 13px}
+.phero-bar{height:7px;border-radius:999px;background:color-mix(in oklch,var(--surface) 22%,transparent);
+  overflow:hidden}
+.phero-bar span{display:block;height:100%;border-radius:999px;background:var(--surface);transform-origin:left}
+.phero-meta{font-family:var(--font-mono);font-size:10px;color:color-mix(in oklch,var(--surface) 70%,transparent)}
+.pstop{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border)}
+.pstop:last-child{border-bottom:0}
+.pstop-n{width:24px;height:24px;border-radius:999px;background:var(--fg-soft);color:var(--fg);
+  display:grid;place-items:center;font-family:var(--font-mono);font-size:11px;flex:none}
+.pstop-n.warm{background:var(--warn-bg);color:var(--warn-fg)}
+.pstop-n.ok{background:var(--ok-bg);color:var(--ok-fg)}
+.pstop-n.info{background:var(--info-bg);color:var(--info-fg)}
+.pstop-go{color:var(--muted);flex:none}
+.is-live .phero-bar span{animation:od-growx .9s var(--ease-out) both;animation-delay:.28s}
+
+/* ============================================================================
+   v3.2-A · capture wizard step bar + shop-owes  (frame-booker-capture) — P1-1
+   Replaces .wiz-dots with the board .wsteps; flags what a shop owes before the
+   order via .shop-owes; .balance callout on review. The pre-existing
+   `.is-live .wstep-bar` motion rule now has real markup to animate.
+   ========================================================================= */
+.wsteps{display:flex;gap:8px;margin-bottom:14px}
+.wstep{flex:1;display:flex;flex-direction:column;gap:5px}
+.wstep-bar{height:3px;border-radius:999px;background:var(--border)}
+.wstep-lab{font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;color:var(--muted)}
+.wstep.is-done .wstep-bar{background:color-mix(in oklch,var(--fg) 45%,var(--border))}
+.wstep.is-on .wstep-bar{background:var(--fg)}
+.wstep.is-on .wstep-lab{color:var(--fg);font-weight:600}
+.shop-owes{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none;text-align:right}
+.shop-owes .num{font-size:12px;color:var(--muted)}
+.balance{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--warn-bg);color:var(--warn-fg);border-radius:10px;padding:10px 12px;margin-top:10px}
+.balance .num{font-size:15px;font-weight:600}
 
 /* --- v3 · money metrics: one strip, no orphan "Rs" --- */
 .pstats.money{grid-template-columns:repeat(3,1fr);gap:0;background:var(--surface);

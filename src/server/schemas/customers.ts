@@ -7,6 +7,8 @@ export const createCustomerSchema = z.object({
   address: z.string().max(300).optional(),
   area: z.string().max(120).optional(),
   route: z.string().max(40).optional(),
+  // Print-only identifier (G2 'Billed to' NTN sub-line).
+  ntn: z.string().max(40).optional(),
   bookerId: z.string().min(1).optional(),
   active: z.boolean().optional(),
 });
@@ -17,6 +19,7 @@ export const updateCustomerSchema = z.object({
   address: z.string().max(300).nullish(),
   area: z.string().max(120).nullish(),
   route: z.string().max(40).nullish(),
+  ntn: z.string().max(40).nullish(),
   bookerId: z.string().min(1).nullish(),
   active: z.boolean().optional(),
 });

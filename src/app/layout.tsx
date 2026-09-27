@@ -3,6 +3,7 @@ import Script from "next/script";
 import "./globals.css";
 import "@/styles/raseed.css";
 import { Providers } from "@/components/Providers";
+import { fontDisplay, fontMono } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: "Raseed",
@@ -25,10 +26,17 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0B6E4F",
+  // Single source of truth with manifest.webmanifest theme_color (#F4F5F7 =
+  // --bg, the first painted screen). viewport-fit=cover makes the existing
+  // env(safe-area-inset-*) padding in raseed.css take effect.
+  // interactiveWidget must live inside the viewport export so it is emitted
+  // as a key of the viewport content string, never as a standalone meta tag.
+  themeColor: "#F4F5F7",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
 
 export const dynamic = "force-dynamic";
@@ -40,7 +48,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en-PK">
+    <html lang="en-PK" className={`${fontDisplay.variable} ${fontMono.variable}`}>
       <body>
         <Script
           id="raseed-pwa-capture"

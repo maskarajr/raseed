@@ -13,7 +13,20 @@ export const createOrderSchema = z.object({
   bookerId: z.string().min(1).optional(),
   notes: z.string().max(500).optional(),
   items: z.array(orderItemSchema).min(1),
+  // Cash advance taken at capture (G1). Whole PKR, >= 0. Upper bound is the
+  // order subtotal, validated in the service once the subtotal is summed
+  // server-side (never trust a client-supplied total).
+  advance: z.number().int().min(0).default(0),
   submit: z.boolean().default(false),
+});
+
+// Draft-only edit (Privy seq211): replace items / notes / advance while the
+// order is still a draft. Nothing else mutates through this endpoint. Server
+// recomputes subtotal from items and re-clamps advance (see editDraftOrder).
+export const editDraftOrderSchema = z.object({
+  items: z.array(orderItemSchema).min(1),
+  notes: z.string().max(500).optional(),
+  advance: z.number().int().min(0).optional(),
 });
 
 // Statuses reachable via the generic status endpoint (office advancing an

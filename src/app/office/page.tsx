@@ -6,9 +6,16 @@ import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { CountUp } from "@/components/CountUp";
 import { OfficeChrome } from "@/components/OfficeChrome";
-import { StatusPill } from "@/components/badges";
+import { Icon } from "@/components/Icon";
 import { formatTodayKarachi } from "@/lib/day";
 import { useToast } from "@/components/Toast";
+
+type SeriesPoint = {
+  label: string; // short weekday, e.g. "Wed"
+  booked?: number;
+  collected?: number;
+  due?: number;
+};
 
 type HomeResponse = {
   kpis: {
@@ -22,6 +29,7 @@ type HomeResponse = {
     oldestAwaitingMins: number;
     lowStock: number;
     outOfStock: number;
+    bookersToday?: number;
   };
   submitted: {
     id: string;
@@ -33,32 +41,48 @@ type HomeResponse = {
     subtotal: number;
     items: number;
   }[];
-  outstandingInvoices: {
-    id: string;
-    code: string;
-    customer: string;
-    balance: number;
-  }[];
+  outstandingInvoices: { id: string; code: string; customer: string; balance: number }[];
+  // Breevie contract: lifecycle pipeline as per-status counts.
+  pipeline?: { status: string; count: number }[];
+  series?: SeriesPoint[];
 };
 
-type SearchHit = {
-  orders: { id: string; code: string; status: string; customer: { name: string } }[];
-  customers: { id: string; name: string; area: string | null; route: string | null }[];
-  products: { id: string; sku: string; name: string }[];
-};
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_SHORT = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+function minsAgo(iso: string): number {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return 0;
+  return Math.max(0, Math.round((Date.now() - t) / 60000));
+}
+function relAge(mins: number): string {
+  if (mins < 1) return "now";
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60);
+  return h < 24 ? `${h}h` : `${Math.floor(h / 24)}d`;
+}
+
+/** Normalize a set of values into 0..100 heights, tagging the last as "now". */
+function bars(values: number[]): { pct: number; now: boolean }[] {
+  const max = Math.max(1, ...values);
+  return values.map((v, i) => ({
+    pct: Math.max(3, Math.round((v / max) * 100)),
+    now: i === values.length - 1,
+  }));
+}
 
 export default function OfficeDashboard() {
   const toast = useToast();
   const [data, setData] = useState<HomeResponse | null>(null);
+  const [series, setSeries] = useState<SeriesPoint[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [today, setToday] = useState("");
-  const [q, setQ] = useState("");
-  const [hits, setHits] = useState<SearchHit | null>(null);
 
   const load = useCallback(async () => {
     try {
       const res = await api<HomeResponse>("/api/office/home");
       setData(res);
+      if (res.series?.length) setSeries(res.series);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     }
@@ -67,29 +91,25 @@ export default function OfficeDashboard() {
   useEffect(() => {
     setToday(formatTodayKarachi());
     load();
+    // 7-day Karachi-day series lives on the reports contract (?range=7d);
+    // Breevie ships it only for that range. Map {day,booked,collected} to the
+    // spark/chart shape (due = booked - collected).
+    api<{ series?: { day: string; booked: number; collected: number }[] }>(
+      "/api/reports?range=7d",
+    )
+      .then((r) => {
+        if (r.series?.length)
+          setSeries(
+            r.series.map((p) => ({
+              label: p.day,
+              booked: p.booked,
+              collected: p.collected,
+              due: Math.max(0, p.booked - p.collected),
+            })),
+          );
+      })
+      .catch(() => {});
   }, [load]);
-
-  useEffect(() => {
-    if (!q.trim()) {
-      setHits(null);
-      return;
-    }
-    const t = setTimeout(() => {
-      api<SearchHit>(`/api/search?q=${encodeURIComponent(q.trim())}`)
-        .then(setHits)
-        .catch(() => setHits(null));
-    }, 150);
-    return () => clearTimeout(t);
-  }, [q]);
-
-  const filteredSubmitted = useMemo(() => {
-    if (!data) return [];
-    const term = q.trim().toLowerCase();
-    if (!term) return data.submitted;
-    return data.submitted.filter((o) =>
-      `${o.code} ${o.customer} ${o.booker}`.toLowerCase().includes(term),
-    );
-  }, [data, q]);
 
   if (error && !data) {
     return (
@@ -108,6 +128,92 @@ export default function OfficeDashboard() {
 
   const { kpis } = data;
   const vsY = kpis.bookedToday - kpis.bookedYesterday;
+  const vsYup = vsY >= 0;
+
+  // Series for spark + chart: real contract data if present, else a flat
+  // 7-bucket placeholder derived from today's totals (lights up when Breevie
+  // ships reports.series / home.series).
+  const s =
+    series && series.length
+      ? series
+      : DAY_LABELS.map((_, i) => ({
+          label: DAY_LABELS[(new Date().getDay() - (6 - i) + 7) % 7],
+          booked: i === 6 ? kpis.bookedToday : 0,
+          collected: i === 6 ? kpis.collectedToday : 0,
+          due: 0,
+        }));
+  const labels = s.map((p, i) => p.label || DAY_SHORT[new Date().getDay()]);
+  const sparkBars = bars(s.map((p) => p.booked ?? 0));
+  const chartMax = Math.max(1, ...s.map((p) => (p.booked ?? (p.collected ?? 0) + (p.due ?? 0))));
+  const chart = s.map((p) => {
+    const booked = p.booked ?? (p.collected ?? 0) + (p.due ?? 0);
+    const got = p.collected ?? 0;
+    const due = p.due ?? Math.max(0, booked - got);
+    const colH = Math.round((booked / chartMax) * 100);
+    const gotPct = booked > 0 ? Math.round((got / booked) * 100) : 0;
+    return { colH, gotPct, duePct: 100 - gotPct };
+  });
+  const bookedSum = s.reduce((a, p) => a + (p.booked ?? 0), 0);
+  const collectedSum = s.reduce((a, p) => a + (p.collected ?? 0), 0);
+  const collectedPct = bookedSum > 0 ? ((collectedSum / bookedSum) * 100).toFixed(1) : "0.0";
+
+  // Pipeline: Breevie ships per-status counts on home.pipeline. Map to the
+  // board's four lifecycle stages; awaiting-confirm is the "now" step. Falls
+  // back to the awaiting KPI if the array is absent.
+  const pcount = (st: string) =>
+    data.pipeline?.find((p) => p.status === st)?.count ?? 0;
+  const pipeSteps: { lab: string; n: number; now?: boolean }[] = [
+    // §4 freeze: Scheduled means confirmed | out_for_delivery — the draft
+    // stage keeps its own name in the pipeline.
+    { lab: "Draft", n: pcount("draft") },
+    {
+      lab: "Awaiting confirm",
+      n: data.pipeline ? pcount("submitted") : kpis.awaitingConfirm,
+      now: true,
+    },
+    { lab: "Confirmed", n: pcount("confirmed") },
+    { lab: "Invoiced", n: pcount("invoiced") },
+  ];
+
+  const onRoadBooked = kpis.bookedToday;
+  const onRoadCollected = kpis.collectedToday;
+  const onRoadPct = onRoadBooked > 0 ? Math.round((onRoadCollected / onRoadBooked) * 100) : 0;
+  const bookersToday =
+    (kpis as { bookersToday?: number }).bookersToday ??
+    new Set(data.submitted.map((o) => o.booker)).size;
+
+  const awaiting = data.submitted
+    .slice()
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    .slice(0, 5);
+
+  // G8 (qa-v3-design-fidelity-final), Privy ruling seq-48 item 3: Export is
+  // client-side CSV over exactly what the dashboard payload already holds —
+  // the rendered 7-day series. No new backend; Range/30d stay out of scope.
+  function exportCsv() {
+    const rows = [
+      ["Day", "Booked", "Collected", "Due"],
+      ...s.map((p) => [
+        p.label ?? "",
+        String(p.booked ?? 0),
+        String(p.collected ?? 0),
+        String(p.due ?? 0),
+      ]),
+    ];
+    const csv = rows
+      .map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(","))
+      .join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `raseed-dashboard-${today || "7d"}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast("Dashboard exported · 7-day series");
+  }
 
   return (
     <OfficeChrome
@@ -115,26 +221,15 @@ export default function OfficeDashboard() {
       subtitle={`${today || "…"} · office hours 09:00–19:00`}
       actions={
         <>
-          <input
-            className="search"
-            placeholder="Search orders, customers, SKUs"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-          <button
-            type="button"
-            className="btn-ghost"
-            onClick={() =>
-              toast(
-                kpis.awaitingConfirm
-                  ? `${kpis.awaitingConfirm} orders awaiting confirmation`
-                  : "No notifications",
-              )
-            }
-          >
-            Bell
+          <div className="seg" role="group" aria-label="Date range">
+            <button type="button" className="seg-item is-on" disabled title="Current range">7 days</button>
+            <button type="button" className="seg-item" disabled title="30-day range lands with the reports backend">30 days</button>
+          </div>
+          <button type="button" className="btn-sec" onClick={exportCsv}>
+            Export
           </button>
           <Link href="/office/orders/new" className="btn-primary">
+            <Icon name="plus" className="ic ic-sm" />
             New order
           </Link>
         </>
@@ -146,139 +241,134 @@ export default function OfficeDashboard() {
       }
     >
       {error && <p className="muted">{error}</p>}
-      <div className="kpis">
-        <div className="kpi">
-          <p className="klab">Booked today</p>
-          <p className="kval">
-            <CountUp value={kpis.bookedToday} money />
-          </p>
-          <p className="kdelta">
-            {kpis.ordersToday} orders · {vsY >= 0 ? "+" : ""}
-            <Money value={vsY} /> vs yesterday
-          </p>
-        </div>
-        <div className="kpi">
-          <p className="klab">Outstanding</p>
-          <p className="kval">
-            <CountUp value={kpis.outstanding} money />
-          </p>
-          <p className="kdelta">{kpis.outstandingCount} invoices open</p>
-        </div>
-        <div className="kpi">
-          <p className="klab">Awaiting confirmation</p>
-          <p className="kval num"><CountUp value={kpis.awaitingConfirm} /></p>
-          <p className="kdelta">
-            {kpis.oldestAwaitingMins
-              ? `Oldest ${kpis.oldestAwaitingMins} min`
-              : "Queue clear"}
-          </p>
-        </div>
-        <div className="kpi">
-          <p className="klab">Low stock SKUs</p>
-          <p className="kval num"><CountUp value={kpis.lowStock} /></p>
-          <p className="kdelta">{kpis.outOfStock} out of stock</p>
-        </div>
-      </div>
-
-      {hits && q.trim() && (
-        <div className="card2">
-          <p className="ptitle-s">Search</p>
-          {hits.orders.map((o) => (
-            <Link key={o.id} href={`/office/orders/${o.id}`} className="prow">
-              <span className="sku">{o.code}</span>
-              <span>{o.customer.name}</span>
-            </Link>
-          ))}
-          {hits.customers.map((c) => (
-            <Link key={c.id} href="/office/customers" className="prow">
-              <span>{c.name}</span>
-              <span className="pmeta">{c.area ?? c.route}</span>
-            </Link>
-          ))}
-          {hits.products.map((p) => (
-            <Link key={p.id} href="/office/products" className="prow">
-              <span className="sku">{p.sku}</span>
-              <span>{p.name}</span>
-            </Link>
-          ))}
-        </div>
-      )}
-
-      <div className="row" style={{ alignItems: "stretch", gap: 16 }}>
-        <div className="card2 grow">
-          <div className="card2-h">
-            <h2 className="h3s">Orders awaiting confirmation</h2>
-            <Link
-              href="/office/orders?chip=awaiting"
-              className="btn-ghost btn-sm"
-            >
-              View all
-            </Link>
-          </div>
-          {filteredSubmitted.length === 0 ? (
-            <p className="tbl-empty">Nothing waiting.</p>
-          ) : (
-            <div className="tbl-wrap">
-              <table className="tbl">
-                <thead>
-                  <tr>
-                    <th>Order</th>
-                    <th>Customer</th>
-                    <th>Booker</th>
-                    <th className="r">Items</th>
-                    <th className="r">Value</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredSubmitted.map((o) => (
-                    <tr key={o.id}>
-                      <td className="sku">
-                        <Link href={`/office/orders/${o.id}`}>{o.code}</Link>
-                      </td>
-                      <td>{o.customer}</td>
-                      <td>{o.booker}</td>
-                      <td className="r num">{o.items}</td>
-                      <td className="money">
-                        <Money value={o.subtotal} />
-                      </td>
-                      <td>
-                        <StatusPill status={o.status} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <div className="dash">
+        <div className="dash-main">
+          {/* Hero: booked today + 7-day spark + lifecycle pipeline */}
+          <div className="card2">
+            <div className="rowb" style={{ alignItems: "flex-start" }}>
+              <div>
+                <p className="klab">Booked today</p>
+                <p className="kpi-val-lg num" style={{ marginTop: 6 }}>
+                  <CountUp value={kpis.bookedToday} money />
+                </p>
+                <p className="delta" style={{ marginTop: 9 }}>
+                  <span className={`caret${vsYup ? "" : " down"}`}></span>
+                  {vsYup ? "+" : "−"}
+                  <Money value={Math.abs(vsY)} /> vs yesterday · {kpis.ordersToday} placed
+                </p>
+              </div>
+              <p className="meta">7-day trend</p>
             </div>
-          )}
-        </div>
-        <aside className="card2" style={{ width: 280, flex: "none" }}>
-          <div className="card2-h">
-            <h2 className="h3s">To collect</h2>
-            <Link href="/office/invoices?chip=to-collect" className="btn-ghost btn-sm">
-              Invoices
-            </Link>
+            <div className="spark" style={{ marginTop: 13 }}>
+              {sparkBars.map((b, i) => (
+                <i key={i} className={b.now ? "is-now" : undefined} style={{ height: `${b.pct}%`, ["--i" as string]: i }} />
+              ))}
+            </div>
+            <div className="spark-lab">
+              {labels.map((l, i) => (
+                <span key={i} className={i === labels.length - 1 ? "is-now" : undefined}>{l}</span>
+              ))}
+            </div>
+            <div className="kpi-split">
+              <div className="rowb" style={{ marginBottom: 9 }}>
+                <p className="ptitle-s">Today's flow</p>
+                <p className="meta">{kpis.ordersToday} orders placed today</p>
+              </div>
+              <div className="pipe">
+                {pipeSteps.map((st, i) => (
+                  <div key={st.lab} style={{ display: "contents" }}>
+                    {i > 0 && <span className="pipe-line" style={{ ["--i" as string]: i }} />}
+                    <div className={`pipe-step${st.now ? " now" : ""}`}>
+                      <span className="pipe-dot" style={{ ["--i" as string]: i }}></span>
+                      <span className="pipe-lab">{st.lab}</span>
+                      <span className="pipe-n">{st.n}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <p className="meta">
-            Collected today <Money value={kpis.collectedToday} />
-          </p>
-          {data.outstandingInvoices.length === 0 ? (
-            <p className="tbl-empty">No outstanding invoices.</p>
-          ) : (
-            data.outstandingInvoices.map((inv) => (
-              <Link
-                key={inv.id}
-                href={`/office/invoices/${inv.id}`}
-                className="prow"
-              >
-                <div>
-                  <div className="sku">{inv.code}</div>
-                  <div className="pmeta">{inv.customer}</div>
+
+          {/* Collected vs to collect chart */}
+          <div className="card2 is-fill">
+            <div className="card2-h">
+              <div>
+                <h4 className="h3s">Collected vs to collect</h4>
+                <p className="meta" style={{ marginTop: 2 }}>
+                  Last 7 days · <Money value={collectedSum} /> of <Money value={bookedSum} /> booked
+                </p>
+              </div>
+              <span className="num" style={{ fontSize: 14, fontWeight: 600 }}>{collectedPct}%</span>
+            </div>
+            <div className="chart">
+              {chart.map((c, i) => (
+                <div className="col" key={i}>
+                  <div className="col-bar" style={{ height: `${c.colH}%`, ["--i" as string]: i }}>
+                    <div className="col-due" style={{ height: `${c.duePct}%` }}></div>
+                    <div className="col-got" style={{ height: `${c.gotPct}%` }}></div>
+                  </div>
                 </div>
-                <Money value={inv.balance} />
-              </Link>
-            ))
-          )}
+              ))}
+            </div>
+            <div className="spark-lab">
+              {labels.map((l, i) => (
+                <span key={i} className={i === labels.length - 1 ? "is-now" : undefined}>{l}</span>
+              ))}
+            </div>
+            <div className="legend2">
+              <span><i style={{ background: "var(--fg)" }}></i>Collected</span>
+              <span><i style={{ background: "var(--warm)" }}></i>To collect</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Rail: position + on the road + needs attention */}
+        <aside className="dash-rail">
+          <div className="card2">
+            <p className="ptitle-s">Today's position</p>
+            <div className="stat-list" style={{ marginTop: 6 }}>
+              <div className="stat-line"><span className="l">Outstanding</span><span className="v"><Money value={kpis.outstanding} /></span></div>
+              <div className="stat-line"><span className="l">Invoices open</span><span className="v">{kpis.outstandingCount}</span></div>
+              <div className="stat-line"><span className="l">Low stock SKUs</span><span className="v">{kpis.lowStock}</span></div>
+            </div>
+          </div>
+
+          <div className="card2">
+            <div className="rowb" style={{ marginBottom: 8 }}>
+              <p className="ptitle-s">On the road</p>
+              <p className="meta">{bookersToday} {bookersToday === 1 ? "booker" : "bookers"} · {onRoadPct}% collected</p>
+            </div>
+            <div className="stat-list">
+              <div className="stat-line"><span className="l">Booked</span><span className="v"><Money value={onRoadBooked} /></span></div>
+              <div className="stat-line"><span className="l">Collected</span><span className="v"><Money value={onRoadCollected} /></span></div>
+              <div className="stat-line"><span className="l">To collect</span><span className="v"><Money value={Math.max(0, onRoadBooked - onRoadCollected)} /></span></div>
+            </div>
+            <div style={{ height: 6, background: "color-mix(in oklch,var(--warm) 22%,transparent)", borderRadius: 999, marginTop: 11, display: "flex", overflow: "hidden" }}>
+              <span style={{ width: `${onRoadPct}%`, background: "var(--fg)", borderRadius: 999 }}></span>
+            </div>
+          </div>
+
+          <div className="card2 is-fill">
+            <div className="card2-h">
+              <h4 className="h3s">Awaiting confirmation</h4>
+              <span className="meta">{kpis.awaitingConfirm} orders</span>
+            </div>
+            {awaiting.length === 0 ? (
+              <p className="tbl-empty">Queue clear — nothing waiting.</p>
+            ) : (
+              <div className="await-list">
+                {awaiting.map((o) => (
+                  <Link key={o.id} href={`/office/orders/${o.id}`} className="await-row">
+                    <span className="sku">{o.code}</span>
+                    <span className="who">{o.customer}</span>
+                    <span className="pmeta">{o.booker}</span>
+                    <span className="money"><Money value={o.subtotal} /></span>
+                    <span className="pmeta">{relAge(minsAgo(o.createdAt))}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </aside>
       </div>
     </OfficeChrome>

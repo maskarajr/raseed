@@ -7,7 +7,7 @@ import { Money } from "@/components/Money";
 import { CountUp } from "@/components/CountUp";
 import { StatusPill } from "@/components/badges";
 import { BookerChrome } from "@/components/BookerChrome";
-import { startOfTodayKarachi, startOfWeekKarachi } from "@/lib/day";
+import { startOfTodayKarachi } from "@/lib/day";
 
 type OrderRow = {
   id: string;
@@ -15,8 +15,8 @@ type OrderRow = {
   status: string;
   subtotal: number;
   createdAt: string;
-  customer: { name: string; area: string | null };
-  invoice: { paymentStatus: string; balance?: number } | null;
+  customer: { name: string; area: string | null; route: string | null };
+  invoice: { paymentStatus: string; balance?: number; amountPaid?: number } | null;
 };
 
 const CLOSED = ["settled", "cancelled"];
@@ -36,112 +36,112 @@ export default function BookerHome() {
   }, []);
 
   const todayStart = startOfTodayKarachi().getTime();
-  const weekStart = startOfWeekKarachi().getTime();
+  // Spec §3: drafts are not route metrics — exclude until submitted.
   const todayOrders = orders.filter(
-    (o) => new Date(o.createdAt).getTime() >= todayStart,
+    (o) =>
+      o.status !== "draft" &&
+      new Date(o.createdAt).getTime() >= todayStart,
   );
   const todayBooked = todayOrders.reduce((s, o) => s + o.subtotal, 0);
-  const weekBooked = orders
-    .filter((o) => new Date(o.createdAt).getTime() >= weekStart)
-    .reduce((s, o) => s + o.subtotal, 0);
-  const collectedAmt = orders
-    .filter(
-      (o) =>
-        o.status === "settled" ||
-        o.invoice?.paymentStatus === "paid" ||
-        (o.invoice != null && (o.invoice.balance ?? 1) <= 0),
-    )
-    .reduce((s, o) => s + o.subtotal, 0);
+  // Privy coherence item (seq85): advance is real cash in the booker's
+  // pocket. The hero reads the invoice-derived ledger — invoice.amountPaid is
+  // seeded from order.advance at invoicing (deriveInvoiceState path), so a
+  // prepaid stop counts as collected the moment the advance exists. Capped at
+  // the order subtotal; scoped to today's bookings to match the denominator.
+  const collectedAmt = todayOrders.reduce(
+    (s, o) => s + Math.min(o.subtotal, o.invoice?.amountPaid ?? 0),
+    0,
+  );
   const pct =
     todayBooked > 0
-      ? Math.min(100, Math.round((collectedAmt / todayBooked) * 100))
+      ? Math.min(100, Math.floor((collectedAmt / todayBooked) * 100))
       : 0;
   const first = name?.split(" ")[0] ?? "Booker";
-  const nextStops = orders
-    .filter((o) => {
-      if (CLOSED.includes(o.status)) return false;
-      if (o.invoice?.paymentStatus === "paid") return false;
-      if (o.invoice != null && (o.invoice.balance ?? 1) <= 0) return false;
-      return true;
-    })
-    .slice(0, 3);
+  const openStops = orders.filter((o) => {
+    if (o.status === "draft") return false;
+    if (CLOSED.includes(o.status)) return false;
+    if (o.invoice?.paymentStatus === "paid") return false;
+    if (o.invoice != null && (o.invoice.balance ?? 1) <= 0) return false;
+    return true;
+  });
+  const nextStops = openStops.slice(0, 5);
+  const stopsLeft = openStops.length;
+  const toCollect = openStops.filter((o) => (o.invoice?.balance ?? 0) > 0).length;
+  // G3/G4 (qa-v3-design-fidelity-final): the hero is route-conditional — a
+  // zero-day must not render an ink hero claiming Rs 0 of Rs 0. Route chip is
+  // the board's identity line `Route {n} · {N} shops`; pct floor-truncates.
+  const routeNo =
+    todayOrders.find((o) => o.customer.route)?.customer.route ?? null;
+  const routeLabel = `Route ${routeNo ?? "—"} · ${todayOrders.length} shops`;
+  const hasRouteToday = todayOrders.length > 0;
+
+  // Spec §4 freeze: "To collect" is an invoice fact (balance > 0), not a raw
+  // status; confirmed/out_for_delivery without a balance read Scheduled.
+  const stopState = (o: OrderRow): { n: string; pill: string } => {
+    if (o.invoice?.paymentStatus === "paid" || (o.invoice != null && (o.invoice.balance ?? 1) <= 0))
+      return { n: "ok", pill: "settled" };
+    if ((o.invoice?.balance ?? 0) > 0) return { n: "warm", pill: "to collect" };
+    return { n: "", pill: "scheduled" };
+  };
 
   return (
     <BookerChrome title={`Salaam, ${first}`}>
       {error && <p className="muted">{error}</p>}
-      <div className="pcard">
-        <p className="ptitle-s">Today's orders</p>
-        <div className="rowb" style={{ marginTop: 6, alignItems: "flex-end" }}>
-          <span className="pbig num"><CountUp value={todayOrders.length} /></span>
-          <span style={{ textAlign: "right" }}>
-            <span className="num" style={{ fontSize: 15, display: "block" }}>
-              <Money value={todayBooked} />
-            </span>
-            <span className="pmeta">Week <Money value={weekBooked} /></span>
-          </span>
+      {hasRouteToday && (
+        <div className="phero">
+          <div className="rowb">
+            <p className="phero-lab">Collected today</p>
+            <span className="phero-route">{routeLabel}</span>
+          </div>
+          <p className="phero-val num"><CountUp value={collectedAmt} money /></p>
+          <div className="phero-bar"><span style={{ width: `${pct}%` }}></span></div>
+          <div className="rowb" style={{ marginTop: 8 }}>
+            <span className="phero-meta">{pct}% of <Money value={todayBooked} /> booked</span>
+            <span className="phero-meta"><Money value={Math.max(0, todayBooked - collectedAmt)} /> to go</span>
+          </div>
         </div>
+      )}
+
+      <div className="pstats">
+        <div className="pstat"><p className="pstat-lab">Orders</p><p className="pstat-val num"><CountUp value={todayOrders.length} /></p></div>
+        <div className="pstat"><p className="pstat-lab">Stops left</p><p className="pstat-val num"><CountUp value={stopsLeft} /></p></div>
+        <div className="pstat"><p className="pstat-lab">To collect</p><p className="pstat-val num"><CountUp value={toCollect} /></p></div>
       </div>
-      <div className="pcard">
-        <div className="rowb" style={{ marginBottom: 6 }}>
-          <p className="ptitle-s">Collections</p>
-          <span className="pmeta">vs booked</span>
-        </div>
-        <div className="rowb" style={{ marginTop: 8 }}>
-          <span className="pname">
-            <Money value={collectedAmt} /> collected
-          </span>
-          <StatusPill status="on track" />
-        </div>
-        <div
-          style={{
-            height: 6,
-            background: "var(--border)",
-            borderRadius: 999,
-            marginTop: 10,
-          }}
-        >
-          <div
-            style={{
-              height: 6,
-              width: `${pct}%`,
-              background: "var(--accent)",
-              borderRadius: 999,
-            }}
-          />
-        </div>
-        <p className="pmeta" style={{ marginTop: 6 }}>
-          {pct}% of <Money value={todayBooked} />
-        </p>
-      </div>
+
       <div className="row" style={{ gap: 10 }}>
-        <Link
-          href="/booker/orders/new"
-          className="btn-primary grow"
-          style={{ justifyContent: "center" }}
-        >
+        <Link href="/booker/orders/new" className="btn-primary grow" style={{ justifyContent: "center" }}>
           New order
         </Link>
-        <Link href="/booker/orders" className="btn-sec">
-          Collect
-        </Link>
+        <Link href="/booker/orders" className="btn-sec">Collect</Link>
       </div>
+
       <div className="pcard" style={{ flex: "1 0 auto" }}>
-        <p className="ptitle-s" style={{ marginBottom: 4 }}>
-          Next stops
-        </p>
-        {nextStops.map((o) => (
-          <Link key={o.id} href="/booker/orders" className="prow">
-            <span>
-              <span className="pname">{o.customer.name}</span>
-              <br />
-              <span className="pmeta">{o.customer.area ?? o.code}</span>
-            </span>
-            <StatusPill status={o.status} />
-          </Link>
-        ))}
+        <div className="rowb" style={{ marginBottom: 2 }}>
+          <p className="ptitle-s">Next stops</p>
+          <span className="pmeta">Ordered by route</span>
+        </div>
         {nextStops.length === 0 && (
-          <p className="tbl-empty">No open stops.</p>
+          <p className="tbl-empty">
+            {hasRouteToday ? "Every stop is collected." : "No route assigned for today."}
+          </p>
         )}
+        {nextStops.map((o, i) => {
+          const st = stopState(o);
+          return (
+            <div className="pstop" key={o.id}>
+              <span className={`pstop-n ${st.n}`}>{i + 1}</span>
+              <span className="grow">
+                <Link href="/booker/orders" className="pname">{o.customer.name}</Link>
+                <br />
+                <span className="pmeta">
+                  {o.customer.area ??
+                    (o.customer.route ? `Route ${o.customer.route}` : "")}
+                </span>
+              </span>
+              <StatusPill status={st.pill} />
+            </div>
+          );
+        })}
       </div>
     </BookerChrome>
   );

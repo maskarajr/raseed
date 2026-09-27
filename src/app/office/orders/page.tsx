@@ -8,7 +8,7 @@ import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { startOfTodayKarachi, endOfTodayKarachi } from "@/lib/day";
-import { statusUi } from "@/lib/status";
+import { orderLabel } from "@/lib/orderLabel";
 import { SideSheet } from "@/components/SideSheet";
 
 type OrderRow = {
@@ -19,14 +19,13 @@ type OrderRow = {
   createdAt: string;
   customer: { name: string; area: string | null };
   booker: { name: string };
-  invoice: { id: string; code: string; paymentStatus: string } | null;
+  invoice: { id: string; code: string; paymentStatus: string; balance?: number } | null;
   _count: { items: number };
 };
 
 const CHIPS: { label: string; term: string }[] = [
   { label: "All", term: "" },
   { label: "Scheduled", term: "scheduled" },
-  { label: "Confirmed", term: "confirmed" },
   { label: "Awaiting confirm", term: "awaiting" },
   { label: "Draft", term: "draft" },
 ];
@@ -58,12 +57,8 @@ export default function OrdersPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return orders.filter((o) => {
-      const extra =
-        o.status === "invoiced" || o.status === "out_for_delivery"
-          ? " scheduled"
-          : "";
       const hay =
-        `${o.code} ${o.customer.name} ${o.booker.name} ${o.status} ${statusUi(o.status).label}${extra}`.toLowerCase();
+        `${o.code} ${o.customer.name} ${o.booker.name} ${o.status} ${orderLabel(o).label}`.toLowerCase();
       if (term && !hay.includes(term)) return false;
       if (booker && o.booker.name !== booker) return false;
       if (q && !hay.includes(q)) return false;
@@ -142,7 +137,10 @@ export default function OrdersPage() {
                     <Money value={o.subtotal} />
                   </td>
                   <td>
-                    <StatusPill status={o.status} />
+                    <StatusPill
+                      label={orderLabel(o).label}
+                      tone={orderLabel(o).tone}
+                    />
                   </td>
                 </tr>
               ))}

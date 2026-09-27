@@ -25,7 +25,11 @@ export const GET = requireRole(
     where,
     orderBy: { createdAt: "desc" },
     include: {
-      customer: { select: { name: true, area: true } },
+      // `id` + `route` are additive; the booker home's numbered route stops need
+      // the shop's route to group stops the way the board draws them.
+      customer: {
+        select: { id: true, name: true, area: true, route: true },
+      },
       booker: { select: { name: true } },
       invoice: {
         select: {
@@ -62,10 +66,12 @@ export const POST = requireRole(
   }
 
   const result = await createOrder({
+    actor: { id: session.id, role: session.role },
     customerId: input.customerId,
     bookerId,
     notes: input.notes,
     items: input.items,
+    advance: input.advance,
     submit: input.submit ?? false,
   });
   return json(result, 201);

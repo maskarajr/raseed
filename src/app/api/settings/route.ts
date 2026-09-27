@@ -10,6 +10,12 @@ const KEYS = [
   "officeHours",
   "bookersSeeOutstanding",
   "offlineCapture",
+  // Issuer block rendered on the invoice print (G2). Generic K/V rows — no
+  // schema change, just new whitelisted keys. Empty string = not configured.
+  "issuerAddress",
+  "issuerPhone",
+  "issuerNtn",
+  "issuerStrn",
 ] as const;
 
 const patchSchema = z.object({
@@ -17,6 +23,10 @@ const patchSchema = z.object({
   officeHours: z.string().min(1).max(40).optional(),
   bookersSeeOutstanding: z.boolean().optional(),
   offlineCapture: z.boolean().optional(),
+  issuerAddress: z.string().max(300).optional(),
+  issuerPhone: z.string().max(40).optional(),
+  issuerNtn: z.string().max(40).optional(),
+  issuerStrn: z.string().max(40).optional(),
 });
 
 export const GET = requireRole(
@@ -31,6 +41,10 @@ export const GET = requireRole(
     officeHours: map.officeHours ?? "09:00 – 19:00",
     bookersSeeOutstanding: map.bookersSeeOutstanding !== "false",
     offlineCapture: map.offlineCapture !== "false",
+    issuerAddress: map.issuerAddress ?? "",
+    issuerPhone: map.issuerPhone ?? "",
+    issuerNtn: map.issuerNtn ?? "",
+    issuerStrn: map.issuerStrn ?? "",
   });
 });
 
@@ -56,5 +70,9 @@ export const PATCH = requireRole(
     officeHours: map.officeHours ?? "09:00 – 19:00",
     bookersSeeOutstanding: map.bookersSeeOutstanding !== "false",
     offlineCapture: map.offlineCapture !== "false",
+    issuerAddress: map.issuerAddress ?? "",
+    issuerPhone: map.issuerPhone ?? "",
+    issuerNtn: map.issuerNtn ?? "",
+    issuerStrn: map.issuerStrn ?? "",
   });
 });

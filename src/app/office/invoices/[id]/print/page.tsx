@@ -13,15 +13,18 @@ type InvoiceDetail = {
   balance: number;
   paymentStatus: string;
   createdAt: string;
+  deliveredAt: string | null;
   order: {
     code: string;
     subtotal: number;
-    booker: { name: string };
+    booker: { name: string; phone?: string };
     customer: {
       name: string;
       phone: string;
       area: string | null;
       address: string | null;
+      route: string | null;
+      ntn: string | null;
     };
     items: {
       id: string;
@@ -33,10 +36,28 @@ type InvoiceDetail = {
   returns: { id: string; amount: number }[];
 };
 
+type Issuer = {
+  businessName?: string;
+  issuerAddress?: string;
+  issuerPhone?: string;
+  issuerNtn?: string;
+  issuerStrn?: string;
+};
+
+function dayKarachi(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-PK", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Karachi",
+  });
+}
+
 export default function InvoicePrintPage() {
   const { id } = useParams<{ id: string }>();
   const [inv, setInv] = useState<InvoiceDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [biz, setBiz] = useState<Issuer | null>(null);
 
   useEffect(() => {
     fetch(`/api/invoices/${id}`, { credentials: "same-origin" })
@@ -46,80 +67,103 @@ export default function InvoicePrintPage() {
         setInv(d.invoice);
       })
       .catch((e) => setError(e.message));
+    fetch("/api/settings", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((d) => setBiz(d as Issuer))
+      .catch(() => setBiz(null));
   }, [id]);
 
-  useEffect(() => {
-    if (inv) {
-      const t = setTimeout(() => window.print(), 400);
-      return () => clearTimeout(t);
-    }
-  }, [inv]);
+  // No auto-fire window.print(): a modal print dialog on mount traps the tab
+  // (blocked automation and any subsequent fetch/hydrate on this and later
+  // screens). Per board spec the print action lives on the user's click — the
+  // Print button below — not on page mount.
 
   if (error) return <p className="muted" style={{ padding: 32 }}>{error}</p>;
   if (!inv) return <p className="muted" style={{ padding: 32 }}>Loading…</p>;
 
   const returnsTotal = inv.returns.reduce((s, r) => s + r.amount, 0);
+  const cust = inv.order.customer;
+  const addrLine = [cust.area, cust.address].filter(Boolean).join(", ");
+  const billedSub = [
+    cust.route ? `Route ${cust.route}` : null,
+    cust.ntn ? `NTN ${cust.ntn}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const issuerContact = [biz?.issuerAddress, biz?.issuerPhone].filter(Boolean).join(" · ");
+  const issuerReg = [
+    biz?.issuerNtn ? `NTN ${biz.issuerNtn}` : null,
+    biz?.issuerStrn ? `Strn ${biz.issuerStrn}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div className="doc">
       <div className="doc-head">
         <div>
-          <p className="rbrand" style={{ padding: 0, fontSize: 16 }}>
-            <BrandMark compact className="rmark" />
-            Raseed
-          </p>
-          <h1 className="doc-t">Invoice</h1>
+          <div className="doc-brand">
+            <BrandMark className="mk" />
+            <p className="doc-t">{biz?.businessName ?? "Raseed"}</p>
+          </div>
+          {issuerContact && <p className="meta" style={{ marginTop: 8 }}>{issuerContact}</p>}
+          {issuerReg && <p className="meta">{issuerReg}</p>}
         </div>
-        <div className="r">
-          <p className="sku">{inv.code}</p>
-          <p className="meta">
-            {new Date(inv.createdAt).toLocaleString("en-PK", {
-              timeZone: "Asia/Karachi",
-            })}
+        <div style={{ textAlign: "right" }}>
+          <p className="pilllg" style={{ background: "var(--neu-bg)", color: "var(--neu-fg)" }}>
+            TAX INVOICE
           </p>
-          <p className="meta">Order {inv.order.code}</p>
+          <p className="num" style={{ fontSize: 20, marginTop: 8 }}>{inv.code}</p>
+          <p className="meta">
+            Issued {dayKarachi(inv.createdAt)}
+            {inv.deliveredAt ? ` · Delivered ${dayKarachi(inv.deliveredAt)}` : ""}
+          </p>
         </div>
       </div>
-      <dl className="dl">
+      <div className="row" style={{ gap: 40 }}>
         <div>
-          <dt>Bill to</dt>
-          <dd>
-            {inv.order.customer.name}
+          <p className="ptitle-s">Billed to</p>
+          <p className="pname" style={{ marginTop: 6 }}>{cust.name}</p>
+          <p className="meta">
+            {addrLine || "—"}
             <br />
-            {inv.order.customer.phone}
-            <br />
-            {inv.order.customer.area ?? ""} {inv.order.customer.address ?? ""}
-          </dd>
+            {billedSub || cust.phone}
+          </p>
         </div>
         <div>
-          <dt>Booked by</dt>
-          <dd>{inv.order.booker.name}</dd>
+          <p className="ptitle-s">Booker</p>
+          <p className="pname" style={{ marginTop: 6 }}>{inv.order.booker.name}</p>
+          {inv.order.booker.phone && <p className="meta">{inv.order.booker.phone}</p>}
         </div>
-      </dl>
+        <div>
+          <p className="ptitle-s">Collection</p>
+          <p className="pname" style={{ marginTop: 6 }}>Cash on delivery</p>
+          <p className="meta">Advance or part payments accepted</p>
+        </div>
+      </div>
       <table className="tbl">
         <thead>
           <tr>
-            <th>#</th>
-            <th>Item</th>
+            <th>SKU</th>
+            <th>Description</th>
             <th className="r">Qty</th>
-            <th className="r">Unit</th>
+            <th className="r">Rate</th>
             <th className="r">Amount</th>
           </tr>
         </thead>
         <tbody>
-          {inv.order.items.map((i, idx) => (
+          {inv.order.items.map((i) => (
             <tr key={i.id}>
-              <td>{idx + 1}</td>
+              <td><span className="sku">{i.product.sku}</span></td>
               <td>
-                <span className="sku">{i.product.sku}</span> {i.product.name}
+                {i.product.name}
+                {i.product.unit ? ` · ${i.product.unit}` : ""}
               </td>
-              <td className="num r">
-                {i.qty} {i.product.unit}
-              </td>
-              <td className="money">
+              <td className="num r">{i.qty}</td>
+              <td className="money r">
                 <Money value={i.unitPrice} />
               </td>
-              <td className="money">
+              <td className="money r">
                 <Money value={i.qty * i.unitPrice} />
               </td>
             </tr>
@@ -128,27 +172,30 @@ export default function InvoicePrintPage() {
       </table>
       <div className="totals">
         <div className="trow">
-          <span>Subtotal</span>
-          <Money value={inv.order.subtotal} />
+          <span className="muted">Subtotal</span>
+          <span className="num"><Money value={inv.order.subtotal} /></span>
         </div>
+        {returnsTotal > 0 && (
+          <div className="trow">
+            <span className="muted">Returns</span>
+            <span className="num">− <Money value={returnsTotal} /></span>
+          </div>
+        )}
         <div className="trow">
-          <span>Returns</span>
-          <span>
-            {returnsTotal > 0 ? "−" : ""}
-            <Money value={returnsTotal} />
-          </span>
-        </div>
-        <div className="trow">
-          <span>Collected</span>
-          <Money value={inv.amountPaid} />
+          <span className="muted">Received to date</span>
+          <span className="num">− <Money value={inv.amountPaid} /></span>
         </div>
         <div className="trow grand">
-          <span>Balance due</span>
-          <Money value={inv.balance} />
+          <span>To collect</span>
+          <span className="num"><Money value={inv.balance} /></span>
         </div>
       </div>
-      <p className="meta" style={{ textAlign: "center" }}>
-        Currency: PKR · cash only
+      <p
+        className="meta"
+        style={{ marginTop: "auto", borderTop: "1px solid var(--border)", paddingTop: 12 }}
+      >
+        Goods remain the property of {biz?.businessName ?? "Raseed"} until paid in
+        full. Queries within 7 days of receipt. · Page 1 of 1
       </p>
       <div className="no-print" style={{ textAlign: "center" }}>
         <button className="btn-primary" onClick={() => window.print()}>

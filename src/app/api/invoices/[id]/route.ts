@@ -17,7 +17,9 @@ export const GET = requireRole<Params>(
       order: {
         include: {
           customer: true,
-          booker: { select: { name: true } },
+          // phone is consumed by the G2 print booker sub-line (Freevie's
+          // conditional render); User.phone is nullable and renders only when set.
+          booker: { select: { name: true, phone: true } },
           items: {
             include: {
               product: { select: { sku: true, name: true, unit: true } },

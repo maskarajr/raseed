@@ -27,3 +27,7 @@ prisma/dev.db-journal
 *.tsbuildinfo
 .playwright-mcp/
 qc-*.png
+preview-v3.log
+
+.next
+.next-preview/

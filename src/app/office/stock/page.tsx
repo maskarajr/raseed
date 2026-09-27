@@ -56,6 +56,7 @@ export default function StockPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [q, setQ] = useState("");
   const [brand, setBrand] = useState("");
   const [sheet, setSheet] = useState<"adjust" | "ledger" | null>(null);
@@ -69,11 +70,13 @@ export default function StockPage() {
         api<{ products: Product[] }>("/api/products?active=true"),
         api<{ entries: LedgerEntry[] }>("/api/stock/ledger"),
       ]);
-      setProducts(rows);
-      setLedger(entries);
+      setProducts(rows ?? []);
+      setLedger(entries ?? []);
       if (!productId && rows[0]) setProductId(rows[0].id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setLoaded(true);
     }
   }
 
@@ -160,7 +163,9 @@ export default function StockPage() {
   return (
     <OfficeChrome
       title="Stock"
-      subtitle={`${products.length} SKUs · ${brands.length} brands`}
+      subtitle={
+        !loaded ? "Loading…" : `${products.length} SKUs · ${brands.length} brands`
+      }
       actions={
         <>
           <input

@@ -28,6 +28,25 @@ export function startOfWeekKarachi(now: Date = new Date()): Date {
   return new Date(startOfTodayKarachi(now).getTime() - 6 * 24 * 60 * 60 * 1000);
 }
 
+// UTC instant of 00:00 PKT for the Karachi day `daysAgo` days before today
+// (0 = today). Used to build day-bucketed windows that line up with the
+// Today KPIs.
+export function startOfKarachiDaysAgo(
+  daysAgo: number,
+  now: Date = new Date(),
+): Date {
+  return new Date(
+    startOfTodayKarachi(now).getTime() - daysAgo * 24 * 60 * 60 * 1000,
+  );
+}
+
+// 'YYYY-MM-DD' label of the Karachi calendar day an instant falls in. Any
+// day bucketing must use this, never toISOString() on the raw UTC value —
+// that would split a Karachi day across two buckets.
+export function karachiDayLabel(instant: Date): string {
+  return new Date(instant.getTime() + KARACHI_OFFSET_MS).toISOString().slice(0, 10);
+}
+
 // Human date label for the Today header, always rendered in Karachi time.
 export function formatTodayKarachi(now: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-GB", {

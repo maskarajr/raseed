@@ -18,6 +18,7 @@ type OrderDetail = {
   status: string;
   notes: string | null;
   subtotal: number;
+  advance?: number;
   createdAt: string;
   customer: {
     name: string;
@@ -124,14 +125,7 @@ export default function OrderDetailPage() {
     <OfficeChrome
       title={order.code}
       kicker={`Orders / ${order.code}`}
-      status={
-        <>
-          <StatusPill status={order.status} />
-          {order.invoice ? (
-            <StatusPill status={order.invoice.paymentStatus} />
-          ) : null}
-        </>
-      }
+      status={<StatusPill status={order.status} />}
       actions={
         <>
           <button
@@ -162,6 +156,15 @@ export default function OrderDetailPage() {
           >
             Reassign booker
           </button>
+          {order.status === "draft" && (
+            <button
+              className="btn-primary"
+              disabled={busy}
+              onClick={() => act(`/api/orders/${order.id}/submit`)}
+            >
+              Submit
+            </button>
+          )}
           {order.status === "submitted" && (
             <button
               className="btn-primary"
@@ -229,8 +232,8 @@ export default function OrderDetailPage() {
             <div>
               <dt>Fulfilment</dt>
               <dd>
-                {order.invoice?.paymentStatus === "paid"
-                  ? "Collected"
+                {(order.advance ?? 0) > 0
+                  ? "Paid — advance"
                   : "Cash on delivery"}
               </dd>
             </div>

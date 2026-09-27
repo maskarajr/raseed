@@ -75,6 +75,9 @@ model Customer {
   address   String?
   area      String?
   route     String?
+  // NTN is a print-only identifier for the invoice "Billed to" block (G2).
+  // Nullable free-text; never used for uniqueness or matching.
+  ntn       String?
   bookerId  String?
   active    Boolean  @default(true)
   createdBy String
@@ -121,15 +124,19 @@ model OrderItem {
 }
 
 model Invoice {
-  id            String   @id @default(cuid())
-  code          String   @unique
-  orderId       String   @unique
+  id            String    @id @default(cuid())
+  code          String    @unique
+  orderId       String    @unique
   customerId    String
   total         Int
-  amountPaid    Int      @default(0)
+  amountPaid    Int       @default(0)
   balance       Int
-  paymentStatus String   @default("unpaid") // unpaid | partial | paid
-  createdAt     DateTime @default(now())
+  paymentStatus String    @default("unpaid") // unpaid | partial | paid
+  createdAt     DateTime  @default(now())
+  // Set exactly once, when the office confirms physical delivery (the delivered
+  // transition). Nullable until then; consumed by the G2 print 'Delivered {d}'
+  // line. Not back-filled for historical rows.
+  deliveredAt   DateTime?
 
   order    Order     @relation(fields: [orderId], references: [id])
   payments Payment[]

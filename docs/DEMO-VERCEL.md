@@ -4,6 +4,10 @@
 
 Do not merge to `main` unless you want hosted DB in the default product.
 
+> **Reviewing the v3 design locally?** Use the pinned preview port in
+> [`PREVIEW.md`](./PREVIEW.md) (v3 preview = **http://localhost:3055**, main
+> checkout `dev` = `:3000`). Do not mix the two.
+
 ## 1. Turso
 
 ```bash

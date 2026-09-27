@@ -1,0 +1,305 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { api } from "@/lib/client";
+import { Money } from "@/components/Money";
+import { StatusPill } from "@/components/badges";
+import { BookerChrome } from "@/components/BookerChrome";
+import { PaymentSheet } from "@/components/PaymentSheet";
+import { Icon } from "@/components/Icon";
+import { orderLabel } from "@/lib/orderLabel";
+
+/**
+ * Figmi spec C (handoff-v3/booker-order-detail.md) + Privy seq211 amendments.
+ * Booker-PWA order detail: ONE header pill (§5 vocabulary), summary card,
+ * money hero only when invoice state exists (no fake Rs 0), line items,
+ * balance row + Collect via the SAME PaymentSheet the list uses.
+ * Writes a booker may do here: Submit own draft, Collect. No delete/reassign.
+ * Edit lands separately behind Breevie's PATCH /api/orders/[id] contract.
+ */
+
+type Detail = {
+  id: string;
+  code: string;
+  status: string;
+  subtotal: number;
+  advance: number;
+  notes: string | null;
+  createdAt: string;
+  customer: { name: string; area: string | null; route: string | null };
+  booker: { name: string };
+  items: {
+    id: string;
+    qty: number;
+    unitPrice: number;
+    product: { sku: string; name: string; unit: string };
+  }[];
+  invoice: {
+    id: string;
+    code: string;
+    total: number;
+    amountPaid: number;
+    balance: number;
+    paymentStatus: string;
+    deliveredAt: string | null;
+  } | null;
+};
+
+function placedLabel(iso: string): string {
+  return new Date(iso).toLocaleString("en-PK", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Karachi",
+  });
+}
+
+export default function BookerOrderDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const [order, setOrder] = useState<Detail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [discardArmed, setDiscardArmed] = useState(false);
+  const [collectOpen, setCollectOpen] = useState(false);
+
+  const load = useCallback(() => {
+    return api<{ order: Detail }>(`/api/orders/${id}`)
+      .then((d) => setOrder(d.order))
+      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
+  }, [id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function act(path: string, body?: unknown) {
+    setBusy(true);
+    setError(null);
+    try {
+      await api(path, {
+        method: "POST",
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Action failed");
+    }
+    setBusy(false);
+  }
+
+  if (error && !order) {
+    return (
+      <BookerChrome title="Order" backHref="/booker/orders">
+        <p className="muted">{error}</p>
+      </BookerChrome>
+    );
+  }
+  if (!order) {
+    return (
+      <BookerChrome title="Order" backHref="/booker/orders">
+        <p className="muted">Loading…</p>
+      </BookerChrome>
+    );
+  }
+
+  const ui = orderLabel(order);
+  const inv = order.invoice;
+  const balance = inv?.balance ?? 0;
+  const collectedPct =
+    inv && inv.total > 0
+      ? Math.min(100, Math.floor(((inv.total - balance) / inv.total) * 100))
+      : 0;
+  const isDraft = order.status === "draft";
+  const isSubmitted = order.status === "submitted";
+  const isCancelled = order.status === "cancelled";
+  const itemCount = order.items.reduce((s, i) => s + i.qty, 0);
+
+  return (
+    <BookerChrome
+      title={order.code}
+      backHref="/booker/orders"
+      meta={
+        <span className="row" style={{ gap: 8 }}>
+          <span className="pmeta">{order.customer.name}</span>
+          <StatusPill label={ui.label} tone={ui.tone} />
+        </span>
+      }
+    >
+      {error && <p className="muted">{error}</p>}
+
+      {/* A. summary strip */}
+      <div className="pcard">
+        <div className="prow">
+          <span className="prow-l">Placed</span>
+          <span className="prow-v num">{placedLabel(order.createdAt)}</span>
+        </div>
+        <div className="prow">
+          <span className="prow-l">Route</span>
+          <span className="prow-v num">
+            {order.customer.route ? `Route ${order.customer.route}` : "—"}
+          </span>
+        </div>
+        <div className="prow">
+          <span className="prow-l">Items</span>
+          <span className="prow-v num">{itemCount}</span>
+        </div>
+        <div className="prow">
+          <span className="prow-l">Delivery</span>
+          <span
+            className="prow-v"
+            style={{ color: inv?.deliveredAt ? "var(--ok-fg)" : "var(--muted)" }}
+          >
+            {inv?.deliveredAt ? "Delivered ✓" : "Not delivered"}
+          </span>
+        </div>
+      </div>
+
+      {/* B. money hero — only once an invoice (money state) exists */}
+      {inv && (
+        <div className="phero">
+          <div className="rowb">
+            <p className="phero-lab">{balance > 0 ? "To collect" : "Collected"}</p>
+            <span className="phero-route">{inv.code}</span>
+          </div>
+          <p className="phero-val num"><Money value={balance} /></p>
+          <div className="phero-bar">
+            <span style={{ width: `${collectedPct}%` }} />
+          </div>
+          <div className="rowb" style={{ marginTop: 8 }}>
+            <span className="phero-meta">
+              {collectedPct}% of <Money value={inv.total} /> in
+            </span>
+            <span className="phero-meta">
+              {order.advance > 0 ? "Paid — advance" : "Cash on delivery"}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* C. line items */}
+      <div className="pcard">
+        <div className="rowb" style={{ marginBottom: 6 }}>
+          <p className="ptitle-s">Line items</p>
+          <span className="pmeta">{order.items.length} lines</span>
+        </div>
+        <table className="tbl">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th className="r">Qty</th>
+              <th className="r">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {order.items.map((i) => (
+              <tr key={i.id}>
+                <td>
+                  <span className="pname">{i.product.name}</span>
+                  <br />
+                  <span className="sku">{i.product.sku}</span>
+                </td>
+                <td className="r num">{i.qty}</td>
+                <td className="r money"><Money value={i.qty * i.unitPrice} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="prow" style={{ marginTop: 6 }}>
+          <span className="prow-l">Subtotal</span>
+          <span className="prow-v money"><Money value={order.subtotal} /></span>
+        </div>
+        <div className="prow">
+          <span className="prow-l"><span className="pname">Total</span></span>
+          <span className="prow-v num" style={{ fontWeight: 600 }}>
+            <Money value={order.subtotal} />
+          </span>
+        </div>
+      </div>
+
+      {/* D. balance row (warn tone, display-only) */}
+      {balance > 0 && (
+        <div className="balance">
+          <span>To collect on delivery</span>
+          <span className="num"><Money value={balance} /></span>
+        </div>
+      )}
+
+      {/* E. actions — §1.3 matrix; the only booker writes are Submit + Collect */}
+      {balance > 0 && inv && (
+        <button
+          type="button"
+          className="btn-primary btn-block"
+          style={{ justifyContent: "center" }}
+          onClick={() => setCollectOpen(true)}
+        >
+          <Icon name="ledger" className="ic ic-sm" />
+          Collect
+        </button>
+      )}
+      {isDraft && (
+        <div className="stack" style={{ gap: 10 }}>
+          <button
+            type="button"
+            className="btn-primary btn-block"
+            style={{ justifyContent: "center" }}
+            disabled={busy}
+            onClick={() => act(`/api/orders/${order.id}/submit`)}
+          >
+            {busy ? "Submitting…" : "Submit"}
+          </button>
+          <div className="row" style={{ gap: 10 }}>
+            <Link
+              href={`/booker/orders/${order.id}/edit`}
+              className="btn-sec grow"
+              style={{ justifyContent: "center" }}
+            >
+              Edit
+            </Link>
+            <button
+              type="button"
+              className="btn-sec grow"
+              style={{ justifyContent: "center", color: "var(--bad-fg)" }}
+              disabled={busy}
+              onClick={() => {
+                if (!discardArmed) {
+                  setDiscardArmed(true);
+                  return;
+                }
+                act(`/api/orders/${order.id}/cancel`);
+              }}
+              onBlur={() => setDiscardArmed(false)}
+            >
+              {discardArmed ? "Confirm discard?" : "Discard"}
+            </button>
+          </div>
+        </div>
+      )}
+      {isSubmitted && (
+        <p className="meta" style={{ textAlign: "center" }}>
+          Sent to office — awaiting confirmation.
+        </p>
+      )}
+      {isCancelled && (
+        <p className="meta" style={{ textAlign: "center" }}>
+          This order was cancelled.
+        </p>
+      )}
+
+      {collectOpen && inv && (
+        <PaymentSheet
+          invoiceId={inv.id}
+          invoiceCode={inv.code}
+          balance={balance}
+          onClose={() => setCollectOpen(false)}
+          onDone={() => {
+            setCollectOpen(false);
+            load();
+          }}
+        />
+      )}
+    </BookerChrome>
+  );
+}

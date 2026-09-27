@@ -202,7 +202,10 @@ async function main() {
     check(login.status === 200, `sana login returns 200 (got ${login.status})`);
     check(login.data?.user?.role === "booker", "sana session role is 'booker'");
     const { status } = await other.req("GET", `/api/orders/${orderId}`);
-    check(status === 403, `other booker cannot read this order (got ${status})`);
+    check(
+      status === 404,
+      `other booker's read of this order returns 404, not 403 (no existence leak) (got ${status})`,
+    );
   }
 
   // ---------------------------------------------------------------
@@ -241,6 +244,27 @@ async function main() {
     );
     check(data.invoice.balance === invoiceTotal, "invoice balance equals total (unpaid)");
     check(data.invoice.paymentStatus === "unpaid", "invoice starts 'unpaid'");
+
+    // Refactor guard: the batched invoice stock write must emit exactly one
+    // 'sale' ledger row PER LINE, linked to the invoice, with delta == -qty.
+    const ledA = (
+      await office.req<{
+        entries: { reason: string; refId: string | null; delta: number }[];
+      }>("GET", `/api/stock/ledger?productId=${prodA}`)
+    ).data.entries.filter((e) => e.reason === "sale" && e.refId === invoiceId);
+    const ledB = (
+      await office.req<{
+        entries: { reason: string; refId: string | null; delta: number }[];
+      }>("GET", `/api/stock/ledger?productId=${prodB}`)
+    ).data.entries.filter((e) => e.reason === "sale" && e.refId === invoiceId);
+    check(
+      ledA.length === 1 && ledB.length === 1,
+      `one 'sale' ledger row per invoiced line, linked to invoice (A:${ledA.length} B:${ledB.length})`,
+    );
+    check(
+      ledA[0]?.delta === -3 && ledB[0]?.delta === -5,
+      `sale ledger deltas reflect line quantities (A ${ledA[0]?.delta}, B ${ledB[0]?.delta})`,
+    );
   }
 
   // Re-invoicing must be rejected.
@@ -383,6 +407,495 @@ async function main() {
     check(status === 401, `unauthenticated request rejected with 401 (got ${status})`);
   }
 
+  // ---------------------------------------------------------------
+  section("11. v3.2 API contracts + booker scoping");
+  {
+    const bilal = makeClient();
+    const sana = makeClient();
+    await bilal.req("POST", "/api/auth/login", {
+      email: "bilal@raseed.local",
+      password: "booker123",
+    });
+    const sanaLogin = await sana.req<{ user: { id: string } }>(
+      "POST",
+      "/api/auth/login",
+      { email: "sana@raseed.local", password: "booker123" },
+    );
+    const sanaId = sanaLogin.data.user.id;
+
+    type ShopRow = { id: string; name: string; bookerId: string | null };
+
+    // GET /api/customers is scoped to the calling booker's own shops.
+    const mine = await bilal.req<{ customers: ShopRow[] }>("GET", "/api/customers");
+    check(mine.status === 200, `booker customers call succeeds (got ${mine.status})`);
+    const foreignShops = mine.data.customers.filter(
+      (c) => c.bookerId !== mine.data.customers[0]?.bookerId,
+    );
+    check(
+      mine.data.customers.length > 0 && foreignShops.length === 0,
+      `every shop a booker sees belongs to them (${mine.data.customers.length} rows, ${foreignShops.length} foreign)`,
+    );
+
+    const theirs = await sana.req<{ customers: ShopRow[] }>("GET", "/api/customers");
+    const shared = theirs.data.customers.filter((c) =>
+      mine.data.customers.some((m) => m.id === c.id),
+    );
+    check(
+      shared.length === 0,
+      `two bookers' shop lists do not overlap (${shared.length} shared)`,
+    );
+
+    // Office still sees everything, unassigned shops included.
+    const allShops = await office.req<{
+      customers: { bookerId: string | null }[];
+    }>("GET", "/api/customers");
+    check(
+      allShops.data.customers.length >=
+        mine.data.customers.length + theirs.data.customers.length,
+      `office sees at least the union of both bookers' shops (${
+        allShops.data.customers.length
+      } vs ${mine.data.customers.length}+${theirs.data.customers.length})`,
+    );
+    check(
+      allShops.data.customers.some((c) => c.bookerId === null),
+      "an unassigned shop is still visible to office",
+    );
+
+    // A booker capturing a shop cannot hand it to a colleague.
+    const captured = await bilal.req<{
+      customer: { id: string; bookerId: string | null };
+    }>("POST", "/api/customers", {
+      name: `E2E Captured ${stamp}`,
+      phone: "0300-0000000",
+      area: "E2E",
+      route: "9",
+      bookerId: sanaId,
+    });
+    check(
+      captured.status === 201,
+      `booker can capture a shop (got ${captured.status})`,
+    );
+    check(
+      captured.data.customer.bookerId !== sanaId,
+      "a captured shop is not assignable to another booker",
+    );
+
+    // A booker cannot raise an order against a colleague's shop.
+    const sanaShop = theirs.data.customers.find((c) => c.bookerId === sanaId);
+    if (sanaShop) {
+      const cross = await bilal.req("POST", "/api/orders", {
+        customerId: sanaShop.id,
+        items: [{ productId: prodA, qty: 1, unitPrice: priceA }],
+        submit: false,
+      });
+      check(
+        cross.status === 403,
+        `booking a colleague's shop is rejected with 403 (got ${cross.status})`,
+      );
+    } else {
+      check(false, "sana has an assigned shop to test against");
+    }
+
+    // Repeating confirm must not move stock a second time.
+    const stockBefore = (await getProduct(office, prodA)).stockQty;
+    const again = await office.req("POST", `/api/orders/${orderId}/confirm`);
+    check(
+      again.status === 400,
+      `repeat confirm rejected with 400 (got ${again.status})`,
+    );
+    const stockAfter = (await getProduct(office, prodA)).stockQty;
+    check(
+      stockAfter === stockBefore,
+      `repeat confirm left stock untouched (${stockBefore} -> ${stockAfter})`,
+    );
+
+    // Lifecycle pipeline block for the office dashboard.
+    const home = await office.req<{
+      kpis: { bookedToday: number; collectedToday: number };
+      pipeline: { status: string; count: number; value: number }[];
+    }>("GET", "/api/office/home");
+    check(
+      Array.isArray(home.data.pipeline) && home.data.pipeline.length === 8,
+      `pipeline carries all 8 stages (got ${home.data.pipeline?.length})`,
+    );
+    check(
+      home.data.pipeline.every(
+        (p) => typeof p.count === "number" && typeof p.value === "number",
+      ),
+      "pipeline entries carry numeric count and value",
+    );
+    check(
+      home.data.pipeline.reduce((s, p) => s + p.count, 0) > 0,
+      "pipeline is populated with real counts",
+    );
+
+    // 7-day booked/collected series behind the hero sparkline.
+    const ranged = await office.req<{
+      series?: { day: string; booked: number; collected: number; orders: number }[];
+    }>("GET", "/api/reports?range=7d");
+    const series = ranged.data.series ?? [];
+    check(
+      series.length === 7,
+      `range=7d returns exactly 7 buckets (got ${series.length})`,
+    );
+    check(
+      series.every(
+        (d) =>
+          /^\d{4}-\d{2}-\d{2}$/.test(d.day) &&
+          typeof d.booked === "number" &&
+          typeof d.collected === "number" &&
+          typeof d.orders === "number",
+      ),
+      "series buckets carry an ISO day label plus numeric booked/collected/orders",
+    );
+    let ascending = series.length === 7;
+    for (let i = 1; i < series.length; i++) {
+      if (series[i].day <= series[i - 1].day) ascending = false;
+    }
+    check(ascending, "series buckets are strictly ascending (zero-filled, oldest first)");
+    const today = series[series.length - 1];
+    check(
+      !!today && today.booked === home.data.kpis.bookedToday,
+      `sparkline's last bucket equals bookedToday (${today?.booked} vs ${home.data.kpis.bookedToday})`,
+    );
+    check(
+      !!today && today.collected === home.data.kpis.collectedToday,
+      `sparkline's last bucket equals collectedToday (${today?.collected} vs ${home.data.kpis.collectedToday})`,
+    );
+
+    // Existing callers must not see a changed payload.
+    const plain = await office.req<Record<string, unknown>>("GET", "/api/reports");
+    check(
+      !("series" in plain.data),
+      "GET /api/reports without range keeps its original keys",
+    );
+
+    // Numbered route stops on the booker home need the shop route per order.
+    const listed = await office.req<{
+      orders: { customer: { route?: string | null } }[];
+    }>("GET", "/api/orders");
+    check(
+      listed.data.orders.length > 0 &&
+        listed.data.orders.every((o) => "route" in o.customer),
+      "orders list carries customer.route",
+    );
+  }
+  // ---------------------------------------------------------------
+  section("12. v3 advance capture + print fields (C1/C2)");
+  {
+    const priceP = 1000;
+    const prodP = (
+      await office.req<{ product: { id: string } }>("POST", "/api/products", {
+        sku: `E2E-P-${stamp}`,
+        name: "E2E Advance Product",
+        price: priceP,
+        stockQty: 50,
+        reorderLevel: 5,
+      })
+    ).data.product.id;
+
+    // G2 print — customer NTN persists and reads back.
+    const cust = await booker.req<{ customer: { id: string } }>(
+      "POST",
+      "/api/customers",
+      {
+        name: `E2E NTN Shop ${stamp}`,
+        phone: "0300-1111111",
+        area: "NTN",
+        ntn: "1234567-8",
+      },
+    );
+    check(cust.status === 201, `customer with NTN created (got ${cust.status})`);
+    const custId = cust.data.customer.id;
+    const custRead = await office.req<{ customer: { ntn: string | null } }>(
+      "GET",
+      `/api/customers/${custId}`,
+    );
+    check(
+      custRead.data.customer.ntn === "1234567-8",
+      `customer NTN persisted (got ${JSON.stringify(custRead.data.customer.ntn)})`,
+    );
+
+    // G2 print — issuer settings round-trip through the whitelist.
+    const setPatch = await office.req<Record<string, string>>(
+      "PATCH",
+      "/api/settings",
+      {
+        issuerAddress: "12 Test Street, Karachi",
+        issuerPhone: "021-111-2222",
+        issuerNtn: "9988776-5",
+        issuerStrn: "STRN-001",
+      },
+    );
+    check(
+      setPatch.status === 200,
+      `issuer settings PATCH accepted (got ${setPatch.status})`,
+    );
+    const setRead = await office.req<Record<string, string>>(
+      "GET",
+      "/api/settings",
+    );
+    check(
+      setRead.data.issuerAddress === "12 Test Street, Karachi" &&
+        setRead.data.issuerNtn === "9988776-5" &&
+        setRead.data.issuerStrn === "STRN-001",
+      "issuer address/NTN/Strn read back from settings",
+    );
+
+    // C1 error — advance greater than the order total is rejected with 400.
+    const badAdv = await booker.req<{ error?: string }>("POST", "/api/orders", {
+      customerId: custId,
+      submit: false,
+      advance: 10 * priceP, // 10000 > subtotal 2000
+      items: [{ productId: prodP, qty: 2, unitPrice: priceP }],
+    });
+    check(
+      badAdv.status === 400,
+      `advance > total rejected with 400 (got ${badAdv.status})`,
+    );
+    check(
+      /exceeds order total/.test(badAdv.data?.error ?? ""),
+      `400 copy names the overflow (got ${JSON.stringify(badAdv.data?.error)})`,
+    );
+
+    // C1 happy (partial advance) — persisted advance + server-computed balanceDue.
+    const partAdv = 800;
+    const oP = await booker.req<{
+      order: { id: string; subtotal: number; advance: number };
+      balanceDue: number;
+    }>("POST", "/api/orders", {
+      customerId: custId,
+      submit: true,
+      advance: partAdv,
+      items: [{ productId: prodP, qty: 2, unitPrice: priceP }],
+    });
+    check(
+      oP.status === 201,
+      `partial-advance order created (got ${oP.status})`,
+    );
+    check(
+      oP.data.order.subtotal === 2000 && oP.data.order.advance === partAdv,
+      `partial order persists subtotal 2000 + advance ${partAdv}`,
+    );
+    check(
+      oP.data.balanceDue === 2000 - partAdv,
+      `server balanceDue = total - advance = ${2000 - partAdv} (got ${oP.data.balanceDue})`,
+    );
+    const oPid = oP.data.order.id;
+    await office.req("POST", `/api/orders/${oPid}/confirm`);
+    const invP = await office.req<{
+      invoice: {
+        id: string;
+        amountPaid: number;
+        balance: number;
+        paymentStatus: string;
+        deliveredAt: string | null;
+      };
+    }>("POST", `/api/orders/${oPid}/invoice`);
+    check(
+      invP.data.invoice.amountPaid === partAdv,
+      `invoice.amountPaid seeded from advance (${partAdv}, got ${invP.data.invoice.amountPaid})`,
+    );
+    check(
+      invP.data.invoice.balance === 2000 - partAdv &&
+        invP.data.invoice.paymentStatus === "partial",
+      `invoiced partial-advance: balance ${2000 - partAdv}, status partial (got ${invP.data.invoice.balance}/${invP.data.invoice.paymentStatus})`,
+    );
+    const ordP = await office.req<{ order: { status: string } }>(
+      "GET",
+      `/api/orders/${oPid}`,
+    );
+    check(
+      ordP.data.order.status === "invoiced",
+      `partial-advance order stays 'invoiced' (got ${ordP.data.order.status})`,
+    );
+    check(
+      invP.data.invoice.deliveredAt === null,
+      "deliveredAt is null before delivery",
+    );
+
+    // C1 — G9 cash-advance collection now posts (kind=advance accepted).
+    const chipPay = await booker.req<{ invoice: { balance: number } }>(
+      "POST",
+      "/api/payments",
+      {
+        invoiceId: invP.data.invoice.id,
+        amount: 300,
+        mode: "cash",
+        kind: "advance",
+      },
+    );
+    check(
+      chipPay.status === 201 &&
+        chipPay.data.invoice.balance === 2000 - partAdv - 300,
+      `cash-advance collection accepted, balance -> ${2000 - partAdv - 300} (got ${chipPay.status}/${chipPay.data?.invoice?.balance})`,
+    );
+
+    // G2 deliveredAt stamping is exercised on a NON-prepaid order (balance > 0),
+    // so the delivered transition is tested without settle masking it.
+    await office.req("POST", `/api/orders/${oPid}/status`, {
+      status: "out_for_delivery",
+    });
+    const delivP = await office.req<{ order: { status: string } }>(
+      "POST",
+      `/api/orders/${oPid}/status`,
+      { status: "delivered" },
+    );
+    check(
+      delivP.data.order.status === "delivered",
+      `balance>0 order reaches 'delivered' (not settled) (got ${delivP.data.order.status})`,
+    );
+    const invPRead = await office.req<{
+      invoice: { deliveredAt: string | null };
+    }>("GET", `/api/invoices/${invP.data.invoice.id}`);
+    check(
+      invPRead.data.invoice.deliveredAt !== null,
+      `deliveredAt stamped on the delivered transition (got ${JSON.stringify(invPRead.data.invoice.deliveredAt)})`,
+    );
+
+    // Option A (owner seq176): a FULLY-PREPAID order must settle at INVOICE time
+    // (read Collected immediately), not after delivery. Multi-line + a duplicate
+    // product also exercises applyStockMovements' running-balance path.
+    const fullAdv = 5000;
+    const oF = await booker.req<{
+      order: { id: string };
+      balanceDue: number;
+    }>("POST", "/api/orders", {
+      customerId: custId,
+      submit: true,
+      advance: fullAdv,
+      items: [
+        { productId: prodP, qty: 3, unitPrice: priceP },
+        { productId: prodP, qty: 2, unitPrice: priceP },
+      ],
+    });
+    const oFid = oF.data.order.id;
+    check(
+      oF.data.balanceDue === 0,
+      `fully-prepaid balanceDue = 0 (got ${oF.data.balanceDue})`,
+    );
+    await office.req("POST", `/api/orders/${oFid}/confirm`);
+    const invF = await office.req<{
+      invoice: {
+        id: string;
+        balance: number;
+        paymentStatus: string;
+        deliveredAt: string | null;
+      };
+    }>("POST", `/api/orders/${oFid}/invoice`);
+    check(
+      invF.data.invoice.balance === 0 &&
+        invF.data.invoice.paymentStatus === "paid",
+      `prepaid invoice: balance 0, status paid (got ${invF.data.invoice.balance}/${invF.data.invoice.paymentStatus})`,
+    );
+    const ordF1 = await office.req<{ order: { status: string } }>(
+      "GET",
+      `/api/orders/${oFid}`,
+    );
+    check(
+      ordF1.data.order.status === "settled",
+      `OPTION A: prepaid order lands 'settled' at invoice, not 'invoiced' (got ${ordF1.data.order.status})`,
+    );
+    // Honesty guard: settled is terminal — a settled prepaid order must not be
+    // re-advanced through delivery (proves no double lifecycle).
+    const reAdv = await office.req("POST", `/api/orders/${oFid}/status`, {
+      status: "out_for_delivery",
+    });
+    check(
+      reAdv.status === 400,
+      `settled prepaid cannot be re-advanced to out_for_delivery (got ${reAdv.status})`,
+    );
+  }
+  // ---------------------------------------------------------------
+  section("13. Draft edit (PATCH /api/orders/[id])");
+  {
+    // A booker creates a DRAFT (submit:false): subtotal 150 (100+50), advance 50.
+    const d1 = await booker.req<{
+      order: { id: string; subtotal: number };
+    }>("POST", "/api/orders", {
+      customerId,
+      submit: false,
+      advance: 50,
+      items: [
+        { productId: prodA, qty: 1, unitPrice: priceA },
+        { productId: prodB, qty: 1, unitPrice: priceB },
+      ],
+    });
+    check(
+      d1.status === 201 && d1.data.order.subtotal === 150,
+      `draft created via submit:false (got ${d1.status}/${d1.data.order?.subtotal})`,
+    );
+    const draftId = d1.data.order.id;
+
+    // Own-booker EDIT: wholesale-replace to 1 line (subtotal 200), set notes,
+    // omit advance -> the draft's existing advance is preserved.
+    const e1 = await booker.req<{
+      order: {
+        subtotal: number;
+        advance: number;
+        notes: string | null;
+        status: string;
+        items: unknown[];
+      };
+    }>("PATCH", `/api/orders/${draftId}`, {
+      items: [{ productId: prodA, qty: 2, unitPrice: priceA }],
+      notes: "edited by booker",
+    });
+    check(e1.status === 200, `draft edit returns 200 (got ${e1.status})`);
+    check(
+      e1.data.order.status === "draft",
+      `edit keeps status 'draft' (got ${e1.data.order.status})`,
+    );
+    check(
+      e1.data.order.subtotal === 200,
+      `subtotal recomputed server-side 150->200 (got ${e1.data.order.subtotal})`,
+    );
+    check(
+      Array.isArray(e1.data.order.items) && e1.data.order.items.length === 1,
+      `items wholesale-replaced to 1 line (got ${e1.data.order.items?.length})`,
+    );
+    check(
+      e1.data.order.advance === 50,
+      `advance preserved when omitted (got ${e1.data.order.advance})`,
+    );
+    check(
+      e1.data.order.notes === "edited by booker",
+      `notes updated (got ${JSON.stringify(e1.data.order.notes)})`,
+    );
+
+    // Guard: advance > (new) subtotal rejected 400 (and rolled back).
+    const badAdv = await booker.req("PATCH", `/api/orders/${draftId}`, {
+      items: [{ productId: prodA, qty: 1, unitPrice: priceA }],
+      advance: 99999,
+    });
+    check(
+      badAdv.status === 400,
+      `advance > subtotal rejected (got ${badAdv.status})`,
+    );
+
+    // Guard: non-draft orders are NOT editable (orderId is settled by now).
+    const nonDraft = await office.req("PATCH", `/api/orders/${orderId}`, {
+      items: [{ productId: prodA, qty: 1, unitPrice: priceA }],
+    });
+    check(
+      nonDraft.status === 400,
+      `non-draft edit rejected 400 (got ${nonDraft.status})`,
+    );
+
+    // Tenant guard: another booker editing this draft => 404 (no existence leak).
+    const sana2 = makeClient();
+    await sana2.req("POST", "/api/auth/login", {
+      email: "sana@raseed.local",
+      password: "booker123",
+    });
+    const cross = await sana2.req("PATCH", `/api/orders/${draftId}`, {
+      items: [{ productId: prodA, qty: 1, unitPrice: priceA }],
+    });
+    check(
+      cross.status === 404,
+      `cross-booker draft edit returns 404 (got ${cross.status})`,
+    );
+  }
   // ---------------------------------------------------------------
   console.log(`\n================ SUMMARY ================`);
   console.log(`  PASSED: ${pass}`);

@@ -35,8 +35,10 @@ export type PaymentMode = (typeof PAYMENT_MODES)[number];
 export const PAYMENT_KINDS = ["part", "advance", "full"] as const;
 export type PaymentKind = (typeof PAYMENT_KINDS)[number];
 
-/** New collections: part or full. `advance` remains on historical Payment rows. */
-export const COLLECT_PAYMENT_KINDS = ["part", "full"] as const;
+/** Collections: part or an explicit cash advance (same arithmetic, different
+ * label for reporting) or full settlement. `advance` is also written by the
+ * invoice service to ledger the capture-time declared advance. */
+export const COLLECT_PAYMENT_KINDS = ["part", "advance", "full"] as const;
 export type CollectPaymentKind = (typeof COLLECT_PAYMENT_KINDS)[number];
 
 // Allowed order status transitions (server-enforced lifecycle).

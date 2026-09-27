@@ -35,6 +35,8 @@ export function PaymentSheet({
         return "Full settlement";
       case "part":
         return "Part payment";
+      case "advance":
+        return "Cash advance";
       default: {
         const _exhaustive: never = k;
         return _exhaustive;
@@ -72,16 +74,20 @@ export function PaymentSheet({
       onClose={onClose}
       variant="sheet"
     >
-      <form onSubmit={save} className="stack">
-        <p className="muted">
-          Outstanding: <Money value={balance} />
-        </p>
+      <form onSubmit={save} className="stack" style={{ gap: 9 }}>
+        <div className="rowb">
+          <span className="muted smlabel">To collect</span>
+          <span className="money" style={{ fontSize: 15, fontWeight: 600 }}>
+            <Money value={balance} />
+          </span>
+        </div>
         <div className="lfield">
           <label>Payment type</label>
           <div className="chips">
             {(
               [
                 ["part", "Part payment"],
+                ["advance", "Cash advance"],
                 ["full", "Full settlement"],
               ] as const
             ).map(([id, label]) => (

@@ -18,7 +18,9 @@ export default async function OfficeLayout({
     <div className="office-root">
       <aside className="rail no-print">
         <Link href="/office" className="rbrand">
-          <BrandMark compact className="rmark" />
+          <span className="rmark">
+            <BrandMark compact className="mk" />
+          </span>
           Raseed
         </Link>
         <OfficeNav variant="main" />

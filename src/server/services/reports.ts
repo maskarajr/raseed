@@ -1,4 +1,60 @@
 import { prisma } from "@/lib/prisma";
+import {
+  karachiDayLabel,
+  startOfKarachiDaysAgo,
+  endOfTodayKarachi,
+} from "@/lib/day";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Day-bucketed booked vs collected for the dashboard hero sparkline.
+//
+// Booked = order subtotal on the Karachi day the order was raised (cancelled
+// orders excluded). Collected = payment amount on the Karachi day it was
+// recorded. Buckets are zero-filled and always exactly `days` long, oldest
+// first, so the frontend plots them without filling gaps — and the last bucket
+// is the same Karachi window the dashboard's bookedToday/collectedToday KPIs
+// use, so the sparkline's final point cannot disagree with the hero number.
+export async function bookedCollectedSeries(days = 7) {
+  const end = endOfTodayKarachi();
+  const start = startOfKarachiDaysAgo(days - 1);
+
+  const [orders, payments] = await Promise.all([
+    prisma.order.findMany({
+      where: { createdAt: { gte: start, lt: end }, status: { not: "cancelled" } },
+      select: { subtotal: true, createdAt: true },
+    }),
+    prisma.payment.findMany({
+      where: { createdAt: { gte: start, lt: end } },
+      select: { amount: true, createdAt: true },
+    }),
+  ]);
+
+  const buckets = new Map<
+    string,
+    { day: string; booked: number; collected: number; orders: number }
+  >();
+  for (let i = days - 1; i >= 0; i--) {
+    const label = karachiDayLabel(
+      new Date(start.getTime() + (days - 1 - i) * DAY_MS),
+    );
+    buckets.set(label, { day: label, booked: 0, collected: 0, orders: 0 });
+  }
+
+  for (const o of orders) {
+    const b = buckets.get(karachiDayLabel(o.createdAt));
+    if (!b) continue;
+    b.booked += o.subtotal;
+    b.orders += 1;
+  }
+  for (const p of payments) {
+    const b = buckets.get(karachiDayLabel(p.createdAt));
+    if (!b) continue;
+    b.collected += p.amount;
+  }
+
+  return Array.from(buckets.values());
+}
 
 function dayRange(from?: string, to?: string): { gte?: Date; lte?: Date } {
   const range: { gte?: Date; lte?: Date } = {};
