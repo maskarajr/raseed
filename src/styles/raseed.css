@@ -393,6 +393,37 @@ html{scroll-behavior:smooth}
 @keyframes od-growx{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @keyframes od-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.68)}}
 @keyframes od-ping{0%{transform:scale(.7);opacity:.6}80%,100%{transform:scale(2.7);opacity:0}}
+/* Spec D (Figmi loading-motion.md): the ONE new keyframe — opacity-only breathe
+   for skeleton blocks. od-pulse scales (.68) — wrong for a block. */
+@keyframes od-breathe{0%,100%{opacity:1}50%{opacity:.45}}
+
+/* --- Spec D: skeleton token — static grey field, same od-* family --- */
+.skel{
+  background:color-mix(in oklch,var(--fg) 9%,var(--surface));
+  color:transparent !important;
+  border-radius:8px;
+  pointer-events:none;user-select:none;
+  /* 1.05s reads as *working* — quicker than the 2.4s idle warm pulse */
+  animation:od-breathe 1.05s var(--ease-io) infinite;
+  flex:none;
+}
+/* shape helpers are sizing only — no extra motion */
+.skel-line{height:12px;border-radius:6px}
+.skel-line.sm{height:9px}
+.skel-title{height:22px;width:40%}
+.skel-val{height:34px;width:60%;border-radius:8px}
+.skel-tile{height:64px;border-radius:12px}
+.skel-rect{border-radius:12px}
+.skel-circle{width:24px;height:24px;border-radius:999px}
+.skel-pill{width:78px;height:20px;border-radius:999px}
+
+/* --- Spec D §3: action-in-flight on the three existing variants (there is
+   no .btn base class; :disabled's .45 opacity reads dead, not busy) --- */
+.btn-primary.is-busy,.btn-sec.is-busy,.btn-ghost.is-busy{
+  opacity:.82;cursor:progress}
+.btn-primary.is-busy .ic,.btn-sec.is-busy .ic,.btn-ghost.is-busy .ic{display:none}
+.btn-spin{display:inline-block;width:6px;height:6px;border-radius:999px;background:currentColor;
+  flex:none;animation:od-pulse 1.2s var(--ease-io) infinite}
 
 /* --- depth --- */
 .card2,.kpi,.pcard,.pstat{box-shadow:var(--sh-1)}
@@ -633,4 +664,8 @@ html{scroll-behavior:smooth}
   html{scroll-behavior:auto}
   *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important;
     animation-delay:0s !important}
+  /* Spec D §4: skeletons go static (still readable grey); the spin dot stops.
+     The phase flag is the real signal — motion is garnish. */
+  .skel{animation:none;opacity:.5}
+  .btn-spin{animation:none}
 }

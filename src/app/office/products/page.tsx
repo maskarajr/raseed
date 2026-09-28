@@ -5,6 +5,7 @@ import type { Product } from "@/generated/prisma/client";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { OfficeChrome } from "@/components/OfficeChrome";
+import { SkelRows } from "@/components/skeletons";
 import { StatusPill } from "@/components/badges";
 import { SideSheet } from "@/components/SideSheet";
 import { Icon } from "@/components/Icon";
@@ -109,7 +110,20 @@ export default function ProductsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => {
+              {!loaded ? (
+                <SkelRows
+                  cols={[
+                    { w: "20px" },
+                    { w: "42%" },
+                    { w: "68%" },
+                    { w: "36%" },
+                    { w: "50%" },
+                    { w: "52px", r: true },
+                    { w: "62%" },
+                  ]}
+                />
+              ) : (
+              filtered.map((p) => {
                 const st = stockTone(p.stockQty, p.reorderLevel);
                 return (
                   <tr key={p.id}>
@@ -135,10 +149,11 @@ export default function ProductsPage() {
                     </td>
                   </tr>
                 );
-              })}
+              })
+              )}
             </tbody>
           </table>
-          {filtered.length === 0 && (
+          {loaded && filtered.length === 0 && (
             <p className="tbl-empty">No products match this filter.</p>
           )}
         </div>

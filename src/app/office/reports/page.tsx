@@ -142,7 +142,17 @@ export default function ReportsPage() {
     >
       {error && <p className="muted">{error}</p>}
       {!data ? (
-        <p className="muted">Loading…</p>
+        <>
+        <span className="skel skel-title" style={{ display: "block" }} />
+        <span className="skel skel-rect" style={{ display: "block", height: 120, width: "100%", marginTop: 14 }} />
+        {[0, 1, 2, 3, 4].map((i) => (
+          <span
+            key={i}
+            className="skel skel-line"
+            style={{ display: "block", width: "80%", marginTop: 10 }}
+          />
+        ))}
+        </>
       ) : (
         <>
           <div className="kpis">

@@ -146,9 +146,11 @@ export function PaymentSheet({
             Cancel
           </button>
           <button
-            className="btn-primary grow"
+            className={`btn-primary grow${saving ? " is-busy" : ""}`}
             disabled={saving || balance <= 0}
+            aria-disabled={saving || undefined}
           >
+            {saving && <span className="btn-spin" />}
             {saving ? "Recording…" : "Record payment"}
           </button>
         </div>

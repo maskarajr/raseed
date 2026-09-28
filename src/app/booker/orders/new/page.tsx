@@ -135,10 +135,12 @@ export default function NewOrderPage() {
                   Save as draft
                 </button>
                 <button
-                  className="btn-primary grow"
+                  className={`btn-primary grow${submitting ? " is-busy" : ""}`}
                   disabled={submitting || cart.length === 0}
+                  aria-disabled={submitting || undefined}
                   onClick={() => submit()}
                 >
+                  {submitting && <span className="btn-spin" />}
                   {submitting ? "Submitting…" : "Place order"}
                 </button>
               </>

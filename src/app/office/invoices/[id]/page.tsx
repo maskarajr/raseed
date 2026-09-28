@@ -10,6 +10,7 @@ import { SideSheet } from "@/components/SideSheet";
 import { Icon } from "@/components/Icon";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { PaymentSheet } from "@/components/PaymentSheet";
+import { SkelDetail } from "@/components/skeletons";
 import { initials } from "@/lib/person";
 import { methodLabel } from "@/lib/status";
 import { useToast } from "@/components/Toast";
@@ -103,7 +104,15 @@ export default function InvoiceDetailPage() {
   if (!inv) {
     return (
       <OfficeChrome title="Invoice">
-        <p className="muted">Loading…</p>
+        <SkelDetail
+          tableCols={[
+            { w: "42%" },
+            { w: "68%" },
+            { w: "36px", r: true },
+            { w: "52px", r: true },
+            { w: "52px", r: true },
+          ]}
+        />
       </OfficeChrome>
     );
   }

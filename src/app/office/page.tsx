@@ -119,9 +119,39 @@ export default function OfficeDashboard() {
     );
   }
   if (!data) {
+    // Spec D §2b: the dashboard's own skeleton — hero block, 38px spark band,
+    // pipeline line, rail rows. No Rs 0 KPI, no null fragments while loading.
     return (
       <OfficeChrome title="Dashboard">
-        <p className="muted">Loading…</p>
+        <div className="dash">
+          <div className="dash-main">
+            <div className="card2">
+              <span className="skel skel-title" style={{ display: "block" }} />
+              <span className="skel skel-val" style={{ display: "block", marginTop: 10 }} />
+              <span
+                className="skel skel-rect"
+                style={{ display: "block", height: 38, width: "100%", marginTop: 14 }}
+              />
+              <span className="skel skel-line" style={{ display: "block", width: "70%", marginTop: 12 }} />
+            </div>
+            <div className="card2 is-fill">
+              <span className="skel skel-title" style={{ display: "block" }} />
+              <span className="skel skel-line" style={{ display: "block", width: "80%", marginTop: 12 }} />
+            </div>
+          </div>
+          <aside className="dash-rail">
+            <div className="card2">
+              <span className="skel skel-line" style={{ display: "block", width: "50%" }} />
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className="skel skel-line sm"
+                  style={{ display: "block", width: "70%", marginTop: 10 }}
+                />
+              ))}
+            </div>
+          </aside>
+        </div>
       </OfficeChrome>
     );
   }

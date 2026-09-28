@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Product } from "@/generated/prisma/client";
 import { api } from "@/lib/client";
 import { OfficeChrome } from "@/components/OfficeChrome";
+import { SkelRows } from "@/components/skeletons";
 import { CountUp } from "@/components/CountUp";
 import { StatusPill } from "@/components/badges";
 import { SideSheet } from "@/components/SideSheet";
@@ -253,7 +254,17 @@ export default function StockPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p) => {
+                {!loaded ? (
+                  <SkelRows
+                    cols={[
+                      { w: "55%" },
+                      { w: "70%" },
+                      { w: "52px", r: true },
+                      { w: "62%" },
+                    ]}
+                  />
+                ) : (
+                filtered.map((p) => {
                   const st = stockTone(p.stockQty, p.reorderLevel);
                   return (
                     <tr key={p.id}>
@@ -271,10 +282,11 @@ export default function StockPage() {
                       </td>
                     </tr>
                   );
-                })}
+                })
+                )}
               </tbody>
             </table>
-            {filtered.length === 0 && (
+            {loaded && filtered.length === 0 && (
               <p className="tbl-empty">No stock matches this filter.</p>
             )}
           </div>
@@ -346,7 +358,7 @@ export default function StockPage() {
                 </div>
               </div>
             ))}
-            {ledger.length === 0 && (
+            {loaded && ledger.length === 0 && (
               <p className="tbl-empty">No movements yet.</p>
             )}
           </div>
@@ -432,7 +444,7 @@ export default function StockPage() {
                 </div>
               </div>
             ))}
-            {ledger.length === 0 && (
+            {loaded && ledger.length === 0 && (
               <p className="tbl-empty">No movements yet.</p>
             )}
           </div>

@@ -8,6 +8,7 @@ import { CountUp } from "@/components/CountUp";
 import { StatusPill } from "@/components/badges";
 import { BookerChrome } from "@/components/BookerChrome";
 import { startOfTodayKarachi } from "@/lib/day";
+import { SkelTiles } from "@/components/skeletons";
 
 type OrderRow = {
   id: string;
@@ -25,11 +26,18 @@ export default function BookerHome() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [name, setName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     api<{ orders: OrderRow[] }>("/api/orders")
-      .then((d) => setOrders(d.orders))
-      .catch((e) => setError(e.message));
+      .then((d) => {
+        setOrders(d.orders);
+        setPhase("ready");
+      })
+      .catch((e) => {
+        setError(e.message);
+        setPhase("error");
+      });
     api<{ user: { name: string } | null }>("/api/auth/me")
       .then((d) => setName(d.user?.name ?? null))
       .catch(() => setName(null));
@@ -87,7 +95,13 @@ export default function BookerHome() {
   return (
     <BookerChrome title={`Salaam, ${first}`}>
       {error && <p className="muted">{error}</p>}
-      {hasRouteToday && (
+      {phase === "loading" && (
+        <span
+          className="skel skel-rect"
+          style={{ height: 120, width: "100%", borderRadius: 14, display: "block" }}
+        />
+      )}
+      {phase === "ready" && hasRouteToday && (
         <div className="phero">
           <div className="rowb">
             <p className="phero-lab">Collected today</p>
@@ -107,11 +121,17 @@ export default function BookerHome() {
         </div>
       )}
 
+      {phase === "loading" ? (
+        <div className="pstats">
+          <SkelTiles />
+        </div>
+      ) : (
       <div className="pstats">
         <div className="pstat"><p className="pstat-lab">Orders</p><p className="pstat-val num"><CountUp value={todayOrders.length} /></p></div>
         <div className="pstat"><p className="pstat-lab">Stops left</p><p className="pstat-val num"><CountUp value={stopsLeft} /></p></div>
         <div className="pstat"><p className="pstat-lab">To collect</p><p className="pstat-val num"><CountUp value={toCollect} /></p></div>
       </div>
+      )}
 
       <div className="row" style={{ gap: 10 }}>
         <Link href="/booker/orders/new" className="btn-primary grow" style={{ justifyContent: "center" }}>
@@ -125,7 +145,17 @@ export default function BookerHome() {
           <p className="ptitle-s">Next stops</p>
           <span className="pmeta">Ordered by route</span>
         </div>
-        {nextStops.length === 0 && (
+        {phase === "loading" &&
+          Array.from({ length: 3 }, (_, i) => (
+            <div className="pstop" key={i}>
+              <span className="skel skel-circle" />
+              <span className="grow">
+                <span className="skel skel-line" style={{ width: "45%", display: "block" }} />
+                <span className="skel skel-line sm" style={{ width: "30%", display: "block", marginTop: 6 }} />
+              </span>
+            </div>
+          ))}
+        {phase === "ready" && nextStops.length === 0 && (
           <p className="tbl-empty">
             {hasRouteToday ? "Every stop is collected." : "No route assigned for today."}
           </p>

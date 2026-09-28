@@ -8,6 +8,7 @@ import { StatusPill } from "@/components/badges";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { PaymentSheet } from "@/components/PaymentSheet";
 import { statusUi } from "@/lib/status";
+import { SkelRows } from "@/components/skeletons";
 
 type InvoiceRow = {
   id: string;
@@ -131,7 +132,20 @@ export default function InvoicesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((i) => (
+              {!loaded ? (
+                <SkelRows
+                  cols={[
+                    { w: "42%" },
+                    { w: "65%" },
+                    { w: "55%" },
+                    { w: "50%" },
+                    { w: "52px", r: true },
+                    { w: "52px", r: true },
+                    { w: "62%" },
+                  ]}
+                />
+              ) : (
+              filtered.map((i) => (
                 <tr
                   key={i.id}
                   style={{ cursor: "pointer" }}
@@ -157,10 +171,11 @@ export default function InvoicesPage() {
                     <StatusPill status={i.paymentStatus} />
                   </td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
-          {filtered.length === 0 && <p className="tbl-empty">No invoices.</p>}
+          {loaded && filtered.length === 0 && <p className="tbl-empty">No invoices.</p>}
         </div>
       </div>
       {pay && (

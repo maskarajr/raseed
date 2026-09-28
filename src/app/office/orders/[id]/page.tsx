@@ -9,6 +9,7 @@ import { StatusPill } from "@/components/badges";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { initials } from "@/lib/person";
 import { SideSheet } from "@/components/SideSheet";
+import { SkelDetail } from "@/components/skeletons";
 import { useToast } from "@/components/Toast";
 import { stockTone, methodLabel } from "@/lib/status";
 
@@ -64,6 +65,9 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Spec D §3: which mutation is in flight — only that button gets the
+  // is-busy look; the rest stay plain-disabled.
+  const [busyPath, setBusyPath] = useState<string | null>(null);
   const [reassign, setReassign] = useState(false);
   const [bookers, setBookers] = useState<{ id: string; name: string }[]>([]);
 
@@ -86,8 +90,9 @@ export default function OrderDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  async function act(path: string, body?: object) {
+  async function act(path: string, body?: object, key?: string) {
     setBusy(true);
+    setBusyPath(key ?? path);
     setError(null);
     try {
       const res = await api<{ invoice?: { id: string } }>(path, {
@@ -103,8 +108,11 @@ export default function OrderDetailPage() {
       setError(e instanceof Error ? e.message : "Action failed");
     } finally {
       setBusy(false);
+      setBusyPath(null);
     }
   }
+
+  const isB = (p: string) => busy && busyPath === p;
 
   if (error && !order) {
     return (
@@ -116,7 +124,7 @@ export default function OrderDetailPage() {
   if (!order) {
     return (
       <OfficeChrome title="Order">
-        <p className="muted">Loading…</p>
+        <SkelDetail />
       </OfficeChrome>
     );
   }
@@ -130,10 +138,12 @@ export default function OrderDetailPage() {
         <>
           <button
             type="button"
-            className="btn-ghost"
+            className={`btn-ghost${isB("duplicate") ? " is-busy" : ""}`}
             disabled={busy}
+            aria-disabled={busy || undefined}
             onClick={async () => {
               setBusy(true);
+              setBusyPath("duplicate");
               try {
                 const { order: copy } = await api<{ order: { id: string; code: string } }>(
                   `/api/orders/${order.id}/duplicate`,
@@ -144,10 +154,12 @@ export default function OrderDetailPage() {
               } catch (e) {
                 setError(e instanceof Error ? e.message : "Duplicate failed");
                 setBusy(false);
+                setBusyPath(null);
               }
             }}
           >
-            Duplicate
+            {isB("duplicate") && <span className="btn-spin" />}
+            {isB("duplicate") ? "Duplicating…" : "Duplicate"}
           </button>
           <button
             type="button"
@@ -158,29 +170,35 @@ export default function OrderDetailPage() {
           </button>
           {order.status === "draft" && (
             <button
-              className="btn-primary"
+              className={`btn-primary${isB(`/api/orders/${order.id}/submit`) ? " is-busy" : ""}`}
               disabled={busy}
+              aria-disabled={busy || undefined}
               onClick={() => act(`/api/orders/${order.id}/submit`)}
             >
-              Submit
+              {isB(`/api/orders/${order.id}/submit`) && <span className="btn-spin" />}
+              {isB(`/api/orders/${order.id}/submit`) ? "Submitting…" : "Submit"}
             </button>
           )}
           {order.status === "submitted" && (
             <button
-              className="btn-primary"
+              className={`btn-primary${isB(`/api/orders/${order.id}/confirm`) ? " is-busy" : ""}`}
               disabled={busy}
+              aria-disabled={busy || undefined}
               onClick={() => act(`/api/orders/${order.id}/confirm`)}
             >
-              Confirm order
+              {isB(`/api/orders/${order.id}/confirm`) && <span className="btn-spin" />}
+              {isB(`/api/orders/${order.id}/confirm`) ? "Confirming…" : "Confirm order"}
             </button>
           )}
           {order.status === "confirmed" && (
             <button
-              className="btn-primary"
+              className={`btn-primary${isB(`/api/orders/${order.id}/invoice`) ? " is-busy" : ""}`}
               disabled={busy}
+              aria-disabled={busy || undefined}
               onClick={() => act(`/api/orders/${order.id}/invoice`)}
             >
-              Generate invoice
+              {isB(`/api/orders/${order.id}/invoice`) && <span className="btn-spin" />}
+              {isB(`/api/orders/${order.id}/invoice`) ? "Generating invoice…" : "Generate invoice"}
             </button>
           )}
           {order.invoice && (
@@ -284,35 +302,47 @@ export default function OrderDetailPage() {
           </div>
           {order.status === "invoiced" && (
             <button
-              className="btn-sec btn-block"
+              className={`btn-sec btn-block${isB("status-ofd") ? " is-busy" : ""}`}
               disabled={busy}
+              aria-disabled={busy || undefined}
               onClick={() =>
-                act(`/api/orders/${order.id}/status`, {
-                  status: "out_for_delivery",
-                })
+                act(
+                  `/api/orders/${order.id}/status`,
+                  { status: "out_for_delivery" },
+                  "status-ofd",
+                )
               }
             >
-              Mark out for delivery
+              {isB("status-ofd") && <span className="btn-spin" />}
+              {isB("status-ofd") ? "Marking…" : "Mark out for delivery"}
             </button>
           )}
           {order.status === "out_for_delivery" && (
             <button
-              className="btn-sec btn-block"
+              className={`btn-sec btn-block${isB("status-del") ? " is-busy" : ""}`}
               disabled={busy}
+              aria-disabled={busy || undefined}
               onClick={() =>
-                act(`/api/orders/${order.id}/status`, { status: "delivered" })
+                act(
+                  `/api/orders/${order.id}/status`,
+                  { status: "delivered" },
+                  "status-del",
+                )
               }
             >
-              Mark delivered
+              {isB("status-del") && <span className="btn-spin" />}
+              {isB("status-del") ? "Marking…" : "Mark delivered"}
             </button>
           )}
           {["draft", "submitted", "confirmed"].includes(order.status) && (
             <button
-              className="btn-sec btn-block"
+              className={`btn-sec btn-block${isB(`/api/orders/${order.id}/cancel`) ? " is-busy" : ""}`}
               disabled={busy}
+              aria-disabled={busy || undefined}
               onClick={() => act(`/api/orders/${order.id}/cancel`)}
             >
-              Cancel order
+              {isB(`/api/orders/${order.id}/cancel`) && <span className="btn-spin" />}
+              {isB(`/api/orders/${order.id}/cancel`) ? "Cancelling…" : "Cancel order"}
             </button>
           )}
         </div>

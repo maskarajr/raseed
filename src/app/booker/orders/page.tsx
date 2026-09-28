@@ -9,6 +9,7 @@ import { StatusPill } from "@/components/badges";
 import { BookerChrome } from "@/components/BookerChrome";
 import { PaymentSheet } from "@/components/PaymentSheet";
 import { orderLabel } from "@/lib/orderLabel";
+import { SkelCards, SkelTiles } from "@/components/skeletons";
 import { startOfTodayKarachi, endOfTodayKarachi } from "@/lib/day";
 
 type OrderRow = {
@@ -35,14 +36,21 @@ const CHIPS = [
 
 export default function BookerOrdersPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
   const [term, setTerm] = useState("");
   const [collect, setCollect] = useState<OrderRow | null>(null);
 
   useEffect(() => {
     api<{ orders: OrderRow[] }>("/api/orders")
-      .then((d) => setOrders(d.orders))
-      .catch((e) => setError(e.message));
+      .then((d) => {
+        setOrders(d.orders);
+        setPhase("ready");
+      })
+      .catch((e) => {
+        setError(e.message);
+        setPhase("error");
+      });
   }, []);
 
   const todayCount = orders.filter((o) => {
@@ -72,6 +80,11 @@ export default function BookerOrdersPage() {
 
   return (
     <BookerChrome title="My orders" backHref="/booker" meta={`${todayCount} today`}>
+      {phase === "loading" ? (
+        <div className="pstats money">
+          <SkelTiles />
+        </div>
+      ) : (
       <div className="pstats money">
         <div className="pstat">
           <p className="pstat-lab">Booked</p>
@@ -95,6 +108,7 @@ export default function BookerOrdersPage() {
           <span style={{ width: `${collectedPct}%` }} />
         </div>
       </div>
+      )}
       <div className="chips">
         {CHIPS.map((c) => (
           <button
@@ -109,7 +123,9 @@ export default function BookerOrdersPage() {
       </div>
       {error && <p className="muted">{error}</p>}
       <div className="stack" style={{ gap: 10 }}>
-        {filtered.map((o) => {
+        {phase === "loading" && <SkelCards />}
+        {phase === "ready" &&
+          filtered.map((o) => {
           const ui = orderLabel(o);
           const canCollect = Boolean(o.invoice && o.invoice.balance > 0);
           return (
@@ -149,7 +165,7 @@ export default function BookerOrdersPage() {
           );
         })}
       </div>
-      {filtered.length === 0 && (
+      {phase === "ready" && filtered.length === 0 && (
         <p className="tbl-empty">No orders match this filter.</p>
       )}
       {collect?.invoice && (

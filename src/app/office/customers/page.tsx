@@ -15,12 +15,14 @@ type Shop = {
 import { api } from "@/lib/client";
 import { SideSheet } from "@/components/SideSheet";
 import { OfficeChrome } from "@/components/OfficeChrome";
+import { SkelRows } from "@/components/skeletons";
 import { StatusPill } from "@/components/badges";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Shop[]>([]);
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [sheet, setSheet] = useState<{
     mode: "create" | "edit";
     customer?: Shop;
@@ -32,8 +34,10 @@ export default function CustomersPage() {
         "/api/customers",
       );
       setCustomers(rows);
+      setLoaded(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
+      setLoaded(true);
     }
   }
 
@@ -85,7 +89,19 @@ export default function CustomersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((c) => (
+              {!loaded ? (
+                <SkelRows
+                  cols={[
+                    { w: "65%" },
+                    { w: "50%" },
+                    { w: "40%" },
+                    { w: "55%" },
+                    { w: "52px", r: true },
+                    { w: "62%" },
+                  ]}
+                />
+              ) : (
+              filtered.map((c) => (
                 <tr
                   key={c.id}
                   style={{ cursor: "pointer" }}
@@ -102,10 +118,11 @@ export default function CustomersPage() {
                     <StatusPill status={c.active ? "active" : "inactive"} />
                   </td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
-          {filtered.length === 0 && (
+          {loaded && filtered.length === 0 && (
             <p className="tbl-empty">No customers match this search.</p>
           )}
         </div>

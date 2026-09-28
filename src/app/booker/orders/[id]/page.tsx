@@ -8,6 +8,7 @@ import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { BookerChrome } from "@/components/BookerChrome";
 import { PaymentSheet } from "@/components/PaymentSheet";
+import { SkelDetail } from "@/components/skeletons";
 import { Icon } from "@/components/Icon";
 import { orderLabel } from "@/lib/orderLabel";
 import { methodLabel } from "@/lib/status";
@@ -64,6 +65,7 @@ export default function BookerOrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [discardArmed, setDiscardArmed] = useState(false);
+  const [busyPath, setBusyPath] = useState<string | null>(null);
   const [collectOpen, setCollectOpen] = useState(false);
 
   const load = useCallback(() => {
@@ -78,6 +80,7 @@ export default function BookerOrderDetailPage() {
 
   async function act(path: string, body?: unknown) {
     setBusy(true);
+    setBusyPath(path);
     setError(null);
     try {
       await api(path, {
@@ -89,7 +92,9 @@ export default function BookerOrderDetailPage() {
       setError(e instanceof Error ? e.message : "Action failed");
     }
     setBusy(false);
+    setBusyPath(null);
   }
+  const isB = (p: string) => busy && busyPath === p;
 
   if (error && !order) {
     return (
@@ -101,7 +106,7 @@ export default function BookerOrderDetailPage() {
   if (!order) {
     return (
       <BookerChrome title="Order" backHref="/booker/orders">
-        <p className="muted">Loading…</p>
+        <SkelDetail />
       </BookerChrome>
     );
   }
@@ -244,12 +249,14 @@ export default function BookerOrderDetailPage() {
         <div className="stack" style={{ gap: 10 }}>
           <button
             type="button"
-            className="btn-primary btn-block"
+            className={`btn-primary btn-block${isB(`/api/orders/${order.id}/submit`) ? " is-busy" : ""}`}
             style={{ justifyContent: "center" }}
             disabled={busy}
+            aria-disabled={busy || undefined}
             onClick={() => act(`/api/orders/${order.id}/submit`)}
           >
-            {busy ? "Submitting…" : "Submit"}
+            {isB(`/api/orders/${order.id}/submit`) && <span className="btn-spin" />}
+            {isB(`/api/orders/${order.id}/submit`) ? "Submitting…" : "Submit"}
           </button>
           <div className="row" style={{ gap: 10 }}>
             <Link
@@ -261,9 +268,10 @@ export default function BookerOrderDetailPage() {
             </Link>
             <button
               type="button"
-              className="btn-sec grow"
+              className={`btn-sec grow${isB(`/api/orders/${order.id}/cancel`) ? " is-busy" : ""}`}
               style={{ justifyContent: "center", color: "var(--bad-fg)" }}
               disabled={busy}
+              aria-disabled={busy || undefined}
               onClick={() => {
                 if (!discardArmed) {
                   setDiscardArmed(true);
@@ -273,7 +281,12 @@ export default function BookerOrderDetailPage() {
               }}
               onBlur={() => setDiscardArmed(false)}
             >
-              {discardArmed ? "Confirm discard?" : "Discard"}
+              {isB(`/api/orders/${order.id}/cancel`) && <span className="btn-spin" />}
+              {isB(`/api/orders/${order.id}/cancel`)
+                ? "Discarding…"
+                : discardArmed
+                  ? "Confirm discard?"
+                  : "Discard"}
             </button>
           </div>
         </div>
