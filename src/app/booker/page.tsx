@@ -82,6 +82,18 @@ export default function BookerHome() {
     todayOrders.find((o) => o.customer.route)?.customer.route ?? null;
   const routeLabel = `Route ${routeNo ?? "—"} · ${todayOrders.length} shops`;
   const hasRouteToday = todayOrders.length > 0;
+  // Privy seq384 fix: the ghost promises a hero on every day, so the READY
+  // state must keep the frame mounted too. A created-today-zero day with open
+  // stops is real work, not a blank: quiet `Rs 0` (a true value — no "% of
+  // Rs 0 booked" claim) + the board line re-pointed at today's OPEN route.
+  const openRouteNo =
+    openStops.find((o) => o.customer.route)?.customer.route ?? null;
+  const openRouteLabel =
+    stopsLeft === 0
+      ? "No stops open today"
+      : openRouteNo
+        ? `Route ${openRouteNo} · ${stopsLeft} ${stopsLeft === 1 ? "stop" : "stops"} open`
+        : `${stopsLeft} ${stopsLeft === 1 ? "stop" : "stops"} open`;
 
   // Spec §4 freeze: "To collect" is an invoice fact (balance > 0), not a raw
   // status; confirmed/out_for_delivery without a balance read Scheduled.
@@ -97,7 +109,7 @@ export default function BookerHome() {
       {error && <p className="muted">{error}</p>}
       {phase === "loading" && (
         // §2b: the hero FRAME and its label are chrome — real at t=0. Only
-        // the amount ghosts; the bar sits at 0 (never an Rs 0 ink hero).
+        // the amount ghosts; §2c rule 3 keeps the track grey-filled.
         <div className="phero" aria-busy="true">
           <span className="sr-only">Loading today's route…</span>
           <div className="rowb">
@@ -132,6 +144,21 @@ export default function BookerHome() {
           <div className="rowb" style={{ marginTop: 8 }}>
             <span className="phero-meta">{pct}% of <Money value={todayBooked} /> booked</span>
             <span className="phero-meta"><Money value={Math.max(0, todayBooked - collectedAmt)} /> to go</span>
+          </div>
+        </div>
+      )}
+      {phase === "ready" && !hasRouteToday && (
+        // Quiet real state (Privy seq384): frame stays mounted exactly as the
+        // ghost promised. Rs 0 is the truth, not a ghost lie; no booked/%
+        // claim; chip names the open route so the day still reads as work.
+        <div className="phero">
+          <div className="rowb">
+            <p className="phero-lab">Collected today</p>
+            <span className="phero-route">{openRouteLabel}</span>
+          </div>
+          <p className="phero-val num"><Money value={0} /></p>
+          <div className="phero-bar">
+            <span className="g-fill" />
           </div>
         </div>
       )}
