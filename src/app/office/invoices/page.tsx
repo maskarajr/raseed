@@ -137,7 +137,7 @@ export default function InvoicesPage() {
                   <span className="sr-only">Loading invoices…</span>
                   <SkelRows
                     cols={[
-                      { role: "code" },
+                      { role: "codeinv" },
                       { role: "name" },
                       { role: "person" },
                       { role: "date" },

@@ -13,6 +13,8 @@ export const GS = {
   money7: "8,888,888", // hero / invoice totals — 7-figure days are real
   figure: "88",
   code: "ORD-88888",
+  codeInv: "INV-88888", // same 9-char footprint, distinct prefix — §8 blind
+  // test must be able to name invoice surfaces from the ghost alone
   sku: "8888",
   name: "Raseed Traders",
   person: "AR",
@@ -24,6 +26,7 @@ export const GS = {
 
 export type Role =
   | "code"
+  | "codeinv"
   | "sku"
   | "name"
   | "word"
@@ -118,6 +121,8 @@ function RoleCell({ role }: { role: Role }) {
       return <GMoney big />;
     case "code":
       return <GNum s={GS.code} />;
+    case "codeinv":
+      return <GNum s={GS.codeInv} />;
     case "sku":
       return <GNum s={GS.sku} />;
     case "figure":
@@ -240,7 +245,7 @@ export function SkelDetail({ noun }: { noun: string }) {
       <span className="sr-only">Loading {noun}…</span>
       <div className="pcard stack">
         <div className="rowb">
-          <GLine s={GS.code} cls="pname" />
+          <GLine s={noun === "invoice" ? GS.codeInv : GS.code} cls="pname" />
           <GPill />
         </div>
         <dl className="dl" style={{ marginTop: 12 }}>
