@@ -251,6 +251,11 @@ export default function OfficeDashboard() {
                 <p className="kpi-val-lg num" style={{ marginTop: 6 }}>
                   <CountUp value={kpis.bookedToday} money />
                 </p>
+                {/* R3 (Figmi seq253): name the EVENT — demand side vs cash side,
+                    so Booked Rs 0 next to cash-in never reads self-contradictory. */}
+                <p className="meta" style={{ marginTop: 4 }}>
+                  orders raised today
+                </p>
                 <p className="delta" style={{ marginTop: 9 }}>
                   <span className={`caret${vsYup ? "" : " down"}`}></span>
                   {vsYup ? "+" : "−"}

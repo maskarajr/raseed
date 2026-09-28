@@ -10,7 +10,7 @@ import { OfficeChrome } from "@/components/OfficeChrome";
 import { initials } from "@/lib/person";
 import { SideSheet } from "@/components/SideSheet";
 import { useToast } from "@/components/Toast";
-import { stockTone } from "@/lib/status";
+import { stockTone, methodLabel } from "@/lib/status";
 
 type OrderDetail = {
   id: string;
@@ -230,11 +230,23 @@ export default function OrderDetailPage() {
               <dd className="num">{placedLabel(order.createdAt)}</dd>
             </div>
             <div>
-              <dt>Fulfilment</dt>
+              {/* R4: money state on the office side is a LABELED chip of METHOD
+                  words only (Figmi seq265 four-state), never a second bare
+                  header pill; amounts live in the invoice rows/buttons. */}
+              <dt>Payment</dt>
               <dd>
-                {(order.advance ?? 0) > 0
-                  ? "Paid — advance"
-                  : "Cash on delivery"}
+                {(() => {
+                  // No invoice => nothing collected yet; the whole subtotal is
+                  // still due. Prepaid drafts/confirmed orders must not read
+                  // bare 'Cash on delivery' (Privy seq276 nitfix) — same
+                  // methodLabel decides every case.
+                  const m = methodLabel(
+                    order.advance ?? 0,
+                    order.subtotal,
+                    order.invoice ? order.invoice.balance : order.subtotal,
+                  );
+                  return <StatusPill label={m.label} tone={m.tone} />;
+                })()}
               </dd>
             </div>
           </dl>

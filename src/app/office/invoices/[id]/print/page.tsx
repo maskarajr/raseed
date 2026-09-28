@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
 import { Money } from "@/components/Money";
+import { methodLabel } from "@/lib/status";
 
 type InvoiceDetail = {
   id: string;
@@ -17,6 +18,7 @@ type InvoiceDetail = {
   order: {
     code: string;
     subtotal: number;
+    advance?: number;
     booker: { name: string; phone?: string };
     customer: {
       name: string;
@@ -137,8 +139,21 @@ export default function InvoicePrintPage() {
         </div>
         <div>
           <p className="ptitle-s">Collection</p>
-          <p className="pname" style={{ marginTop: 6 }}>Cash on delivery</p>
-          <p className="meta">Advance or part payments accepted</p>
+          {/* R2 print (Figmi seq265): short method word in .pname so the
+              3-column header can't wrap; the balance reminder rides the
+              .pmeta sub-line. */}
+          <p className="pname" style={{ marginTop: 6 }}>
+            {methodLabel(
+              inv.order.advance ?? 0,
+              inv.order.subtotal,
+              inv.balance,
+            ).label}
+          </p>
+          <p className="meta">
+            {inv.order.advance && inv.order.advance > 0 && inv.balance > 0
+              ? `collect Rs ${inv.balance.toLocaleString("en-US")} on delivery`
+              : "Advance or part payments accepted"}
+          </p>
         </div>
       </div>
       <table className="tbl">

@@ -2,16 +2,19 @@ export type PillTone = "ok" | "info" | "warn" | "bad" | "neu";
 
 type StatusUi = { label: string; tone: PillTone };
 
-/** DB / domain status → locked StatusPill copy + tone. */
+/** DB / domain status → locked StatusPill copy + tone.
+ * Office order surfaces render this map 1:1 with the persisted enum (R4:
+ * one axis per surface). 'Settled' is the office terminal word — if the
+ * owner flips it to 'Collected', change ONLY this constant. The money-axis
+ * words (To collect/Collected/Scheduled) live in orderLabel.ts, booker side. */
 const BY_KEY: Record<string, StatusUi> = {
   draft: { label: "Draft", tone: "neu" },
   submitted: { label: "Awaiting confirm", tone: "warn" },
   confirmed: { label: "Confirmed", tone: "ok" },
   invoiced: { label: "Invoiced", tone: "info" },
-  scheduled: { label: "Scheduled", tone: "info" },
-  out_for_delivery: { label: "Not shipped", tone: "neu" },
+  out_for_delivery: { label: "Out for delivery", tone: "info" },
   delivered: { label: "Delivered", tone: "ok" },
-  settled: { label: "Collected", tone: "ok" },
+  settled: { label: "Settled", tone: "ok" },
   cancelled: { label: "Cancelled", tone: "bad" },
   unpaid: { label: "To collect", tone: "warn" },
   partial: { label: "To collect", tone: "warn" },
@@ -41,4 +44,27 @@ export function stockTone(qty: number, reorder: number | null): StatusUi {
   if (qty <= 0) return { label: "Out", tone: "bad" };
   if (reorder != null && qty <= reorder) return { label: "Low", tone: "warn" };
   return { label: "In stock", tone: "ok" };
+}
+
+/**
+ * Payment METHOD word — closed four-state (Figmi seq265, locked by Privy
+ * seq268). ONE derived helper feeding order-detail Payment chip, invoice
+ * detail, invoice print and booker detail; no surface keeps an inline
+ * ternary. Method words only — amounts are shown by the surrounding rows,
+ * never restated here. (Subtotal is part of the locked signature; the closed
+ * matrix doesn't need it: partial-advance-then-collected hits
+ * 'Paid — advance' via advance > 0 && balance == 0.)
+ */
+export function methodLabel(
+  advance: number,
+  _subtotal: number,
+  balance: number,
+): StatusUi {
+  if (balance <= 0)
+    return advance > 0
+      ? { label: "Paid — advance", tone: "ok" }
+      : { label: "Paid", tone: "ok" };
+  return advance > 0
+    ? { label: "Advance taken", tone: "warn" }
+    : { label: "Cash on delivery", tone: "neu" };
 }

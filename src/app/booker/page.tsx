@@ -93,6 +93,11 @@ export default function BookerHome() {
             <p className="phero-lab">Collected today</p>
             <span className="phero-route">{routeLabel}</span>
           </div>
+          {/* R3 (Figmi seq253): cash-side scope — today's receipts can include
+              collections on earlier invoices, so it needn't match booked. */}
+          <p className="phero-meta" style={{ marginTop: 2 }}>
+            cash received today · incl. earlier invoices
+          </p>
           <p className="phero-val num"><CountUp value={collectedAmt} money /></p>
           <div className="phero-bar"><span style={{ width: `${pct}%` }}></span></div>
           <div className="rowb" style={{ marginTop: 8 }}>
