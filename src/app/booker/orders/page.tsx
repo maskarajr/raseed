@@ -122,8 +122,17 @@ export default function BookerOrdersPage() {
         ))}
       </div>
       {error && <p className="muted">{error}</p>}
-      <div className="stack" style={{ gap: 10 }}>
-        {phase === "loading" && <SkelCards />}
+      <div
+        className={phase === "loading" ? "stack g-band" : "stack"}
+        style={{ gap: 10 }}
+        aria-busy={phase === "loading" || undefined}
+      >
+        {phase === "loading" && (
+          <>
+            <span className="sr-only">Loading orders…</span>
+            <SkelCards />
+          </>
+        )}
         {phase === "ready" &&
           filtered.map((o) => {
           const ui = orderLabel(o);

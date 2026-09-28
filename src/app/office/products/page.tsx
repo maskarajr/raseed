@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Product } from "@/generated/prisma/client";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
@@ -10,6 +10,12 @@ import { StatusPill } from "@/components/badges";
 import { SideSheet } from "@/components/SideSheet";
 import { Icon } from "@/components/Icon";
 import { stockTone } from "@/lib/status";
+import {
+  busyStart,
+  busyEnd,
+  lockButtonWidth,
+  useBusyLong,
+} from "@/lib/busy";
 
 const CATS = ["All", "Rice", "Oil", "Grocery", "Pulses"] as const;
 
@@ -109,19 +115,22 @@ export default function ProductsPage() {
                 <th>Stock</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className={!loaded ? "g-band" : undefined}>
               {!loaded ? (
-                <SkelRows
-                  cols={[
-                    { w: "20px" },
-                    { w: "42%" },
-                    { w: "68%" },
-                    { w: "36%" },
-                    { w: "50%" },
-                    { w: "52px", r: true },
-                    { w: "62%" },
-                  ]}
-                />
+                <>
+                  <span className="sr-only">Loading products…</span>
+                  <SkelRows
+                    cols={[
+                      { role: "figure" },
+                      { role: "sku" },
+                      { role: "name" },
+                      { role: "word" },
+                      { role: "word" },
+                      { role: "money", r: true },
+                      { role: "status" },
+                    ]}
+                  />
+                </>
               ) : (
               filtered.map((p) => {
                 const st = stockTone(p.stockQty, p.reorderLevel);
@@ -193,9 +202,14 @@ function ProductForm({
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const long = useBusyLong(saving);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
+    const t0 = busyStart();
+    lockButtonWidth(btnRef.current);
     setError(null);
     setSaving(true);
     try {
@@ -224,10 +238,12 @@ function ProductForm({
           }),
         });
       }
+      await busyEnd(t0);
       onSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
     } finally {
+      await busyEnd(t0);
       setSaving(false);
     }
   }
@@ -323,8 +339,21 @@ function ProductForm({
           <button type="button" className="btn-sec grow" onClick={onClose}>
             Cancel
           </button>
-          <button className="btn-primary grow" disabled={saving}>
-            {saving ? "Saving…" : isEdit ? "Save changes" : "Create product"}
+          <button
+            ref={btnRef}
+            className={`btn-primary grow${saving ? " is-busy" : ""}`}
+            disabled={saving}
+            aria-disabled={saving || undefined}
+            aria-busy={saving || undefined}
+          >
+            {saving && <span className="btn-spin" />}
+            {saving
+              ? long
+                ? "Still working…"
+                : "Saving…"
+              : isEdit
+                ? "Save changes"
+                : "Create product"}
           </button>
         </div>
       </form>

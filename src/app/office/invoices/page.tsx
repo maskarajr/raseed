@@ -131,19 +131,22 @@ export default function InvoicesPage() {
                 <th>Status</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className={!loaded ? "g-band" : undefined}>
               {!loaded ? (
-                <SkelRows
-                  cols={[
-                    { w: "42%" },
-                    { w: "65%" },
-                    { w: "55%" },
-                    { w: "50%" },
-                    { w: "52px", r: true },
-                    { w: "52px", r: true },
-                    { w: "62%" },
-                  ]}
-                />
+                <>
+                  <span className="sr-only">Loading invoices…</span>
+                  <SkelRows
+                    cols={[
+                      { role: "code" },
+                      { role: "name" },
+                      { role: "person" },
+                      { role: "date" },
+                      { role: "money", r: true },
+                      { role: "money", r: true },
+                      { role: "status" },
+                    ]}
+                  />
+                </>
               ) : (
               filtered.map((i) => (
                 <tr

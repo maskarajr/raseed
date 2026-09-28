@@ -12,6 +12,12 @@ import { SkelDetail } from "@/components/skeletons";
 import { Icon } from "@/components/Icon";
 import { orderLabel } from "@/lib/orderLabel";
 import { methodLabel } from "@/lib/status";
+import {
+  busyStart,
+  busyEnd,
+  lockButtonWidth,
+  useBusyLong,
+} from "@/lib/busy";
 
 /**
  * Figmi spec C (handoff-v3/booker-order-detail.md) + Privy seq211 amendments.
@@ -78,7 +84,9 @@ export default function BookerOrderDetailPage() {
     load();
   }, [load]);
 
-  async function act(path: string, body?: unknown) {
+  async function act(path: string, body?: unknown, el?: HTMLElement) {
+    const t0 = busyStart();
+    lockButtonWidth(el ?? null);
     setBusy(true);
     setBusyPath(path);
     setError(null);
@@ -91,10 +99,12 @@ export default function BookerOrderDetailPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Action failed");
     }
+    await busyEnd(t0);
     setBusy(false);
     setBusyPath(null);
   }
   const isB = (p: string) => busy && busyPath === p;
+  const long = useBusyLong(busy);
 
   if (error && !order) {
     return (
@@ -106,7 +116,7 @@ export default function BookerOrderDetailPage() {
   if (!order) {
     return (
       <BookerChrome title="Order" backHref="/booker/orders">
-        <SkelDetail />
+        <SkelDetail noun="order" />
       </BookerChrome>
     );
   }
@@ -253,10 +263,17 @@ export default function BookerOrderDetailPage() {
             style={{ justifyContent: "center" }}
             disabled={busy}
             aria-disabled={busy || undefined}
-            onClick={() => act(`/api/orders/${order.id}/submit`)}
+            aria-busy={isB(`/api/orders/${order.id}/submit`) || undefined}
+            onClick={(e) =>
+              act(`/api/orders/${order.id}/submit`, undefined, e.currentTarget)
+            }
           >
             {isB(`/api/orders/${order.id}/submit`) && <span className="btn-spin" />}
-            {isB(`/api/orders/${order.id}/submit`) ? "Submitting…" : "Submit"}
+            {isB(`/api/orders/${order.id}/submit`)
+              ? long
+                ? "Still working…"
+                : "Submitting…"
+              : "Submit"}
           </button>
           <div className="row" style={{ gap: 10 }}>
             <Link
@@ -272,18 +289,21 @@ export default function BookerOrderDetailPage() {
               style={{ justifyContent: "center", color: "var(--bad-fg)" }}
               disabled={busy}
               aria-disabled={busy || undefined}
-              onClick={() => {
+              aria-busy={isB(`/api/orders/${order.id}/cancel`) || undefined}
+              onClick={(e) => {
                 if (!discardArmed) {
                   setDiscardArmed(true);
                   return;
                 }
-                act(`/api/orders/${order.id}/cancel`);
+                act(`/api/orders/${order.id}/cancel`, undefined, e.currentTarget);
               }}
               onBlur={() => setDiscardArmed(false)}
             >
               {isB(`/api/orders/${order.id}/cancel`) && <span className="btn-spin" />}
               {isB(`/api/orders/${order.id}/cancel`)
-                ? "Discarding…"
+                ? long
+                  ? "Still working…"
+                  : "Discarding…"
                 : discardArmed
                   ? "Confirm discard?"
                   : "Discard"}

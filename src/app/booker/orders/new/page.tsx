@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import type { Customer } from "@/generated/prisma/client";
 import { api } from "@/lib/client";
@@ -9,6 +9,12 @@ import { BookerChrome } from "@/components/BookerChrome";
 import { Icon } from "@/components/Icon";
 import { SideSheet } from "@/components/SideSheet";
 import { initials } from "@/lib/person";
+import {
+  busyStart,
+  busyEnd,
+  lockButtonWidth,
+  useBusyLong,
+} from "@/lib/busy";
 import { LinesStep, type CartLine } from "@/components/wizard/LinesStep";
 
 type SubmitResult = {
@@ -27,12 +33,16 @@ export default function NewOrderPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
+  const long = useBusyLong(submitting);
 
   const subtotal = cart.reduce((s, l) => s + l.qty * l.unitPrice, 0);
   const itemCount = cart.reduce((s, l) => s + l.qty, 0);
   const clampedAdvance = Math.max(0, Math.min(Math.floor(advance) || 0, subtotal));
 
-  async function submit(asDraft = false) {
+  async function submit(asDraft = false, el?: HTMLElement) {
+    if (submitting) return; // double-submit guard during the min-display hold
+    const t0 = busyStart();
+    lockButtonWidth(el ?? null);
     setError(null);
     setSubmitting(true);
     try {
@@ -55,9 +65,11 @@ export default function NewOrderPage() {
           })),
         }),
       });
+      await busyEnd(t0);
       setResult({ code: res.order.code, warnings: res.warnings, draft: asDraft });
       setSubmitting(false);
     } catch (e) {
+      await busyEnd(t0);
       setError(e instanceof Error ? e.message : "Submit failed");
       setSubmitting(false);
     }
@@ -130,7 +142,7 @@ export default function NewOrderPage() {
                 <button
                   className="btn-sec"
                   disabled={submitting || cart.length === 0}
-                  onClick={() => submit(true)}
+                  onClick={(e) => submit(true, e.currentTarget)}
                 >
                   Save as draft
                 </button>
@@ -138,10 +150,11 @@ export default function NewOrderPage() {
                   className={`btn-primary grow${submitting ? " is-busy" : ""}`}
                   disabled={submitting || cart.length === 0}
                   aria-disabled={submitting || undefined}
-                  onClick={() => submit()}
+                  aria-busy={submitting || undefined}
+                  onClick={(e) => submit(false, e.currentTarget)}
                 >
                   {submitting && <span className="btn-spin" />}
-                  {submitting ? "Submitting…" : "Place order"}
+                  {submitting ? (long ? "Still working…" : "Submitting…") : "Place order"}
                 </button>
               </>
             )}
@@ -277,9 +290,14 @@ function FullScreenCustomerCreate({
   const [area, setArea] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const long = useBusyLong(saving);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
+    const t0 = busyStart();
+    lockButtonWidth(btnRef.current);
     setSaving(true);
     setError(null);
     try {
@@ -291,10 +309,13 @@ function FullScreenCustomerCreate({
           area: area || undefined,
         }),
       });
+      await busyEnd(t0);
+      setSaving(false);
       onCreated(customer);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      await busyEnd(t0);
       setSaving(false);
+      setError(err instanceof Error ? err.message : "Save failed");
     }
   }
 
@@ -327,8 +348,16 @@ function FullScreenCustomerCreate({
           />
         </div>
         {error && <p className="muted">{error}</p>}
-        <button className="btn-primary btn-block" disabled={saving}>
-          {saving ? "Saving…" : "Save & continue"}
+        <button
+          ref={btnRef}
+          className={`btn-primary btn-block${saving ? " is-busy" : ""}`}
+          style={{ justifyContent: "center" }}
+          disabled={saving}
+          aria-disabled={saving || undefined}
+          aria-busy={saving || undefined}
+        >
+          {saving && <span className="btn-spin" />}
+          {saving ? (long ? "Still working…" : "Saving…") : "Save & continue"}
         </button>
       </form>
     </SideSheet>

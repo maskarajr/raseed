@@ -1,7 +1,7 @@
 "use client";
 
 import { QtyVal } from "@/components/QtyVal";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Customer, Product } from "@/generated/prisma/client";
 import { api } from "@/lib/client";
@@ -9,6 +9,12 @@ import { Money } from "@/components/Money";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { SideSheet } from "@/components/SideSheet";
 import { initials } from "@/lib/person";
+import {
+  busyStart,
+  busyEnd,
+  lockButtonWidth,
+  useBusyLong,
+} from "@/lib/busy";
 
 type CartLine = {
   product: Product;
@@ -30,11 +36,15 @@ export default function NewOrderPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
+  const long = useBusyLong(submitting);
 
   const subtotal = cart.reduce((s, l) => s + l.qty * l.unitPrice, 0);
   const itemCount = cart.reduce((s, l) => s + l.qty, 0);
 
-  async function submit() {
+  async function submit(el?: HTMLElement) {
+    if (submitting) return;
+    const t0 = busyStart();
+    lockButtonWidth(el ?? null);
     setError(null);
     setSubmitting(true);
     try {
@@ -54,9 +64,11 @@ export default function NewOrderPage() {
           })),
         }),
       });
+      await busyEnd(t0);
       setResult({ code: res.order.code, warnings: res.warnings });
       setSubmitting(false);
     } catch (e) {
+      await busyEnd(t0);
       setError(e instanceof Error ? e.message : "Submit failed");
       setSubmitting(false);
     }
@@ -145,11 +157,14 @@ export default function NewOrderPage() {
             )}
             {step === 3 && (
               <button
-                className="btn-primary grow"
+                className={`btn-primary grow${submitting ? " is-busy" : ""}`}
                 disabled={submitting}
-                onClick={submit}
+                aria-disabled={submitting || undefined}
+                aria-busy={submitting || undefined}
+                onClick={(e) => submit(e.currentTarget)}
               >
-                {submitting ? "Submitting…" : "Submit order"}
+                {submitting && <span className="btn-spin" />}
+                {submitting ? (long ? "Still working…" : "Submitting…") : "Submit order"}
               </button>
             )}
           </div>
@@ -262,9 +277,14 @@ function FullScreenCustomerCreate({
   const [area, setArea] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const long = useBusyLong(saving);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
+    const t0 = busyStart();
+    lockButtonWidth(btnRef.current);
     setSaving(true);
     setError(null);
     try {
@@ -276,10 +296,13 @@ function FullScreenCustomerCreate({
           area: area || undefined,
         }),
       });
+      await busyEnd(t0);
+      setSaving(false);
       onCreated(customer);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      await busyEnd(t0);
       setSaving(false);
+      setError(err instanceof Error ? err.message : "Save failed");
     }
   }
 
@@ -312,8 +335,16 @@ function FullScreenCustomerCreate({
           />
         </div>
         {error && <p className="muted">{error}</p>}
-        <button className="btn-primary btn-block" disabled={saving}>
-          {saving ? "Saving…" : "Save & continue"}
+        <button
+          ref={btnRef}
+          className={`btn-primary btn-block${saving ? " is-busy" : ""}`}
+          style={{ justifyContent: "center" }}
+          disabled={saving}
+          aria-disabled={saving || undefined}
+          aria-busy={saving || undefined}
+        >
+          {saving && <span className="btn-spin" />}
+          {saving ? (long ? "Still working…" : "Saving…") : "Save & continue"}
         </button>
       </form>
     </SideSheet>

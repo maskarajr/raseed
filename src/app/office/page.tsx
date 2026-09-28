@@ -9,6 +9,14 @@ import { OfficeChrome } from "@/components/OfficeChrome";
 import { Icon } from "@/components/Icon";
 import { formatTodayKarachi } from "@/lib/day";
 import { useToast } from "@/components/Toast";
+import {
+  GSpark,
+  SkelPipeline,
+  SkelStatLines,
+  GPerson,
+  GBtn,
+  GS,
+} from "@/components/skeletons";
 
 type SeriesPoint = {
   label: string; // short weekday, e.g. "Wed"
@@ -119,36 +127,59 @@ export default function OfficeDashboard() {
     );
   }
   if (!data) {
-    // Spec D §2b: the dashboard's own skeleton — hero block, 38px spark band,
-    // pipeline line, rail rows. No Rs 0 KPI, no null fragments while loading.
+    // Spec D rev 2 §2b: every label/frame on this screen is chrome — real at
+    // t=0. Only fetched numbers ghost, in their role silhouette.
     return (
       <OfficeChrome title="Dashboard">
+        <span className="sr-only">Loading dashboard…</span>
         <div className="dash">
           <div className="dash-main">
             <div className="card2">
-              <span className="skel skel-title" style={{ display: "block" }} />
-              <span className="skel skel-val" style={{ display: "block", marginTop: 10 }} />
-              <span
-                className="skel skel-rect"
-                style={{ display: "block", height: 38, width: "100%", marginTop: 14 }}
-              />
-              <span className="skel skel-line" style={{ display: "block", width: "70%", marginTop: 12 }} />
+              <p className="klab">Booked today</p>
+              <p className="kpi-val-lg num g g-num g-breathe" style={{ marginTop: 6 }} aria-hidden="true">
+                Rs {GS.money7}
+              </p>
+              <GSpark />
+              <div className="spark-lab" aria-hidden="true">
+                {DAY_SHORT.map((l, i) => (
+                  <span key={i} className={i === 6 ? "is-now" : undefined}>
+                    {l}
+                  </span>
+                ))}
+              </div>
+              <SkelPipeline />
             </div>
             <div className="card2 is-fill">
-              <span className="skel skel-title" style={{ display: "block" }} />
-              <span className="skel skel-line" style={{ display: "block", width: "80%", marginTop: 12 }} />
+              <p className="ptitle-s">Collected vs to collect</p>
+              <p className="meta" style={{ marginTop: 4 }}>Last 7 days</p>
+              <div className="g-band" style={{ marginTop: 10 }}>
+                <SkelStatLines labels={["Collected", "To collect"]} />
+              </div>
             </div>
           </div>
           <aside className="dash-rail">
             <div className="card2">
-              <span className="skel skel-line" style={{ display: "block", width: "50%" }} />
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className="skel skel-line sm"
-                  style={{ display: "block", width: "70%", marginTop: 10 }}
-                />
-              ))}
+              <p className="ptitle-s">Today&apos;s position</p>
+              <div className="g-band" style={{ marginTop: 6 }}>
+                <SkelStatLines labels={["Outstanding", "Invoices open", "Low stock SKUs"]} />
+              </div>
+            </div>
+            <div className="card2">
+              <p className="ptitle-s">On the road</p>
+              <div className="g-band" style={{ marginTop: 6 }}>
+                <SkelStatLines labels={["Booked", "Collected", "To collect"]} />
+              </div>
+            </div>
+            <div className="card2 is-fill">
+              <p className="ptitle-s">Awaiting confirmation</p>
+              <div className="stack g-band" style={{ gap: 10, marginTop: 8 }}>
+                {[0, 1, 2].map((i) => (
+                  <div className="rowb" key={i}>
+                    <GPerson />
+                    <GBtn label="888888" />
+                  </div>
+                ))}
+              </div>
             </div>
           </aside>
         </div>

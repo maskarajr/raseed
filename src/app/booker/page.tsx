@@ -8,7 +8,7 @@ import { CountUp } from "@/components/CountUp";
 import { StatusPill } from "@/components/badges";
 import { BookerChrome } from "@/components/BookerChrome";
 import { startOfTodayKarachi } from "@/lib/day";
-import { SkelTiles } from "@/components/skeletons";
+import { SkelTiles, GLine, GPerson, GPill, GS } from "@/components/skeletons";
 
 type OrderRow = {
   id: string;
@@ -96,10 +96,23 @@ export default function BookerHome() {
     <BookerChrome title={`Salaam, ${first}`}>
       {error && <p className="muted">{error}</p>}
       {phase === "loading" && (
-        <span
-          className="skel skel-rect"
-          style={{ height: 120, width: "100%", borderRadius: 14, display: "block" }}
-        />
+        // §2b: the hero FRAME and its label are chrome — real at t=0. Only
+        // the amount ghosts; the bar sits at 0 (never an Rs 0 ink hero).
+        <div className="phero" aria-busy="true">
+          <span className="sr-only">Loading today's route…</span>
+          <div className="rowb">
+            <p className="phero-lab">Collected today</p>
+            <span className="phero-route">
+              <GLine s={GS.word} />
+            </span>
+          </div>
+          <p className="phero-val num g g-num g-breathe" aria-hidden="true">
+            {GS.money7}
+          </p>
+          <div className="phero-bar">
+            <span style={{ width: 0 }} />
+          </div>
+        </div>
       )}
       {phase === "ready" && hasRouteToday && (
         <div className="phero">
@@ -123,7 +136,7 @@ export default function BookerHome() {
 
       {phase === "loading" ? (
         <div className="pstats">
-          <SkelTiles />
+          <SkelTiles labels={["Orders", "Stops left", "To collect"]} />
         </div>
       ) : (
       <div className="pstats">
@@ -148,11 +161,13 @@ export default function BookerHome() {
         {phase === "loading" &&
           Array.from({ length: 3 }, (_, i) => (
             <div className="pstop" key={i}>
-              <span className="skel skel-circle" />
-              <span className="grow">
-                <span className="skel skel-line" style={{ width: "45%", display: "block" }} />
-                <span className="skel skel-line sm" style={{ width: "30%", display: "block", marginTop: 6 }} />
+              <span className="pstop-n num g g-num" aria-hidden="true">
+                88
               </span>
+              <span className="grow">
+                <GPerson />
+              </span>
+              <GPill tone="ok" />
             </div>
           ))}
         {phase === "ready" && nextStops.length === 0 && (

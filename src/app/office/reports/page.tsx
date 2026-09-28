@@ -5,6 +5,7 @@ import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { StatusPill } from "@/components/badges";
+import { GNum, SkelRows, GS } from "@/components/skeletons";
 
 type ReportsResponse = {
   sales: {
@@ -143,15 +144,56 @@ export default function ReportsPage() {
       {error && <p className="muted">{error}</p>}
       {!data ? (
         <>
-        <span className="skel skel-title" style={{ display: "block" }} />
-        <span className="skel skel-rect" style={{ display: "block", height: 120, width: "100%", marginTop: 14 }} />
-        {[0, 1, 2, 3, 4].map((i) => (
-          <span
-            key={i}
-            className="skel skel-line"
-            style={{ display: "block", width: "80%", marginTop: 10 }}
-          />
-        ))}
+          <span className="sr-only">Loading reports…</span>
+          <div className="kpis">
+            <div className="kpi">
+              <p className="klab">Orders</p>
+              <p className="kval">
+                <GNum s={GS.figure} cls="g-breathe" />
+              </p>
+            </div>
+            {(["Value", "Collections", "Returns"] as const).map((l) => (
+              <div className="kpi" key={l}>
+                <p className="klab">{l}</p>
+                <p className="kval money">
+                  <span className="muted">Rs&nbsp;</span>
+                  <GNum s={GS.money} cls="g-breathe" />
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="card2 grow">
+            <div className="card2-h">
+              <h2 className="h3s">By booker</h2>
+            </div>
+            <div className="tbl-wrap">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>Booker</th>
+                    <th>Route</th>
+                    <th className="r">Orders</th>
+                    <th className="r">Value</th>
+                    <th className="r">Collected</th>
+                    <th className="r">Returns</th>
+                  </tr>
+                </thead>
+                <tbody className="g-band">
+                  <SkelRows
+                    rows={5}
+                    cols={[
+                      { role: "name" },
+                      { role: "word" },
+                      { role: "figure", r: true },
+                      { role: "money", r: true },
+                      { role: "money", r: true },
+                      { role: "money", r: true },
+                    ]}
+                  />
+                </tbody>
+              </table>
+            </div>
+          </div>
         </>
       ) : (
         <>

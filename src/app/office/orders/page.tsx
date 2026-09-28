@@ -135,19 +135,22 @@ export default function OrdersPage() {
                 <th>Status</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className={phase === "loading" ? "g-band" : undefined}>
               {phase === "loading" ? (
-                <SkelRows
-                  cols={[
-                    { w: "42%" },
-                    { w: "68%" },
-                    { w: "55%" },
-                    { w: "40%" },
-                    { w: "28px", r: true },
-                    { w: "52px", r: true },
-                    { w: "62%" },
-                  ]}
-                />
+                <>
+                  <span className="sr-only">Loading orders…</span>
+                  <SkelRows
+                    cols={[
+                      { role: "code" },
+                      { role: "name" },
+                      { role: "person" },
+                      { role: "word" },
+                      { role: "figure", r: true },
+                      { role: "money", r: true },
+                      { role: "status" },
+                    ]}
+                  />
+                </>
               ) : (
                 filtered.map((o) => (
                 <tr

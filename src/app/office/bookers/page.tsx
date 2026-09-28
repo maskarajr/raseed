@@ -98,20 +98,23 @@ export default function BookersPage() {
                 <th />
               </tr>
             </thead>
-            <tbody>
+            <tbody className={!loaded ? "g-band" : undefined}>
               {!loaded ? (
-                <SkelRows
-                  cols={[
-                    { w: "60%" },
-                    { w: "40%" },
-                    { w: "52%" },
-                    { w: "36px", r: true },
-                    { w: "52px", r: true },
-                    { w: "52px", r: true },
-                    { w: "58%" },
-                    { w: "40px" },
-                  ]}
-                />
+                <>
+                  <span className="sr-only">Loading bookers…</span>
+                  <SkelRows
+                    cols={[
+                      { role: "person" },
+                      { role: "figure" },
+                      { role: "line" },
+                      { role: "figure", r: true },
+                      { role: "money", r: true },
+                      { role: "money", r: true },
+                      { role: "status" },
+                      { role: "figure" },
+                    ]}
+                  />
+                </>
               ) : (
               bookers.map((b) => (
                 <tr key={b.id}>

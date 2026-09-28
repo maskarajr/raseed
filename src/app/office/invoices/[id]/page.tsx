@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/client";
@@ -14,6 +14,12 @@ import { SkelDetail } from "@/components/skeletons";
 import { initials } from "@/lib/person";
 import { methodLabel } from "@/lib/status";
 import { useToast } from "@/components/Toast";
+import {
+  busyStart,
+  busyEnd,
+  lockButtonWidth,
+  useBusyLong,
+} from "@/lib/busy";
 import type { PaymentKind } from "@/lib/enums";
 
 function paymentKindLabel(kind: string | undefined): string {
@@ -104,15 +110,7 @@ export default function InvoiceDetailPage() {
   if (!inv) {
     return (
       <OfficeChrome title="Invoice">
-        <SkelDetail
-          tableCols={[
-            { w: "42%" },
-            { w: "68%" },
-            { w: "36px", r: true },
-            { w: "52px", r: true },
-            { w: "52px", r: true },
-          ]}
-        />
+        <SkelDetail noun="invoice" />
       </OfficeChrome>
     );
   }
@@ -350,6 +348,8 @@ function ReturnSheet({
   const [qtys, setQtys] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const long = useBusyLong(saving);
 
   function setQty(productId: string, value: number, max: number) {
     const clamped = Math.min(max, Math.max(0, value || 0));
@@ -362,7 +362,10 @@ function ReturnSheet({
     0,
   );
 
-  async function save() {
+  async function save(el?: HTMLElement) {
+    if (saving) return;
+    const t0 = busyStart();
+    lockButtonWidth(el ?? null);
     setSaving(true);
     setError(null);
     try {
@@ -377,8 +380,10 @@ function ReturnSheet({
           }),
         });
       }
+      await busyEnd(t0);
       onDone();
     } catch (err) {
+      await busyEnd(t0);
       setError(err instanceof Error ? err.message : "Return failed");
       setSaving(false);
     }
@@ -431,11 +436,15 @@ function ReturnSheet({
 
         {error && <p className="muted">{error}</p>}
         <button
-          className="btn-primary btn-block"
+          className={`btn-primary btn-block${saving ? " is-busy" : ""}`}
+          style={{ justifyContent: "center" }}
           disabled={saving || totalQty === 0}
-          onClick={save}
+          aria-disabled={saving || undefined}
+          aria-busy={saving || undefined}
+          onClick={(e) => save(e.currentTarget)}
         >
-          {saving ? "Posting…" : "Confirm returns"}
+          {saving && <span className="btn-spin" />}
+          {saving ? (long ? "Still working…" : "Posting…") : "Confirm returns"}
         </button>
       </div>
     </SideSheet>

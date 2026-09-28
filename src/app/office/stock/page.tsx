@@ -253,16 +253,19 @@ export default function StockPage() {
                   <th>Status</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className={!loaded ? "g-band" : undefined}>
                 {!loaded ? (
-                  <SkelRows
-                    cols={[
-                      { w: "55%" },
-                      { w: "70%" },
-                      { w: "52px", r: true },
-                      { w: "62%" },
-                    ]}
-                  />
+                  <>
+                    <span className="sr-only">Loading stock…</span>
+                    <SkelRows
+                      cols={[
+                        { role: "word" },
+                        { role: "name" },
+                        { role: "figure", r: true },
+                        { role: "status" },
+                      ]}
+                    />
+                  </>
                 ) : (
                 filtered.map((p) => {
                   const st = stockTone(p.stockQty, p.reorderLevel);
