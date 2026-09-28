@@ -438,9 +438,16 @@ html{scroll-behavior:smooth}
 /* single values breathe, slow and shallow */
 .g-breathe{animation:od-breathe 1.6s var(--ease-io) infinite}
 /* rev-3: chart-shaped ghost for the 7-day card — real .chart chain, neutral
-   two-tone fills so the silhouette says "stacked bars", not "stat rows". */
-.col-bar.g-col .col-got{background:var(--ghost)}
-.col-bar.g-col .col-due{background:var(--ghost-line)}
+   two-tone fills so the silhouette says "stacked bars", not "stat rows".
+   §2c tones are ORDERED: lower segment (Collected) is the DARKER grey, upper
+   (To collect) the lighter — matching the legend, so the swap is grey→ink,
+   never a luminance flip. Guard: a placeholder never stagger-animates. */
+.col-bar.g-col .col-got{background:var(--ghost-line)}
+.col-bar.g-col .col-due{background:var(--ghost)}
+.col-bar.g-col{animation:none !important}
+/* §2c rule 3: an empty track reads "0 %" — a value, not a preview. The fill
+   ghosts grey at a constant 58% inside the REAL track; width is never data. */
+.g-fill{width:58% !important;background:var(--ghost-line) !important;border-radius:999px}
 
 /* --- Spec D rev 2 §5: in-flight button — UNMISSABLE, zero size change.
    busy must not look dead: full ink, progress cursor, guarded clicks. --- */

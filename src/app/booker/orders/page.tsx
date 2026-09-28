@@ -82,7 +82,9 @@ export default function BookerOrdersPage() {
     <BookerChrome title="My orders" backHref="/booker" meta={`${todayCount} today`}>
       {phase === "loading" ? (
         <div className="pstats money">
-          <SkelTiles />
+          {/* §2c: loaded strip ends in .pstats-bar — ghost it, or the strip
+              grows on swap (Figmi rule 3). */}
+          <SkelTiles bar />
         </div>
       ) : (
       <div className="pstats money">

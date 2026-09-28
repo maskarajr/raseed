@@ -162,7 +162,7 @@ export default function OfficeDashboard() {
             <div className="card2">
               <p className="ptitle-s">On the road</p>
               <div className="g-band" style={{ marginTop: 6 }}>
-                <SkelStatLines labels={["Booked", "Collected", "To collect"]} />
+                <SkelStatLines labels={["Booked", "Collected", "To collect"]} bar />
               </div>
             </div>
             <div className="card2 is-fill">

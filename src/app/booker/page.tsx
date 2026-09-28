@@ -109,8 +109,10 @@ export default function BookerHome() {
           <p className="phero-val num g g-num g-breathe" aria-hidden="true">
             {GS.money7}
           </p>
+          {/* §2c rule 3: an empty track reads "0 % collected" — a value. The
+              real track renders with a constant grey 58% fill instead. */}
           <div className="phero-bar">
-            <span style={{ width: 0 }} />
+            <span className="g-fill" />
           </div>
         </div>
       )}

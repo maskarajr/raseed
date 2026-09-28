@@ -76,11 +76,16 @@ export function GPill({ tone = "neu" }: { tone?: string }) {
   );
 }
 
-/* 4 — real .person tree: avatar disc + name line + meta line */
-export function GPerson() {
+/* 4 — real .person tree: avatar disc + name line + meta line.
+   big: 40px disc for the booker account header (§2c rule 4). */
+export function GPerson({ big = false }: { big?: boolean }) {
   return (
     <span className="person">
-      <span className="avatar g-disc" aria-hidden="true">
+      <span
+        className="avatar g-disc"
+        aria-hidden="true"
+        style={big ? { width: 40, height: 40, fontSize: 13 } : undefined}
+      >
         {GS.person}
       </span>
       <span>
@@ -190,8 +195,17 @@ export function SkelCards({ n = 3 }: { n?: number }) {
   );
 }
 
-/** §2b — stat tiles: real labels (chrome) + breathing numeric values. */
-export function SkelTiles({ labels }: { labels?: string[] } = {}) {
+/** §2b — stat tiles: real labels (chrome) + breathing numeric values.
+ *  bar (§2c rule 3): the loaded booker-orders strip ends in a real
+ *  .pstats-bar — render the track with a constant grey .g-fill so the strip
+ *  neither grows on swap nor previews "0 %". */
+export function SkelTiles({
+  labels,
+  bar = false,
+}: {
+  labels?: string[];
+  bar?: boolean;
+} = {}) {
   const labs = labels ?? ["Booked", "Collected", "To collect"];
   return (
     <>
@@ -203,21 +217,52 @@ export function SkelTiles({ labels }: { labels?: string[] } = {}) {
           </p>
         </div>
       ))}
+      {bar && (
+        <div className="pstats-bar" aria-hidden="true">
+          <span className="g-fill" />
+        </div>
+      )}
     </>
   );
 }
 
-/** Rail stat lines: real label text + money ghost, right-pinned. */
-export function SkelStatLines({ labels }: { labels: string[] }) {
+/** Rail stat lines: real label text + money ghost, right-pinned.
+ *  bar (§2c rule 3): 'On the road' loads with a 6px band — the ghost must
+ *  carry the real track + grey fill, or it is byte-identical to
+ *  'Today's position' and grows ~17px on swap. */
+export function SkelStatLines({
+  labels,
+  bar = false,
+}: {
+  labels: string[];
+  bar?: boolean;
+}) {
   return (
-    <div className="stat-list">
-      {labels.map((l) => (
-        <div className="stat-line" key={l}>
-          <span className="l">{l}</span>
-          <GMoney />
+    <>
+      <div className="stat-list">
+        {labels.map((l) => (
+          <div className="stat-line" key={l}>
+            <span className="l">{l}</span>
+            <GMoney />
+          </div>
+        ))}
+      </div>
+      {bar && (
+        <div
+          aria-hidden="true"
+          style={{
+            height: 6,
+            background: "color-mix(in oklch,var(--warm) 22%,transparent)",
+            borderRadius: 999,
+            marginTop: 11,
+            display: "flex",
+            overflow: "hidden",
+          }}
+        >
+          <span className="g-fill" />
         </div>
-      ))}
-    </div>
+      )}
+    </>
   );
 }
 
@@ -237,45 +282,44 @@ export function SkelPipeline({ steps = 4 }: { steps?: number }) {
   );
 }
 
-/** rev-3 (Privy seq337): 'Collected vs to collect' is a 7-day stacked bar
- *  chart once data lands — so the ghost IS the chart: real .chart/.col/
- *  .col-bar/.col-due/.col-got chain, two-tone via the ghost fills, one peak,
- *  real date ticks + legend (chrome), % block top-right, money sub-line in
- *  the header. One slow breathe over the plot; no new keyframes. */
+/** rev-3 (Privy seq337 / Figmi §2c rule 1-2): the 'Collected vs to collect'
+ *  chart ghost reuses the REAL .chart/.col/.col-bar/.col-due/.col-got chain —
+ *  7 fixed columns, peak at index 4 so it reads as data not a ramp, two-tone
+ *  via the ordered greys (bottom = darker), real ticks + legend, one container
+ *  breathe. NO --i: the loaded tree remounts, so the ghost must not
+ *  stagger-grow under .is-live (double-animation gate, §8a item 10). */
+const GHOST_CHART: [number, number][] = [
+  [42, 72],
+  [58, 55],
+  [36, 80],
+  [74, 61],
+  [96, 84],
+  [61, 50],
+  [48, 68],
+];
+
 export function SkelDayChart({ labels }: { labels: string[] }) {
-  const cols = [
-    { h: 46, got: 62 },
-    { h: 62, got: 48 },
-    { h: 38, got: 71 },
-    { h: 74, got: 55 },
-    { h: 55, got: 66 },
-    { h: 92, got: 80 }, // peak like real data
-    { h: 70, got: 58 },
-  ];
   return (
-    <div className="card2 is-fill">
+    <div className="card2 is-fill" data-probe="g-chart">
       <div className="card2-h">
         <div>
           <h4 className="h3s">Collected vs to collect</h4>
           <p className="meta" style={{ marginTop: 2 }}>
-            Last 7 days · Rs&nbsp;
-            <GNum s={GS.money} /> of Rs&nbsp;
+            Last 7 days · <span className="muted">Rs&nbsp;</span>
+            <GNum s={GS.money} /> of <span className="muted">Rs&nbsp;</span>
             <GNum s={GS.money} /> booked
           </p>
         </div>
         <span className="num" style={{ fontSize: 14, fontWeight: 600 }}>
-          <GNum s={GS.figure} cls="g-breathe" />%
+          <GNum s={GS.figure} />%
         </span>
       </div>
       <div className="chart g-breathe" aria-hidden="true">
-        {cols.map((c, i) => (
+        {GHOST_CHART.map(([h, got], i) => (
           <div className="col" key={i}>
-            <div
-              className="col-bar g-col"
-              style={{ height: `${c.h}%`, ["--i" as string]: i }}
-            >
-              <div className="col-due" style={{ height: `${100 - c.got}%` }} />
-              <div className="col-got" style={{ height: `${c.got}%` }} />
+            <div className="col-bar g-col" style={{ height: `${h}%` }}>
+              <div className="col-due" style={{ height: `${100 - got}%` }} />
+              <div className="col-got" style={{ height: `${got}%` }} />
             </div>
           </div>
         ))}
