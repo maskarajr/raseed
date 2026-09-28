@@ -11,6 +11,7 @@ import { Icon } from "@/components/Icon";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { PaymentSheet } from "@/components/PaymentSheet";
 import { initials } from "@/lib/person";
+import { methodLabel } from "@/lib/status";
 import { useToast } from "@/components/Toast";
 import type { PaymentKind } from "@/lib/enums";
 
@@ -42,6 +43,7 @@ type InvoiceDetail = {
     code: string;
     status: string;
     subtotal: number;
+    advance?: number;
     customer: { name: string; phone: string; area: string | null };
     booker: { name: string };
     items: {
@@ -166,7 +168,14 @@ export default function InvoiceDetailPage() {
             </div>
             <div>
               <dt>Collection</dt>
-              <dd>Cash on delivery</dd>
+              {/* R2 (Privy seq268): method word only, derived — never hardcoded. */}
+              <dd>
+                {methodLabel(
+                  inv.order.advance ?? 0,
+                  inv.order.subtotal,
+                  inv.balance,
+                ).label}
+              </dd>
             </div>
             <div>
               <dt>Collects</dt>

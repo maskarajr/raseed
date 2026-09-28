@@ -10,6 +10,7 @@ import { BookerChrome } from "@/components/BookerChrome";
 import { PaymentSheet } from "@/components/PaymentSheet";
 import { Icon } from "@/components/Icon";
 import { orderLabel } from "@/lib/orderLabel";
+import { methodLabel } from "@/lib/status";
 
 /**
  * Figmi spec C (handoff-v3/booker-order-detail.md) + Privy seq211 amendments.
@@ -173,7 +174,7 @@ export default function BookerOrderDetailPage() {
               {collectedPct}% of <Money value={inv.total} /> in
             </span>
             <span className="phero-meta">
-              {order.advance > 0 ? "Paid — advance" : "Cash on delivery"}
+              {methodLabel(order.advance, order.subtotal, balance).label}
             </span>
           </div>
         </div>

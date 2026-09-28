@@ -42,3 +42,26 @@ export function stockTone(qty: number, reorder: number | null): StatusUi {
   if (reorder != null && qty <= reorder) return { label: "Low", tone: "warn" };
   return { label: "In stock", tone: "ok" };
 }
+
+/**
+ * Payment METHOD word — closed four-state (Figmi seq265, locked by Privy
+ * seq268). ONE derived helper feeding order-detail Payment chip, invoice
+ * detail, invoice print and booker detail; no surface keeps an inline
+ * ternary. Method words only — amounts are shown by the surrounding rows,
+ * never restated here. (Subtotal is part of the locked signature; the closed
+ * matrix doesn't need it: partial-advance-then-collected hits
+ * 'Paid — advance' via advance > 0 && balance == 0.)
+ */
+export function methodLabel(
+  advance: number,
+  _subtotal: number,
+  balance: number,
+): StatusUi {
+  if (balance <= 0)
+    return advance > 0
+      ? { label: "Paid — advance", tone: "ok" }
+      : { label: "Paid", tone: "ok" };
+  return advance > 0
+    ? { label: "Advance taken", tone: "warn" }
+    : { label: "Cash on delivery", tone: "neu" };
+}
