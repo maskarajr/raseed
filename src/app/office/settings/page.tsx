@@ -5,6 +5,12 @@ import { api } from "@/lib/client";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { StatusPill } from "@/components/badges";
 import { useToast } from "@/components/Toast";
+import {
+  busyStart,
+  busyEnd,
+  lockButtonWidth,
+  useBusyLong,
+} from "@/lib/busy";
 
 type Me = { name: string; email: string; role: string } | null;
 type Settings = {
@@ -33,6 +39,7 @@ export default function SettingsPage() {
     issuerStrn: "",
   });
   const [saving, setSaving] = useState(false);
+  const long = useBusyLong(saving);
 
   useEffect(() => {
     api<{ user: Me }>("/api/auth/me").then((d) => setMe(d.user));
@@ -40,7 +47,9 @@ export default function SettingsPage() {
     setDark(document.documentElement.getAttribute("data-theme") === "dark");
   }, []);
 
-  async function save() {
+  async function save(el?: HTMLElement) {
+    const t0 = busyStart();
+    lockButtonWidth(el ?? null);
     setSaving(true);
     try {
       const next = await api<Settings>("/api/settings", {
@@ -50,6 +59,7 @@ export default function SettingsPage() {
       setS(next);
       toast("Settings saved");
     } finally {
+      await busyEnd(t0);
       setSaving(false);
     }
   }
@@ -59,8 +69,15 @@ export default function SettingsPage() {
       title="Settings"
       subtitle="Business, roles and appearance"
       actions={
-        <button className="btn-primary" disabled={saving} onClick={save}>
-          {saving ? "Saving…" : "Save"}
+        <button
+          className={`btn-primary${saving ? " is-busy" : ""}`}
+          disabled={saving}
+          aria-disabled={saving || undefined}
+          aria-busy={saving || undefined}
+          onClick={(e) => save(e.currentTarget)}
+        >
+          {saving && <span className="btn-spin" />}
+          {saving ? (long ? "Still working…" : "Saving…") : "Save"}
         </button>
       }
     >

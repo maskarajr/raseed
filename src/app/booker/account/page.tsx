@@ -9,6 +9,7 @@ import { StatusPill } from "@/components/badges";
 import { initials } from "@/lib/person";
 import { startOfTodayKarachi } from "@/lib/day";
 import { PwaInstallCta } from "@/components/PwaInstallCta";
+import { GPerson, GNum, GS } from "@/components/skeletons";
 
 type Me = { name: string; email: string; role: string } | null;
 
@@ -21,12 +22,19 @@ type OrderRow = {
 export default function BookerAccountPage() {
   const [me, setMe] = useState<Me>(null);
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [phase, setPhase] = useState<"loading" | "ready">("loading");
 
   useEffect(() => {
-    api<{ user: Me }>("/api/auth/me").then((d) => setMe(d.user));
-    api<{ orders: OrderRow[] }>("/api/orders")
-      .then((d) => setOrders(d.orders))
-      .catch(() => setOrders([]));
+    // §2c rule 4: no more —/…/0/Rs 0 while in flight — a real loading phase,
+    // ghosts in the loaded silhouettes.
+    Promise.all([
+      api<{ user: Me }>("/api/auth/me").then((d) => setMe(d.user)),
+      api<{ orders: OrderRow[] }>("/api/orders")
+        .then((d) => setOrders(d.orders))
+        .catch(() => setOrders([])),
+    ])
+      .catch(() => undefined)
+      .finally(() => setPhase("ready"));
   }, []);
 
   const todayStart = startOfTodayKarachi().getTime();
@@ -42,20 +50,68 @@ export default function BookerAccountPage() {
 
   return (
     <BookerChrome title="Account">
-      <div className="pcard">
-        <div className="person">
-          <span className="avatar" style={{ width: 40, height: 40, fontSize: 13 }}>
-            {me ? initials(me.name) : "—"}
-          </span>
-          <span>
-            <span className="pname">{me?.name ?? "…"}</span>
-            <br />
-            <span className="pmeta">
-              {me?.role ?? "…"} · {me?.email ?? ""}
-            </span>
-          </span>
+      {phase === "loading" ? (
+        <div className="pcard">
+          <GPerson big />
         </div>
-      </div>
+      ) : (
+        me && (
+          <div className="pcard">
+            <div className="person">
+              <span className="avatar" style={{ width: 40, height: 40, fontSize: 13 }}>
+                {initials(me.name)}
+              </span>
+              <span>
+                <span className="pname">{me.name}</span>
+                <br />
+                <span className="pmeta">
+                  {me.role} · {me.email}
+                </span>
+              </span>
+            </div>
+          </div>
+        )
+      )}
+      {phase === "loading" ? (
+        // Same silhouettes as loaded: .pbig figure ghost, money ghosts, and
+        // the real 6px track carrying a grey .g-fill (never 0-width).
+        <div className="pcard" aria-busy="true">
+          <span className="sr-only">Loading account…</span>
+          <p className="ptitle-s">Today</p>
+          <div
+            className="rowb"
+            style={{ marginTop: 8, alignItems: "flex-end" }}
+          >
+            <span className="pbig num g g-num g-breathe" aria-hidden="true">
+              {GS.figure}
+            </span>
+            <span style={{ textAlign: "right" }}>
+              <span className="num" style={{ display: "block", fontSize: 15 }}>
+                <span className="muted">Rs&nbsp;</span>
+                <GNum s={GS.money} />
+              </span>
+              <span className="pmeta">booked</span>
+            </span>
+          </div>
+          <div
+            aria-hidden="true"
+            style={{
+              height: 6,
+              background: "var(--border)",
+              borderRadius: 999,
+              marginTop: 12,
+              display: "flex",
+              overflow: "hidden",
+            }}
+          >
+            <span className="g-fill" />
+          </div>
+          <p className="pmeta" style={{ marginTop: 6 }}>
+            <span className="muted">Rs&nbsp;</span>
+            <GNum s={GS.money} /> collected
+          </p>
+        </div>
+      ) : (
       <div className="pcard">
         <p className="ptitle-s">Today</p>
         <div
@@ -91,6 +147,7 @@ export default function BookerAccountPage() {
           <Money value={collected} /> collected
         </p>
       </div>
+      )}
       <div className="pcard">
         <div className="prow">
           <span>

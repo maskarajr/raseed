@@ -10,6 +10,7 @@ import { OfficeChrome } from "@/components/OfficeChrome";
 import { startOfTodayKarachi, endOfTodayKarachi } from "@/lib/day";
 import { statusUi } from "@/lib/status";
 import { SideSheet } from "@/components/SideSheet";
+import { SkelRows } from "@/components/skeletons";
 
 type OrderRow = {
   id: string;
@@ -42,13 +43,16 @@ export default function OrdersPage() {
   const [booker, setBooker] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
 
   async function load() {
     try {
       const { orders: rows } = await api<{ orders: OrderRow[] }>("/api/orders");
       setOrders(rows);
+      setPhase("ready");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
+      setPhase("error");
     }
   }
 
@@ -131,8 +135,24 @@ export default function OrdersPage() {
                 <th>Status</th>
               </tr>
             </thead>
-            <tbody>
-              {filtered.map((o) => (
+            <tbody className={phase === "loading" ? "g-band" : undefined}>
+              {phase === "loading" ? (
+                <>
+                  <span className="sr-only">Loading orders…</span>
+                  <SkelRows
+                    cols={[
+                      { role: "code" },
+                      { role: "name" },
+                      { role: "person" },
+                      { role: "word" },
+                      { role: "figure", r: true },
+                      { role: "money", r: true },
+                      { role: "status" },
+                    ]}
+                  />
+                </>
+              ) : (
+                filtered.map((o) => (
                 <tr
                   key={o.id}
                   style={{ cursor: "pointer" }}
@@ -150,10 +170,11 @@ export default function OrdersPage() {
                     <StatusPill status={o.status} />
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
-          {filtered.length === 0 && (
+          {phase === "ready" && filtered.length === 0 && (
             <p className="tbl-empty">No orders match this filter.</p>
           )}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 type Shop = {
   id: string;
   name: string;
@@ -15,12 +15,20 @@ type Shop = {
 import { api } from "@/lib/client";
 import { SideSheet } from "@/components/SideSheet";
 import { OfficeChrome } from "@/components/OfficeChrome";
+import { SkelRows } from "@/components/skeletons";
 import { StatusPill } from "@/components/badges";
+import {
+  busyStart,
+  busyEnd,
+  lockButtonWidth,
+  useBusyLong,
+} from "@/lib/busy";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Shop[]>([]);
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [sheet, setSheet] = useState<{
     mode: "create" | "edit";
     customer?: Shop;
@@ -32,8 +40,10 @@ export default function CustomersPage() {
         "/api/customers",
       );
       setCustomers(rows);
+      setLoaded(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
+      setLoaded(true);
     }
   }
 
@@ -84,8 +94,23 @@ export default function CustomersPage() {
                 <th>Status</th>
               </tr>
             </thead>
-            <tbody>
-              {filtered.map((c) => (
+            <tbody className={!loaded ? "g-band" : undefined}>
+              {!loaded ? (
+                <>
+                  <span className="sr-only">Loading customers…</span>
+                  <SkelRows
+                    cols={[
+                      { role: "name" },
+                      { role: "word" },
+                      { role: "figure" },
+                      { role: "person" },
+                      { role: "money", r: true },
+                      { role: "status" },
+                    ]}
+                  />
+                </>
+              ) : (
+              filtered.map((c) => (
                 <tr
                   key={c.id}
                   style={{ cursor: "pointer" }}
@@ -102,10 +127,11 @@ export default function CustomersPage() {
                     <StatusPill status={c.active ? "active" : "inactive"} />
                   </td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
-          {filtered.length === 0 && (
+          {loaded && filtered.length === 0 && (
             <p className="tbl-empty">No customers match this search.</p>
           )}
         </div>
@@ -141,9 +167,14 @@ function CustomerSheet({
   const [ntn, setNtn] = useState(customer?.ntn ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const long = useBusyLong(saving);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
+    const t0 = busyStart();
+    lockButtonWidth(btnRef.current);
     setSaving(true);
     setError(null);
     try {
@@ -159,8 +190,11 @@ function CustomerSheet({
       } else {
         await api("/api/customers", { method: "POST", body });
       }
+      await busyEnd(t0);
+      setSaving(false);
       onSaved();
     } catch (err) {
+      await busyEnd(t0);
       setError(err instanceof Error ? err.message : "Save failed");
       setSaving(false);
     }
@@ -220,8 +254,15 @@ function CustomerSheet({
           <button type="button" className="btn-sec grow" onClick={onClose}>
             Cancel
           </button>
-          <button className="btn-primary grow" disabled={saving}>
-            {saving ? "Saving…" : "Save"}
+          <button
+            ref={btnRef}
+            className={`btn-primary grow${saving ? " is-busy" : ""}`}
+            disabled={saving}
+            aria-disabled={saving || undefined}
+            aria-busy={saving || undefined}
+          >
+            {saving && <span className="btn-spin" />}
+            {saving ? (long ? "Still working…" : "Saving…") : "Save"}
           </button>
         </div>
       </form>

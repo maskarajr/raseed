@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
 import { OfficeChrome } from "@/components/OfficeChrome";
+import { SkelRows } from "@/components/skeletons";
 import { StatusPill } from "@/components/badges";
 import { SideSheet } from "@/components/SideSheet";
 
@@ -22,6 +23,7 @@ type Booker = {
 export default function BookersPage() {
   const [bookers, setBookers] = useState<Booker[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -33,8 +35,10 @@ export default function BookersPage() {
     try {
       const { bookers: rows } = await api<{ bookers: Booker[] }>("/api/bookers");
       setBookers(rows);
+      setLoaded(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
+      setLoaded(true);
     }
   }
 
@@ -94,8 +98,25 @@ export default function BookersPage() {
                 <th />
               </tr>
             </thead>
-            <tbody>
-              {bookers.map((b) => (
+            <tbody className={!loaded ? "g-band" : undefined}>
+              {!loaded ? (
+                <>
+                  <span className="sr-only">Loading bookers…</span>
+                  <SkelRows
+                    cols={[
+                      { role: "person" },
+                      { role: "figure" },
+                      { role: "line" },
+                      { role: "figure", r: true },
+                      { role: "money", r: true },
+                      { role: "money", r: true },
+                      { role: "status" },
+                      { role: "figure" },
+                    ]}
+                  />
+                </>
+              ) : (
+              bookers.map((b) => (
                 <tr key={b.id}>
                   <td>
                     <div className="person">
@@ -142,10 +163,11 @@ export default function BookersPage() {
                     </button>
                   </td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
-          {bookers.length === 0 && <p className="tbl-empty">No bookers.</p>}
+          {loaded && bookers.length === 0 && <p className="tbl-empty">No bookers.</p>}
         </div>
       </div>
       {open && (

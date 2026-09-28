@@ -9,6 +9,15 @@ import { OfficeChrome } from "@/components/OfficeChrome";
 import { Icon } from "@/components/Icon";
 import { formatTodayKarachi } from "@/lib/day";
 import { useToast } from "@/components/Toast";
+import {
+  GSpark,
+  SkelPipeline,
+  SkelStatLines,
+  SkelDayChart,
+  GPerson,
+  GBtn,
+  GS,
+} from "@/components/skeletons";
 
 type SeriesPoint = {
   label: string; // short weekday, e.g. "Wed"
@@ -119,9 +128,56 @@ export default function OfficeDashboard() {
     );
   }
   if (!data) {
+    // Spec D rev 2 §2b: every label/frame on this screen is chrome — real at
+    // t=0. Only fetched numbers ghost, in their role silhouette.
     return (
       <OfficeChrome title="Dashboard">
-        <p className="muted">Loading…</p>
+        <span className="sr-only">Loading dashboard…</span>
+        <div className="dash">
+          <div className="dash-main">
+            <div className="card2">
+              <p className="klab">Booked today</p>
+              <p className="kpi-val-lg num g g-num g-breathe" style={{ marginTop: 6 }} aria-hidden="true">
+                Rs {GS.money7}
+              </p>
+              <GSpark />
+              <div className="spark-lab" aria-hidden="true">
+                {DAY_SHORT.map((l, i) => (
+                  <span key={i} className={i === 6 ? "is-now" : undefined}>
+                    {l}
+                  </span>
+                ))}
+              </div>
+              <SkelPipeline />
+            </div>
+            <SkelDayChart labels={DAY_SHORT} />
+          </div>
+          <aside className="dash-rail">
+            <div className="card2">
+              <p className="ptitle-s">Today&apos;s position</p>
+              <div className="g-band" style={{ marginTop: 6 }}>
+                <SkelStatLines labels={["Outstanding", "Invoices open", "Low stock SKUs"]} />
+              </div>
+            </div>
+            <div className="card2">
+              <p className="ptitle-s">On the road</p>
+              <div className="g-band" style={{ marginTop: 6 }}>
+                <SkelStatLines labels={["Booked", "Collected", "To collect"]} bar />
+              </div>
+            </div>
+            <div className="card2 is-fill">
+              <p className="ptitle-s">Awaiting confirmation</p>
+              <div className="stack g-band" style={{ gap: 10, marginTop: 8 }}>
+                {[0, 1, 2].map((i) => (
+                  <div className="rowb" key={i}>
+                    <GPerson />
+                    <GBtn label="888888" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </aside>
+        </div>
       </OfficeChrome>
     );
   }

@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { SideSheet } from "@/components/SideSheet";
 import { useToast } from "@/components/Toast";
+import {
+  busyStart,
+  busyEnd,
+  lockButtonWidth,
+  useBusyLong,
+} from "@/lib/busy";
 import type { CollectPaymentKind, PaymentMode } from "@/lib/enums";
 
 export function PaymentSheet({
@@ -26,6 +32,8 @@ export function PaymentSheet({
   const [amount, setAmount] = useState(String(Math.min(balance, 20000)));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const long = useBusyLong(saving);
 
   const posted = kind === "full" ? balance : Number(amount);
 
@@ -46,6 +54,9 @@ export function PaymentSheet({
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return; // double-submit guard while the hold is pending
+    const t0 = busyStart();
+    lockButtonWidth(btnRef.current);
     setSaving(true);
     setError(null);
     try {
@@ -58,13 +69,16 @@ export function PaymentSheet({
           kind,
         }),
       });
+      await busyEnd(t0);
+      setSaving(false);
       toast(
         `${kindLabel(kind)} of Rs ${posted.toLocaleString("en-PK")} recorded${invoiceCode ? ` · ${invoiceCode}` : ""} balance Rs ${res.invoice.balance.toLocaleString("en-PK")}`,
       );
       onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Payment failed");
+      await busyEnd(t0);
       setSaving(false);
+      setError(err instanceof Error ? err.message : "Payment failed");
     }
   }
 
@@ -146,10 +160,14 @@ export function PaymentSheet({
             Cancel
           </button>
           <button
-            className="btn-primary grow"
+            ref={btnRef}
+            className={`btn-primary grow${saving ? " is-busy" : ""}`}
             disabled={saving || balance <= 0}
+            aria-disabled={saving || undefined}
+            aria-busy={saving || undefined}
           >
-            {saving ? "Recording…" : "Record payment"}
+            {saving && <span className="btn-spin" />}
+            {saving ? (long ? "Still working…" : "Recording…") : "Record payment"}
           </button>
         </div>
       </form>

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Product } from "@/generated/prisma/client";
 import { api } from "@/lib/client";
 import { OfficeChrome } from "@/components/OfficeChrome";
+import { SkelRows } from "@/components/skeletons";
 import { CountUp } from "@/components/CountUp";
 import { StatusPill } from "@/components/badges";
 import { SideSheet } from "@/components/SideSheet";
@@ -252,8 +253,21 @@ export default function StockPage() {
                   <th>Status</th>
                 </tr>
               </thead>
-              <tbody>
-                {filtered.map((p) => {
+              <tbody className={!loaded ? "g-band" : undefined}>
+                {!loaded ? (
+                  <>
+                    <span className="sr-only">Loading stock…</span>
+                    <SkelRows
+                      cols={[
+                        { role: "word" },
+                        { role: "name" },
+                        { role: "figure", r: true },
+                        { role: "status" },
+                      ]}
+                    />
+                  </>
+                ) : (
+                filtered.map((p) => {
                   const st = stockTone(p.stockQty, p.reorderLevel);
                   return (
                     <tr key={p.id}>
@@ -271,10 +285,11 @@ export default function StockPage() {
                       </td>
                     </tr>
                   );
-                })}
+                })
+                )}
               </tbody>
             </table>
-            {filtered.length === 0 && (
+            {loaded && filtered.length === 0 && (
               <p className="tbl-empty">No stock matches this filter.</p>
             )}
           </div>
@@ -346,7 +361,7 @@ export default function StockPage() {
                 </div>
               </div>
             ))}
-            {ledger.length === 0 && (
+            {loaded && ledger.length === 0 && (
               <p className="tbl-empty">No movements yet.</p>
             )}
           </div>
@@ -432,7 +447,7 @@ export default function StockPage() {
                 </div>
               </div>
             ))}
-            {ledger.length === 0 && (
+            {loaded && ledger.length === 0 && (
               <p className="tbl-empty">No movements yet.</p>
             )}
           </div>

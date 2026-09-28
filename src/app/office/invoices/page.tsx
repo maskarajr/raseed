@@ -8,6 +8,7 @@ import { StatusPill } from "@/components/badges";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { PaymentSheet } from "@/components/PaymentSheet";
 import { statusUi } from "@/lib/status";
+import { SkelRows } from "@/components/skeletons";
 
 type InvoiceRow = {
   id: string;
@@ -130,8 +131,24 @@ export default function InvoicesPage() {
                 <th>Status</th>
               </tr>
             </thead>
-            <tbody>
-              {filtered.map((i) => (
+            <tbody className={!loaded ? "g-band" : undefined}>
+              {!loaded ? (
+                <>
+                  <span className="sr-only">Loading invoices…</span>
+                  <SkelRows
+                    cols={[
+                      { role: "codeinv" },
+                      { role: "name" },
+                      { role: "person" },
+                      { role: "date" },
+                      { role: "money", r: true },
+                      { role: "money", r: true },
+                      { role: "status" },
+                    ]}
+                  />
+                </>
+              ) : (
+              filtered.map((i) => (
                 <tr
                   key={i.id}
                   style={{ cursor: "pointer" }}
@@ -157,10 +174,11 @@ export default function InvoicesPage() {
                     <StatusPill status={i.paymentStatus} />
                   </td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
-          {filtered.length === 0 && <p className="tbl-empty">No invoices.</p>}
+          {loaded && filtered.length === 0 && <p className="tbl-empty">No invoices.</p>}
         </div>
       </div>
       {pay && (

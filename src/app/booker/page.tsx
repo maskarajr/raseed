@@ -8,6 +8,7 @@ import { CountUp } from "@/components/CountUp";
 import { StatusPill } from "@/components/badges";
 import { BookerChrome } from "@/components/BookerChrome";
 import { startOfTodayKarachi } from "@/lib/day";
+import { SkelTiles, GLine, GPerson, GPill, GS } from "@/components/skeletons";
 
 type OrderRow = {
   id: string;
@@ -25,11 +26,18 @@ export default function BookerHome() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [name, setName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     api<{ orders: OrderRow[] }>("/api/orders")
-      .then((d) => setOrders(d.orders))
-      .catch((e) => setError(e.message));
+      .then((d) => {
+        setOrders(d.orders);
+        setPhase("ready");
+      })
+      .catch((e) => {
+        setError(e.message);
+        setPhase("error");
+      });
     api<{ user: { name: string } | null }>("/api/auth/me")
       .then((d) => setName(d.user?.name ?? null))
       .catch(() => setName(null));
@@ -87,7 +95,28 @@ export default function BookerHome() {
   return (
     <BookerChrome title={`Salaam, ${first}`}>
       {error && <p className="muted">{error}</p>}
-      {hasRouteToday && (
+      {phase === "loading" && (
+        // §2b: the hero FRAME and its label are chrome — real at t=0. Only
+        // the amount ghosts; the bar sits at 0 (never an Rs 0 ink hero).
+        <div className="phero" aria-busy="true">
+          <span className="sr-only">Loading today's route…</span>
+          <div className="rowb">
+            <p className="phero-lab">Collected today</p>
+            <span className="phero-route">
+              <GLine s={GS.word} />
+            </span>
+          </div>
+          <p className="phero-val num g g-num g-breathe" aria-hidden="true">
+            {GS.money7}
+          </p>
+          {/* §2c rule 3: an empty track reads "0 % collected" — a value. The
+              real track renders with a constant grey 58% fill instead. */}
+          <div className="phero-bar">
+            <span className="g-fill" />
+          </div>
+        </div>
+      )}
+      {phase === "ready" && hasRouteToday && (
         <div className="phero">
           <div className="rowb">
             <p className="phero-lab">Collected today</p>
@@ -107,11 +136,17 @@ export default function BookerHome() {
         </div>
       )}
 
+      {phase === "loading" ? (
+        <div className="pstats">
+          <SkelTiles labels={["Orders", "Stops left", "To collect"]} />
+        </div>
+      ) : (
       <div className="pstats">
         <div className="pstat"><p className="pstat-lab">Orders</p><p className="pstat-val num"><CountUp value={todayOrders.length} /></p></div>
         <div className="pstat"><p className="pstat-lab">Stops left</p><p className="pstat-val num"><CountUp value={stopsLeft} /></p></div>
         <div className="pstat"><p className="pstat-lab">To collect</p><p className="pstat-val num"><CountUp value={toCollect} /></p></div>
       </div>
+      )}
 
       <div className="row" style={{ gap: 10 }}>
         <Link href="/booker/orders/new" className="btn-primary grow" style={{ justifyContent: "center" }}>
@@ -125,7 +160,19 @@ export default function BookerHome() {
           <p className="ptitle-s">Next stops</p>
           <span className="pmeta">Ordered by route</span>
         </div>
-        {nextStops.length === 0 && (
+        {phase === "loading" &&
+          Array.from({ length: 3 }, (_, i) => (
+            <div className="pstop" key={i}>
+              <span className="pstop-n num g g-num" aria-hidden="true">
+                88
+              </span>
+              <span className="grow">
+                <GPerson />
+              </span>
+              <GPill tone="ok" />
+            </div>
+          ))}
+        {phase === "ready" && nextStops.length === 0 && (
           <p className="tbl-empty">
             {hasRouteToday ? "Every stop is collected." : "No route assigned for today."}
           </p>

@@ -8,9 +8,16 @@ import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { BookerChrome } from "@/components/BookerChrome";
 import { PaymentSheet } from "@/components/PaymentSheet";
+import { SkelDetail } from "@/components/skeletons";
 import { Icon } from "@/components/Icon";
 import { orderLabel } from "@/lib/orderLabel";
 import { methodLabel } from "@/lib/status";
+import {
+  busyStart,
+  busyEnd,
+  lockButtonWidth,
+  useBusyLong,
+} from "@/lib/busy";
 
 /**
  * Figmi spec C (handoff-v3/booker-order-detail.md) + Privy seq211 amendments.
@@ -64,6 +71,7 @@ export default function BookerOrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [discardArmed, setDiscardArmed] = useState(false);
+  const [busyPath, setBusyPath] = useState<string | null>(null);
   const [collectOpen, setCollectOpen] = useState(false);
 
   const load = useCallback(() => {
@@ -76,8 +84,11 @@ export default function BookerOrderDetailPage() {
     load();
   }, [load]);
 
-  async function act(path: string, body?: unknown) {
+  async function act(path: string, body?: unknown, el?: HTMLElement) {
+    const t0 = busyStart();
+    lockButtonWidth(el ?? null);
     setBusy(true);
+    setBusyPath(path);
     setError(null);
     try {
       await api(path, {
@@ -88,8 +99,12 @@ export default function BookerOrderDetailPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Action failed");
     }
+    await busyEnd(t0);
     setBusy(false);
+    setBusyPath(null);
   }
+  const isB = (p: string) => busy && busyPath === p;
+  const long = useBusyLong(busy);
 
   if (error && !order) {
     return (
@@ -101,7 +116,7 @@ export default function BookerOrderDetailPage() {
   if (!order) {
     return (
       <BookerChrome title="Order" backHref="/booker/orders">
-        <p className="muted">Loading…</p>
+        <SkelDetail noun="order" />
       </BookerChrome>
     );
   }
@@ -244,12 +259,21 @@ export default function BookerOrderDetailPage() {
         <div className="stack" style={{ gap: 10 }}>
           <button
             type="button"
-            className="btn-primary btn-block"
+            className={`btn-primary btn-block${isB(`/api/orders/${order.id}/submit`) ? " is-busy" : ""}`}
             style={{ justifyContent: "center" }}
             disabled={busy}
-            onClick={() => act(`/api/orders/${order.id}/submit`)}
+            aria-disabled={busy || undefined}
+            aria-busy={isB(`/api/orders/${order.id}/submit`) || undefined}
+            onClick={(e) =>
+              act(`/api/orders/${order.id}/submit`, undefined, e.currentTarget)
+            }
           >
-            {busy ? "Submitting…" : "Submit"}
+            {isB(`/api/orders/${order.id}/submit`) && <span className="btn-spin" />}
+            {isB(`/api/orders/${order.id}/submit`)
+              ? long
+                ? "Still working…"
+                : "Submitting…"
+              : "Submit"}
           </button>
           <div className="row" style={{ gap: 10 }}>
             <Link
@@ -261,19 +285,28 @@ export default function BookerOrderDetailPage() {
             </Link>
             <button
               type="button"
-              className="btn-sec grow"
+              className={`btn-sec grow${isB(`/api/orders/${order.id}/cancel`) ? " is-busy" : ""}`}
               style={{ justifyContent: "center", color: "var(--bad-fg)" }}
               disabled={busy}
-              onClick={() => {
+              aria-disabled={busy || undefined}
+              aria-busy={isB(`/api/orders/${order.id}/cancel`) || undefined}
+              onClick={(e) => {
                 if (!discardArmed) {
                   setDiscardArmed(true);
                   return;
                 }
-                act(`/api/orders/${order.id}/cancel`);
+                act(`/api/orders/${order.id}/cancel`, undefined, e.currentTarget);
               }}
               onBlur={() => setDiscardArmed(false)}
             >
-              {discardArmed ? "Confirm discard?" : "Discard"}
+              {isB(`/api/orders/${order.id}/cancel`) && <span className="btn-spin" />}
+              {isB(`/api/orders/${order.id}/cancel`)
+                ? long
+                  ? "Still working…"
+                  : "Discarding…"
+                : discardArmed
+                  ? "Confirm discard?"
+                  : "Discard"}
             </button>
           </div>
         </div>

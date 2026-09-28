@@ -8,6 +8,12 @@ import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
 import { BookerChrome } from "@/components/BookerChrome";
 import { LinesStep, type CartLine } from "@/components/wizard/LinesStep";
+import {
+  busyStart,
+  busyEnd,
+  lockButtonWidth,
+  useBusyLong,
+} from "@/lib/busy";
 
 type DraftDetail = {
   id: string;
@@ -47,6 +53,7 @@ export default function EditDraftPage() {
   const [notes, setNotes] = useState("");
   const [advance, setAdvance] = useState(0);
   const [saving, setSaving] = useState(false);
+  const long = useBusyLong(saving);
 
   useEffect(() => {
     api<{ order: DraftDetail }>(`/api/orders/${id}`)
@@ -67,7 +74,10 @@ export default function EditDraftPage() {
   );
   const clampedAdvance = Math.max(0, Math.min(Math.floor(advance) || 0, subtotal));
 
-  async function save() {
+  async function save(el?: HTMLElement) {
+    if (saving) return;
+    const t0 = busyStart();
+    lockButtonWidth(el ?? null);
     setError(null);
     setSaving(true);
     try {
@@ -83,8 +93,10 @@ export default function EditDraftPage() {
           advance: clampedAdvance,
         }),
       });
+      await busyEnd(t0);
       router.push(`/booker/orders/${id}`);
     } catch (e) {
+      await busyEnd(t0);
       setError(e instanceof Error ? e.message : "Save failed");
       setSaving(false);
     }
@@ -183,11 +195,14 @@ export default function EditDraftPage() {
             Cancel
           </Link>
           <button
-            className="btn-primary grow"
+            className={`btn-primary grow${saving ? " is-busy" : ""}`}
             disabled={saving || cart.length === 0}
-            onClick={save}
+            aria-disabled={saving || undefined}
+            aria-busy={saving || undefined}
+            onClick={(e) => save(e.currentTarget)}
           >
-            {saving ? "Saving…" : "Save changes"}
+            {saving && <span className="btn-spin" />}
+            {saving ? (long ? "Still working…" : "Saving…") : "Save changes"}
           </button>
         </div>
       </div>
