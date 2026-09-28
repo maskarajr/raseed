@@ -235,18 +235,18 @@ export default function OrderDetailPage() {
                   header pill; amounts live in the invoice rows/buttons. */}
               <dt>Payment</dt>
               <dd>
-                {order.invoice ? (
-                  (() => {
-                    const m = methodLabel(
-                      order.advance ?? 0,
-                      order.subtotal,
-                      order.invoice!.balance,
-                    );
-                    return <StatusPill label={m.label} tone={m.tone} />;
-                  })()
-                ) : (
-                  "Cash on delivery"
-                )}
+                {(() => {
+                  // No invoice => nothing collected yet; the whole subtotal is
+                  // still due. Prepaid drafts/confirmed orders must not read
+                  // bare 'Cash on delivery' (Privy seq276 nitfix) — same
+                  // methodLabel decides every case.
+                  const m = methodLabel(
+                    order.advance ?? 0,
+                    order.subtotal,
+                    order.invoice ? order.invoice.balance : order.subtotal,
+                  );
+                  return <StatusPill label={m.label} tone={m.tone} />;
+                })()}
               </dd>
             </div>
           </dl>
