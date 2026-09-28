@@ -2,16 +2,19 @@ export type PillTone = "ok" | "info" | "warn" | "bad" | "neu";
 
 type StatusUi = { label: string; tone: PillTone };
 
-/** DB / domain status → locked StatusPill copy + tone. */
+/** DB / domain status → locked StatusPill copy + tone.
+ * Office order surfaces render this map 1:1 with the persisted enum (R4:
+ * one axis per surface). 'Settled' is the office terminal word — if the
+ * owner flips it to 'Collected', change ONLY this constant. The money-axis
+ * words (To collect/Collected/Scheduled) live in orderLabel.ts, booker side. */
 const BY_KEY: Record<string, StatusUi> = {
   draft: { label: "Draft", tone: "neu" },
   submitted: { label: "Awaiting confirm", tone: "warn" },
   confirmed: { label: "Confirmed", tone: "ok" },
   invoiced: { label: "Invoiced", tone: "info" },
-  scheduled: { label: "Scheduled", tone: "info" },
-  out_for_delivery: { label: "Not shipped", tone: "neu" },
+  out_for_delivery: { label: "Out for delivery", tone: "info" },
   delivered: { label: "Delivered", tone: "ok" },
-  settled: { label: "Collected", tone: "ok" },
+  settled: { label: "Settled", tone: "ok" },
   cancelled: { label: "Cancelled", tone: "bad" },
   unpaid: { label: "To collect", tone: "warn" },
   partial: { label: "To collect", tone: "warn" },

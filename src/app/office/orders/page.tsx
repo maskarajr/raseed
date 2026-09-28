@@ -8,7 +8,7 @@ import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { startOfTodayKarachi, endOfTodayKarachi } from "@/lib/day";
-import { orderLabel } from "@/lib/orderLabel";
+import { statusUi } from "@/lib/status";
 import { SideSheet } from "@/components/SideSheet";
 
 type OrderRow = {
@@ -29,6 +29,10 @@ const CHIPS: { label: string; term: string }[] = [
   { label: "Awaiting confirm", term: "awaiting" },
   { label: "Draft", term: "draft" },
 ];
+
+// R4 (Privy seq258): on the office side 'Scheduled' is ONLY a filter band —
+// the persisted statuses it collects, never a pill word.
+const SCHEDULED_BAND = ["confirmed", "out_for_delivery"];
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -58,8 +62,14 @@ export default function OrdersPage() {
     const q = search.trim().toLowerCase();
     return orders.filter((o) => {
       const hay =
-        `${o.code} ${o.customer.name} ${o.booker.name} ${o.status} ${orderLabel(o).label}`.toLowerCase();
-      if (term && !hay.includes(term)) return false;
+        `${o.code} ${o.customer.name} ${o.booker.name} ${o.status} ${statusUi(o.status).label}`.toLowerCase();
+      if (term === "scheduled") {
+        if (!SCHEDULED_BAND.includes(o.status)) return false;
+      } else if (term === "awaiting") {
+        if (o.status !== "submitted") return false;
+      } else if (term === "draft") {
+        if (o.status !== "draft") return false;
+      } else if (term && !hay.includes(term)) return false;
       if (booker && o.booker.name !== booker) return false;
       if (q && !hay.includes(q)) return false;
       return true;
@@ -137,10 +147,7 @@ export default function OrdersPage() {
                     <Money value={o.subtotal} />
                   </td>
                   <td>
-                    <StatusPill
-                      label={orderLabel(o).label}
-                      tone={orderLabel(o).tone}
-                    />
+                    <StatusPill status={o.status} />
                   </td>
                 </tr>
               ))}
