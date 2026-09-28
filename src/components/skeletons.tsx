@@ -237,6 +237,68 @@ export function SkelPipeline({ steps = 4 }: { steps?: number }) {
   );
 }
 
+/** rev-3 (Privy seq337): 'Collected vs to collect' is a 7-day stacked bar
+ *  chart once data lands — so the ghost IS the chart: real .chart/.col/
+ *  .col-bar/.col-due/.col-got chain, two-tone via the ghost fills, one peak,
+ *  real date ticks + legend (chrome), % block top-right, money sub-line in
+ *  the header. One slow breathe over the plot; no new keyframes. */
+export function SkelDayChart({ labels }: { labels: string[] }) {
+  const cols = [
+    { h: 46, got: 62 },
+    { h: 62, got: 48 },
+    { h: 38, got: 71 },
+    { h: 74, got: 55 },
+    { h: 55, got: 66 },
+    { h: 92, got: 80 }, // peak like real data
+    { h: 70, got: 58 },
+  ];
+  return (
+    <div className="card2 is-fill">
+      <div className="card2-h">
+        <div>
+          <h4 className="h3s">Collected vs to collect</h4>
+          <p className="meta" style={{ marginTop: 2 }}>
+            Last 7 days · Rs&nbsp;
+            <GNum s={GS.money} /> of Rs&nbsp;
+            <GNum s={GS.money} /> booked
+          </p>
+        </div>
+        <span className="num" style={{ fontSize: 14, fontWeight: 600 }}>
+          <GNum s={GS.figure} cls="g-breathe" />%
+        </span>
+      </div>
+      <div className="chart g-breathe" aria-hidden="true">
+        {cols.map((c, i) => (
+          <div className="col" key={i}>
+            <div
+              className="col-bar g-col"
+              style={{ height: `${c.h}%`, ["--i" as string]: i }}
+            >
+              <div className="col-due" style={{ height: `${100 - c.got}%` }} />
+              <div className="col-got" style={{ height: `${c.got}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="spark-lab" aria-hidden="true">
+        {labels.map((l, i) => (
+          <span key={i} className={i === labels.length - 1 ? "is-now" : undefined}>
+            {l}
+          </span>
+        ))}
+      </div>
+      <div className="legend2">
+        <span>
+          <i style={{ background: "var(--fg)" }}></i>Collected
+        </span>
+        <span>
+          <i style={{ background: "var(--warm)" }}></i>To collect
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /** §2b — detail (order / invoice, both surfaces): real section titles, real
  * dl dt labels, real thead, hollow timeline rings; ghost only the values. */
 export function SkelDetail({ noun }: { noun: string }) {

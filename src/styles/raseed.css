@@ -437,6 +437,10 @@ html{scroll-behavior:smooth}
   transform:translateX(-100%);animation:od-sheen 1.5s var(--ease-io) infinite;pointer-events:none}
 /* single values breathe, slow and shallow */
 .g-breathe{animation:od-breathe 1.6s var(--ease-io) infinite}
+/* rev-3: chart-shaped ghost for the 7-day card — real .chart chain, neutral
+   two-tone fills so the silhouette says "stacked bars", not "stat rows". */
+.col-bar.g-col .col-got{background:var(--ghost)}
+.col-bar.g-col .col-due{background:var(--ghost-line)}
 
 /* --- Spec D rev 2 §5: in-flight button — UNMISSABLE, zero size change.
    busy must not look dead: full ink, progress cursor, guarded clicks. --- */

@@ -13,6 +13,7 @@ import {
   GSpark,
   SkelPipeline,
   SkelStatLines,
+  SkelDayChart,
   GPerson,
   GBtn,
   GS,
@@ -149,13 +150,7 @@ export default function OfficeDashboard() {
               </div>
               <SkelPipeline />
             </div>
-            <div className="card2 is-fill">
-              <p className="ptitle-s">Collected vs to collect</p>
-              <p className="meta" style={{ marginTop: 4 }}>Last 7 days</p>
-              <div className="g-band" style={{ marginTop: 10 }}>
-                <SkelStatLines labels={["Collected", "To collect"]} />
-              </div>
-            </div>
+            <SkelDayChart labels={DAY_SHORT} />
           </div>
           <aside className="dash-rail">
             <div className="card2">
