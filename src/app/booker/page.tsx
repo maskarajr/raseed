@@ -134,32 +134,40 @@ export default function BookerHome() {
             <p className="phero-lab">Collected today</p>
             <span className="phero-route">{routeLabel}</span>
           </div>
-          {/* R3 (Figmi seq253): cash-side scope — today's receipts can include
-              collections on earlier invoices, so it needn't match booked. */}
-          <p className="phero-meta" style={{ marginTop: 2 }}>
-            cash received today · incl. earlier invoices
-          </p>
-          <p className="phero-val num"><CountUp value={collectedAmt} money /></p>
+          {/* Figmi seq395 adjust 3: the 'cash received today · incl. earlier
+              invoices' meta dropped — collectedAmt only sums today-created
+              orders (no paidAt in schema), so it asserted an unverifiable
+              scope. Restore when paidAt lands. */}
+          {collectedAmt === 0 ? (
+            // no ink zero (§8b gate 16); copy split by provability
+            <p className="phero-val is-quiet">
+              {todayBooked > 0 ? "Nothing collected yet" : "No bookings today"}
+            </p>
+          ) : (
+            <p className="phero-val num"><CountUp value={collectedAmt} money /></p>
+          )}
           <div className="phero-bar"><span style={{ width: `${pct}%` }}></span></div>
-          <div className="rowb" style={{ marginTop: 8 }}>
-            <span className="phero-meta">{pct}% of <Money value={todayBooked} /> booked</span>
-            <span className="phero-meta"><Money value={Math.max(0, todayBooked - collectedAmt)} /> to go</span>
-          </div>
+          {todayBooked > 0 && (
+            <div className="rowb" style={{ marginTop: 8 }}>
+              <span className="phero-meta">{pct}% of <Money value={todayBooked} /> booked</span>
+              <span className="phero-meta"><Money value={Math.max(0, todayBooked - collectedAmt)} /> to go</span>
+            </div>
+          )}
         </div>
       )}
       {phase === "ready" && !hasRouteToday && (
-        // Quiet real state (Privy seq384): frame stays mounted exactly as the
-        // ghost promised. Rs 0 is the truth, not a ghost lie; no booked/%
-        // claim; chip names the open route so the day still reads as work.
+        // §2c rule 5 (Figmi-blessed): frame stays mounted — the predicate picks
+        // the FORM, never deletes it. Quiet 22px copy, never an ink zero, never
+        // a grey preview (§8b gates 13/16). Carry-over day keeps the real track
+        // EMPTY (a true 0% is an empty track); off day drops the bar row —
+        // nothing to measure.
         <div className="phero">
           <div className="rowb">
             <p className="phero-lab">Collected today</p>
             <span className="phero-route">{openRouteLabel}</span>
           </div>
-          <p className="phero-val num"><Money value={0} /></p>
-          <div className="phero-bar">
-            <span className="g-fill" />
-          </div>
+          <p className="phero-val is-quiet">No bookings today</p>
+          {stopsLeft > 0 && <div className="phero-bar" />}
         </div>
       )}
 
