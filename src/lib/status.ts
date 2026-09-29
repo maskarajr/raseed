@@ -54,15 +54,21 @@ export function stockTone(qty: number, reorder: number | null): StatusUi {
  * seq268). ONE derived helper feeding order-detail Payment chip, invoice
  * detail, invoice print and booker detail; no surface keeps an inline
  * ternary. Method words only — amounts are shown by the surrounding rows,
- * never restated here. (Subtotal is part of the locked signature; the closed
- * matrix doesn't need it: partial-advance-then-collected hits
- * 'Paid — advance' via advance > 0 && balance == 0.)
+ * never restated here.
+ * F3 (Figmi seq486/seq497, ratified; F5 clamp per Breevie seq490): the
+ * signature reads the INVOICE table — (advance, total, amountPaid) — never
+ * order figures, so no caller mixes tables. Balance is derived and clamped
+ * here (max(0, total − amountPaid)); the surplus is never signed into it.
+ * (Subtotal was already ignored by design; the locked matrix doesn't need
+ * it: partial-advance-then-collected hits 'Paid — advance' via advance > 0
+ * && balance == 0.)
  */
 export function methodLabel(
   advance: number,
-  _subtotal: number,
-  balance: number,
+  total: number,
+  amountPaid: number,
 ): StatusUi {
+  const balance = Math.max(0, total - amountPaid);
   if (balance <= 0)
     return advance > 0
       ? { label: "Paid — advance", tone: "ok" }

@@ -51,6 +51,10 @@ type OrderDetail = {
     code: string;
     paymentStatus: string;
     balance: number;
+    // F3: the GET route already ships the full invoice row (invoice: true);
+    // declaring them here lets the Payment chip read the invoice table.
+    total: number;
+    amountPaid: number;
   } | null;
 };
 
@@ -295,11 +299,13 @@ export default function OrderDetailPage() {
                   // still due. Prepaid drafts/confirmed orders must not read
                   // bare 'Cash on delivery' (Privy seq276 nitfix) — same
                   // methodLabel decides every case.
-                  const m = methodLabel(
-                    order.advance ?? 0,
-                    order.subtotal,
-                    order.invoice ? order.invoice.balance : order.subtotal,
-                  );
+                  const m = order.invoice
+                    ? methodLabel(
+                        order.advance ?? 0,
+                        order.invoice.total,
+                        order.invoice.amountPaid,
+                      )
+                    : methodLabel(order.advance ?? 0, order.subtotal, 0);
                   return <StatusPill label={m.label} tone={m.tone} />;
                 })()}
               </dd>

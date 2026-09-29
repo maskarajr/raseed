@@ -19,10 +19,7 @@ export const GET = requireRole<Params>(
       customer: true,
       booker: { select: { id: true, name: true } },
       items: { include: { product: { select: { sku: true, name: true, unit: true, stockQty: true, reorderLevel: true } } } },
-      // Spec E §9 detail-card fix (Privy seq476): the booker card must render
-      // real returns when they exist, so paid > total stays legible instead of
-      // silently clamping. Additive select — amounts only, no PII.
-      invoice: { include: { returns: { select: { qty: true, amount: true } } } },
+      invoice: true,
     },
   });
   if (!order || (session.role === "booker" && order.bookerId !== session.id)) {

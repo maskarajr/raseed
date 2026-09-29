@@ -179,8 +179,8 @@ export default function InvoiceDetailPage() {
               <dd>
                 {methodLabel(
                   inv.order.advance ?? 0,
-                  inv.order.subtotal,
-                  inv.balance,
+                  inv.total,
+                  inv.amountPaid,
                 ).label}
               </dd>
             </div>

@@ -229,7 +229,7 @@ export default function BookerOrderDetailPage() {
               {collectedPct}% of <Money value={inv.total} /> in
             </span>
             <span className="phero-meta">
-              {methodLabel(order.advance, order.subtotal, balance).label}
+              {methodLabel(order.advance, inv.total, paid).label}
             </span>
           </div>
         </div>
