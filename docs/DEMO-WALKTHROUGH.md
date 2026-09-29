@@ -19,7 +19,7 @@ Pick the card, then **Sign in**.
 
 ## Recorded pass
 
-The clean recording follows this script. The order in that pass is **ORD-00035** → **INV-00025** (Al-Madina Kiryana Store, Sugar 1kg × 1, Rs 150, full cash). Catalog example: **DEMO-CARD-31** Demo Cardamom 50g, opening stock 5, reorder 20, then stock **+30** purchase and **−10** adjustment (on hand 25).
+The recording that keeps the whole window on screen is the one to use. That pass is **ORD-00037** → **INV-00027** (Al-Madina Kiryana Store, Sugar 1kg × 1, Rs 150, full cash). Catalog example: **DEMO-CARD-33** Demo Cardamom 50g, opening stock 5, reorder 20, then stock **+30** purchase and **−10** adjustment (on hand 25).
 
 ## 1. Office
 
@@ -45,7 +45,7 @@ Booker → **Orders** → **Collect** → **Full settlement** → **Cash** → *
 
 Office → **Products** → **New product**.
 
-- SKU `DEMO-CARD-31` (use a new SKU if that one exists)
+- SKU `DEMO-CARD-32` (use a new SKU if that one exists)
 - Name `Demo Cardamom 50g`
 - Unit `pack`, rate `180`, category `Grocery`
 - Opening stock `5`, reorder level `20`
