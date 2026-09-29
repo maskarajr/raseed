@@ -52,7 +52,7 @@ type Detail = {
     balance: number;
     paymentStatus: string;
     deliveredAt: string | null;
-    returns?: { amount: number }[];
+    returns?: { qty: number; amount: number }[];
   } | null;
 };
 
@@ -268,11 +268,11 @@ export default function BookerOrderDetailPage() {
           <span className="prow-v money"><Money value={order.subtotal} /></span>
         </div>
         {returnsTotal > 0 && (
-          // Privy seq489 (gate 29, corrected): the Return entity is real and
-          // INV-00020 HAS a row — the card tells the story with the record
-          // that exists, mirroring office/invoices/[id]:298-305 'Returns −Rs X'.
-          // No return record ⇒ no row; nothing is invented ('Overpaid' was
-          // rejected — no refund mechanic exists to make it a fact).
+          // Privy seq489 + Figmi seq493 (gate 29, corrected): the Return
+          // entity is real and INV-00020 HAS a row — the card tells the story
+          // with the record that exists, mirroring office/invoices/[id]
+          // 'Subtotal / Returns −X / Invoice total'. No return record ⇒ no
+          // row; the delta is never inferred into a goods claim.
           <div className="prow">
             <span className="prow-l">Returns</span>
             <span className="prow-v num">
