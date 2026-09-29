@@ -4,11 +4,13 @@ type StatusUi = { label: string; tone: PillTone };
 
 /** DB / domain status → locked StatusPill copy + tone.
  * Office order surfaces render this map 1:1 with the persisted enum (R4:
- * one axis per surface). 'Settled' is the office terminal word — if the
- * owner flips it to 'Collected', change ONLY this constant. The money-axis
- * words (To collect/Collected) live in orderLabel.ts, booker side.
+ * one axis per surface). OWNER RULING (seq514/520, vocabulary.md v1): the
+ * terminal pill word is 'Collected' — 'Settled' retired, this constant was
+ * the single producer and is the single edit; the enum value and the verb
+ * 'settle' (auto-settle, no settle button) stay, they are not pill words.
+ * The booker-side money words (To collect/Collected) live in orderLabel.ts.
  * Spec E §9 gate 24 (owner REMOVE ratified, seq474): green is reserved for
- * money-in (Paid/Settled) and the physical fact Delivered — 'Confirmed' is
+ * money-in (Paid/Collected) and the physical fact Delivered — 'Confirmed' is
  * s-info, same "office has it" band as Invoiced/Out for delivery. */
 const BY_KEY: Record<string, StatusUi> = {
   draft: { label: "Draft", tone: "neu" },
@@ -17,7 +19,7 @@ const BY_KEY: Record<string, StatusUi> = {
   invoiced: { label: "Invoiced", tone: "info" },
   out_for_delivery: { label: "Out for delivery", tone: "info" },
   delivered: { label: "Delivered", tone: "ok" },
-  settled: { label: "Settled", tone: "ok" },
+  settled: { label: "Collected", tone: "ok" },
   cancelled: { label: "Cancelled", tone: "bad" },
   unpaid: { label: "To collect", tone: "warn" },
   partial: { label: "To collect", tone: "warn" },
