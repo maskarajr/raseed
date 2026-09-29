@@ -8,6 +8,7 @@ import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { initials } from "@/lib/person";
 import { startOfTodayKarachi } from "@/lib/day";
+import { bookedSum, collectedSum } from "@/lib/money";
 import { PwaInstallCta } from "@/components/PwaInstallCta";
 import { GPerson, GNum, GS } from "@/components/skeletons";
 
@@ -17,6 +18,10 @@ type OrderRow = {
   subtotal: number;
   status: string;
   createdAt: string;
+  // G3 (Figmi seq512): the money shape the helpers need — /api/orders already
+  // sends invoice.amountPaid (#17 select); declaring it here lets the Today
+  // card consume lib/money.ts instead of bespoke math.
+  invoice: { amountPaid?: number | null } | null;
 };
 
 export default function BookerAccountPage() {
@@ -41,10 +46,16 @@ export default function BookerAccountPage() {
   const today = orders.filter(
     (o) => new Date(o.createdAt).getTime() >= todayStart,
   );
-  const booked = today.reduce((s, o) => s + o.subtotal, 0);
-  const collected = orders
-    .filter((o) => o.status === "settled")
-    .reduce((s, o) => s + o.subtotal, 0);
+  // G3 (Figmi seq512, tracked by Privy seq515): this card used three rules at
+  // once — drafts counted as rupees, lifetime settled-subtotal cash over
+  // today's booked volume, and a load-bearing min(100) clamp that pegged the
+  // bar to 100% on most days. Now ONE population: both sides come from
+  // lib/money.ts over today's orders. The count tile keeps drafts (a draft is
+  // work), the money never does; collectedSum caps each row at its subtotal,
+  // so collected <= booked by construction and the clamp below is a guard
+  // that cannot fire (gate 30).
+  const booked = bookedSum(today);
+  const collected = collectedSum(today);
   const pct =
     booked > 0 ? Math.min(100, Math.round((collected / booked) * 100)) : 0;
 
