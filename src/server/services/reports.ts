@@ -164,6 +164,17 @@ export async function stockReport() {
 }
 
 // Booker leaderboard: order count + sales value (invoiced orders).
+// CREDITABLE = invoiced-or-later and NOT cancelled. salesValue and collected
+// MUST be summed over the SAME set: the office may cancel an invoiced order
+// (ORDER_TRANSITIONS allows it), and a status-blind `collected` kept that
+// invoice's paid cash while `sales` dropped the order — the collected/sales
+// bar then shows credit for a cancelled deal (PR #17 money-truth class).
+const CREDITABLE_STATUSES = [
+  "invoiced",
+  "out_for_delivery",
+  "delivered",
+  "settled",
+];
 export async function bookerLeaderboard() {
   const bookers = await prisma.user.findMany({
     where: { role: "booker" },
@@ -177,17 +188,15 @@ export async function bookerLeaderboard() {
         select: { subtotal: true, status: true, invoice: { select: { amountPaid: true } } },
       });
       const orderCount = orders.length;
-      const salesValue = orders
-        .filter((o) =>
-          ["invoiced", "out_for_delivery", "delivered", "settled"].includes(
-            o.status,
-          ),
-        )
-        .reduce((s, o) => s + o.subtotal, 0);
-      const collected = orders.reduce(
+      const creditable = orders.filter((o) =>
+        CREDITABLE_STATUSES.includes(o.status),
+      );
+      const salesValue = creditable.reduce((s, o) => s + o.subtotal, 0);
+      const collected = creditable.reduce(
         (s, o) => s + (o.invoice?.amountPaid ?? 0),
         0,
       );
+
       const returns = await prisma.return.aggregate({
         where: { invoice: { order: { bookerId: b.id } } },
         _sum: { amount: true },

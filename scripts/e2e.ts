@@ -897,6 +897,70 @@ async function main() {
     );
   }
   // ---------------------------------------------------------------
+  section("14. Office leaderboard: cancelled orders leave BOTH money columns");
+  {
+    // Regression (PR #17 class, server side): collected summed
+    // invoice.amountPaid over ALL statuses, so cash on an order the office
+    // later cancelled kept crediting the booker while salesValue dropped it.
+    // Both columns must move together.
+    type LbRow = { salesValue: number; collected: number };
+    const lb = async (): Promise<LbRow> => {
+      const r = await office.req<{
+        bookers: { email: string; salesValue: number; collected: number }[];
+      }>("GET", "/api/reports");
+      const row = r.data.bookers.find(
+        (b) => b.email === "bilal@raseed.local",
+      );
+      return row ?? { salesValue: -1, collected: -1 };
+    };
+    const base = await lb();
+    const o = await booker.req<{ order: { id: string } }>(
+      "POST",
+      "/api/orders",
+      {
+        customerId,
+        submit: true,
+        items: [{ productId: prodA, qty: 2, unitPrice: priceA }],
+      },
+    );
+    const oid = o.data.order.id;
+    await office.req("POST", `/api/orders/${oid}/confirm`);
+    const inv = await office.req<{ invoice: { id: string } }>(
+      "POST",
+      `/api/orders/${oid}/invoice`,
+    );
+    // Partial payment (150 of 200) so the order stays cancellable ('invoiced').
+    await office.req("POST", "/api/payments", {
+      invoiceId: inv.data.invoice.id,
+      amount: 150,
+      mode: "cash",
+      kind: "part",
+    });
+    const paid = await lb();
+    check(
+      paid.salesValue === base.salesValue + 2 * priceA,
+      `invoiced order adds Rs ${2 * priceA} to sales (got +${paid.salesValue - base.salesValue})`,
+    );
+    check(
+      paid.collected === base.collected + 150,
+      `partial payment adds Rs 150 to collected (got +${paid.collected - base.collected})`,
+    );
+    const cx = await office.req("POST", `/api/orders/${oid}/cancel`);
+    check(
+      cx.status === 200 || cx.status === 201,
+      `office cancels the paid order (got ${cx.status})`,
+    );
+    const after = await lb();
+    check(
+      after.collected === base.collected,
+      `cancelled order's Rs 150 no longer counts as collected (delta ${after.collected - base.collected})`,
+    );
+    check(
+      after.salesValue === base.salesValue,
+      `cancelled order excluded from sales too (delta ${after.salesValue - base.salesValue})`,
+    );
+  }
+  // ---------------------------------------------------------------
   console.log(`\n================ SUMMARY ================`);
   console.log(`  PASSED: ${pass}`);
   console.log(`  FAILED: ${fail}`);
