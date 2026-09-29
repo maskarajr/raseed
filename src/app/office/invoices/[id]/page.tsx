@@ -203,14 +203,20 @@ export default function InvoiceDetailPage() {
                   <Money value={inv.balance} />
                 </dd>
               </div>
-            ) : (
+            ) : inv.amountPaid > 0 ? (
+              // G2 (Figmi seq512): app money rows say 'Collected' + the
+              // amount — no sentence in an amount slot, no 'Outstanding'
+              // (that word is the cross-invoice sum on office home and the
+              // per-customer column; §0.4 direction). The receipt/print
+              // keeps 'Paid in full': payer-side document convention,
+              // perspective not drift.
               <div>
-                <dt>Outstanding</dt>
-                <dd className="num" style={{ color: "var(--ok-fg)" }}>
-                  Nothing owed
+                <dt>Collected</dt>
+                <dd className="num">
+                  <Money value={inv.amountPaid} />
                 </dd>
               </div>
-            )}
+            ) : null}
           </dl>
         </div>
         <div className="card2" style={{ width: 340 }}>

@@ -25,7 +25,7 @@ tone: 'ok' | 'info' | 'warn' | 'bad' | 'neu'
 
 | Tone | fg | bg | Contrast | Labels |
 |---|---|---|---|---|
-| `ok` | `--ok-fg` | `--ok-bg` | 8.61 | Paid · Confirmed · In stock · Collected · Delivered · Up to date · On track · Active |
+| `ok` | `--ok-fg` | `--ok-bg` | 8.61 | Paid · In stock · Collected · Delivered · Up to date · On track · Active |
 | `info` | `--info-fg` | `--info-bg` | 8.15 | Confirmed |
 | `warn` | `--warn-fg` | `--warn-bg` | 7.60 | To collect · Awaiting confirm · Low |
 | `bad` | `--bad-fg` | `--bad-bg` | 8.35 | Cancelled · Out |

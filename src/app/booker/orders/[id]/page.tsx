@@ -132,8 +132,14 @@ export default function BookerOrderDetailPage() {
   // stays legible instead of clamping into mystery.
   const paid = inv?.amountPaid ?? 0;
   const returnsTotal = (inv?.returns ?? []).reduce((s, r) => s + r.amount, 0);
+  // G1 (Figmi seq512): invoice.total is NET of returns, so raw paid can exceed
+  // it on any invoice that took cash before a return. The bar counts the part
+  // of the cash the invoice can still claim (counted = min(paid, total)); the
+  // hero keeps raw paid. The Math.min(100,…) is now a guard that cannot fire
+  // (reworded gate 30) — the cap lives on the numerator, never on the quotient.
+  const counted = Math.min(paid, inv?.total ?? 0);
   const collectedPct =
-    inv && inv.total > 0 ? Math.min(100, Math.floor((paid / inv.total) * 100)) : 0;
+    inv && inv.total > 0 ? Math.min(100, Math.floor((counted / inv.total) * 100)) : 0;
   const isDraft = order.status === "draft";
   const isSubmitted = order.status === "submitted";
   const isCancelled = order.status === "cancelled";
