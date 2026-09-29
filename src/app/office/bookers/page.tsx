@@ -5,6 +5,7 @@ import { api } from "@/lib/client";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { SkelRows } from "@/components/skeletons";
 import { StatusPill } from "@/components/badges";
+import { Money } from "@/components/Money";
 import { SideSheet } from "@/components/SideSheet";
 
 type Booker = {
@@ -133,8 +134,10 @@ export default function BookersPage() {
                   <td className="sku">{b.route ?? "—"}</td>
                   <td className="num">{b.phone ?? "—"}</td>
                   <td className="r num">{b.ordersToday}</td>
-                  <td className="money">{b.valueToday.toLocaleString("en-PK")}</td>
-                  <td className="money">{b.collectedToday.toLocaleString("en-PK")}</td>
+                  {/* G5/gate 33 (owner: Rs 123,450 wins): every rupee on
+                      screen goes through <Money> — one grouping everywhere. */}
+                  <td className="money"><Money value={b.valueToday} /></td>
+                  <td className="money"><Money value={b.collectedToday} /></td>
                   <td>
                     <StatusPill status={b.active ? "active" : "inactive"} />
                   </td>
