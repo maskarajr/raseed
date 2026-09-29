@@ -332,6 +332,46 @@ async function main() {
       "'Return restock' ledger row (reason 'return') linked to the invoice",
     );
 
+    // Gate 32: the booker's own order GET must now expose the returns the
+    // detail card renders — same shape the office invoice endpoint serves.
+    const bookerRead = await booker.req<{
+      order: {
+        invoice: {
+          total: number;
+          returns?: {
+            qty: number;
+            amount: number;
+            product?: { sku?: string; name?: string };
+          }[];
+        } | null;
+      };
+    }>("GET", `/api/orders/${orderId}`);
+    const bRets = bookerRead.data.order?.invoice?.returns;
+    check(
+      bookerRead.status === 200 && Array.isArray(bRets) && bRets.length === 1,
+      `booker order GET carries invoice.returns (status ${bookerRead.status}, ${Array.isArray(bRets) ? bRets.length : "none"} rows)`,
+    );
+    check(
+      !!bRets?.[0] &&
+        bRets[0].qty === 1 &&
+        bRets[0].amount === priceB &&
+        bRets[0].product?.sku === `E2E-B-${stamp}`,
+      `return row readable by booker: 1 x Rs ${priceB}, product labelled (got ${JSON.stringify(bRets?.[0])})`,
+    );
+    // Cross-tenant negative (Privy seq496): another booker must NOT be able to
+    // fetch this order (and thus never sees the returns payload) — the
+    // identical 404, no existence leak, unchanged by the include widening.
+    const sanaG32 = makeClient();
+    await sanaG32.req("POST", "/api/auth/login", {
+      email: "sana@raseed.local",
+      password: "booker123",
+    });
+    const crossG32 = await sanaG32.req("GET", `/api/orders/${orderId}`);
+    check(
+      crossG32.status === 404,
+      `cross-booker fetch of the returns-carrying order returns 404 (got ${crossG32.status})`,
+    );
+
     invoiceTotal = data.invoice.total; // now 500
   }
 

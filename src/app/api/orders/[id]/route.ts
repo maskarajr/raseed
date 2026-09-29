@@ -19,7 +19,19 @@ export const GET = requireRole<Params>(
       customer: true,
       booker: { select: { id: true, name: true } },
       items: { include: { product: { select: { sku: true, name: true, unit: true, stockQty: true, reorderLevel: true } } } },
-      invoice: true,
+      // Gate 32 (Figmi seq493): the booker order-detail card mirrors the office
+      // row set (Subtotal / Returns −X / Invoice total / Paid), so this payload
+      // must carry the SAME returns shape the office invoice endpoint already
+      // serves (api/invoices/[id]) — qty + amount + product identity. Role
+      // scoping is unchanged: the tenant 404 below still gates the whole read.
+      invoice: {
+        include: {
+          returns: {
+            orderBy: { createdAt: "desc" },
+            include: { product: { select: { sku: true, name: true } } },
+          },
+        },
+      },
     },
   });
   if (!order || (session.role === "booker" && order.bookerId !== session.id)) {
