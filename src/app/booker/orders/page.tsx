@@ -9,6 +9,7 @@ import { StatusPill } from "@/components/badges";
 import { BookerChrome } from "@/components/BookerChrome";
 import { PaymentSheet } from "@/components/PaymentSheet";
 import { orderLabel } from "@/lib/orderLabel";
+import { bookedSum, collectedSum, toCollectSum } from "@/lib/money";
 import { SkelCards, SkelTiles } from "@/components/skeletons";
 import { startOfTodayKarachi, endOfTodayKarachi } from "@/lib/day";
 
@@ -23,6 +24,7 @@ type OrderRow = {
     id: string;
     paymentStatus: string;
     balance: number;
+    amountPaid?: number | null;
   } | null;
   _count: { items: number };
 };
@@ -60,12 +62,15 @@ export default function BookerOrdersPage() {
     );
   }).length;
 
-  const booked = orders.reduce((s, o) => s + o.subtotal, 0);
-  const toCollect = orders.reduce(
-    (s, o) => s + (o.invoice && o.invoice.balance > 0 ? o.invoice.balance : 0),
-    0,
-  );
-  const collected = Math.max(0, booked - toCollect);
+  // Money truth (Figmi seq444 / Privy seq447): the old residual formula
+  // `booked - toCollect` counted drafts and unfilled invoices as collected.
+  // Probe on demo DB: draft ORD-00009 (Rs 5,280) plus ~Rs 35k of not-yet-
+  // invoiced open bookings inflated Collected by Rs 40,410. A draft is work,
+  // never a rupee — all three sums now exclude draft/cancelled, and
+  // Collected is real cash on invoices, capped per order at its subtotal.
+  const booked = bookedSum(orders);
+  const toCollect = toCollectSum(orders);
+  const collected = collectedSum(orders);
   const collectedPct =
     booked > 0 ? Math.min(100, Math.round((collected / booked) * 100)) : 0;
 
