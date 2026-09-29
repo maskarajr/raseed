@@ -163,9 +163,22 @@ async function main() {
   section("5. Booker creates + submits order (with soft-stock-warning line)");
   let orderId = "";
   {
+    // Regression guard (demo 500-on-submit): after deletes leave gaps, the
+    // count-based generator re-minted an EXISTING code -> unique violation.
+    // Capture max existing suffix BEFORE creating; the new order's code must
+    // be max+1, never count+1. (Gapped after the R1 wipe; trivially equal on
+    // a contiguous fresh seed — the standalone scripts/test-codegen-gap.ts
+    // forces the gapped shape deterministically.)
+    const ordSuffix = (code: string) => Number(code.slice(4));
+    const before = await office.req<{ orders: { code: string }[] }>(
+      "GET",
+      "/api/orders",
+    );
+    const codesBefore = before.data.orders.map((o) => o.code);
+    const m0 = Math.max(0, ...codesBefore.map(ordSuffix));
     // A: qty 3 (<= stock 8, no warning). B: qty 5 (> stock 2, warning).
     const { status, data } = await booker.req<{
-      order: { id: string; status: string; subtotal: number };
+      order: { id: string; code: string; status: string; subtotal: number };
       warnings: { productId: string; requested: number; available: number }[];
     }>("POST", "/api/orders", {
       customerId,
@@ -176,6 +189,10 @@ async function main() {
       ],
     });
     check(status === 201, `order created (got ${status})`);
+    check(
+      ordSuffix(data.order?.code ?? "") === m0 + 1,
+      `order code ORD-${String(m0 + 1).padStart(5, "0")} = max(suffix)+1, not count+1 (got ${data.order?.code})`,
+    );
     check(data.order.status === "submitted", "order status is 'submitted'");
     check(
       data.order.subtotal === 3 * priceA + 5 * priceB,
