@@ -196,27 +196,21 @@ export default function InvoiceDetailPage() {
             </div>
             {inv.balance > 0 ? (
               // F1 (Figmi seq486, gate 28): the locked word 'To collect' never
-              // sits beside a zero. Received above already carries the cash.
+              // sits beside a zero.
               <div>
                 <dt>To collect</dt>
                 <dd className="num" style={{ color: "var(--warn-fg)" }}>
                   <Money value={inv.balance} />
                 </dd>
               </div>
-            ) : inv.amountPaid > 0 ? (
-              // G2 (Figmi seq512): app money rows say 'Collected' + the
-              // amount — no sentence in an amount slot, no 'Outstanding'
-              // (that word is the cross-invoice sum on office home and the
-              // per-customer column; §0.4 direction). The receipt/print
-              // keeps 'Paid in full': payer-side document convention,
-              // perspective not drift.
-              <div>
-                <dt>Collected</dt>
-                <dd className="num">
-                  <Money value={inv.amountPaid} />
-                </dd>
-              </div>
             ) : null}
+            {/* G6 (Figmi seq526, vocabulary.md §2): Received and Collected
+                never share a card — Received above already carries the one
+                formula (amountPaid). At balance 0 the summary list shows
+                Received only; absence is the ending signal, same pattern as
+                terminal Next: states. The Collected line stays in the
+                payment-history footer (a real total) and 'Paid in full'
+                stays on the receipt (payer register). */}
           </dl>
         </div>
         <div className="card2" style={{ width: 340 }}>
