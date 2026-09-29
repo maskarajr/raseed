@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { api } from "@/lib/client";
+import { formatPKR } from "@/lib/money";
 import { Money } from "@/components/Money";
 import { SideSheet } from "@/components/SideSheet";
 import { useToast } from "@/components/Toast";
@@ -72,7 +73,7 @@ export function PaymentSheet({
       await busyEnd(t0);
       setSaving(false);
       toast(
-        `${kindLabel(kind)} of Rs ${posted.toLocaleString("en-PK")} recorded${invoiceCode ? ` · ${invoiceCode}` : ""} balance Rs ${res.invoice.balance.toLocaleString("en-PK")}`,
+        `${kindLabel(kind)} of ${formatPKR(posted)} recorded${invoiceCode ? ` · ${invoiceCode}` : ""} balance ${formatPKR(res.invoice.balance)}`,
       );
       onDone();
     } catch (err) {
