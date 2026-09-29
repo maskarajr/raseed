@@ -24,16 +24,27 @@ type OrderRow = {
   _count: { items: number };
 };
 
+// Spec E §9 REMOVE (owner @474): the virtual no-date band is gone. Five
+// chips = the office's real work queue; they own confirm and dispatch, so
+// the lifecycle bands are theirs. The deleted band's rows split into
+// `confirmed` + `out_for_delivery` chips — same rows, honest names, the
+// queue loses nothing. Collected = the office terminal status `settled`
+// (R4: office words follow the persisted enum; money words stay on the
+// money axis).
 const CHIPS: { label: string; term: string }[] = [
   { label: "All", term: "" },
-  { label: "Scheduled", term: "scheduled" },
   { label: "Awaiting confirm", term: "awaiting" },
-  { label: "Draft", term: "draft" },
+  { label: "Confirmed", term: "confirmed" },
+  { label: "Out for delivery", term: "out for delivery" },
+  { label: "Collected", term: "collected" },
 ];
 
-// R4 (Privy seq258): on the office side 'Scheduled' is ONLY a filter band —
-// the persisted statuses it collects, never a pill word.
-const SCHEDULED_BAND = ["confirmed", "out_for_delivery"];
+const TERM_STATUSES: Record<string, string[]> = {
+  awaiting: ["submitted"],
+  confirmed: ["confirmed"],
+  "out for delivery": ["out_for_delivery"],
+  collected: ["settled"],
+};
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -67,12 +78,8 @@ export default function OrdersPage() {
     return orders.filter((o) => {
       const hay =
         `${o.code} ${o.customer.name} ${o.booker.name} ${o.status} ${statusUi(o.status).label}`.toLowerCase();
-      if (term === "scheduled") {
-        if (!SCHEDULED_BAND.includes(o.status)) return false;
-      } else if (term === "awaiting") {
-        if (o.status !== "submitted") return false;
-      } else if (term === "draft") {
-        if (o.status !== "draft") return false;
+      if (TERM_STATUSES[term]) {
+        if (!TERM_STATUSES[term].includes(o.status)) return false;
       } else if (term && !hay.includes(term)) return false;
       if (booker && o.booker.name !== booker) return false;
       if (q && !hay.includes(q)) return false;
@@ -130,7 +137,7 @@ export default function OrdersPage() {
                 <th>Customer</th>
                 <th>Booker</th>
                 <th>Route</th>
-                <th className="r">Items</th>
+                <th className="r">Lines</th>
                 <th className="r">Value</th>
                 <th>Status</th>
               </tr>

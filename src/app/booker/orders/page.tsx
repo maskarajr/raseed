@@ -29,9 +29,15 @@ type OrderRow = {
   _count: { items: number };
 };
 
+// Spec E §9 rev 1.1 (Privy seq441, owner REMOVE confirmed @474): four chips,
+// every one maps to work the booker owns or money he cares about. Draft is
+// his most booker-owned state (`Next: Yours to submit`) — hiding it inside
+// All manufactures dead ends. `Awaiting confirm` / `Confirmed` / `Out for
+// delivery` stay read-only pills with no chip: filtering by a state you
+// cannot act on is the same mistake in chip clothing.
 const CHIPS = [
   { label: "All", term: "" },
-  { label: "Scheduled", term: "scheduled" },
+  { label: "Draft", term: "draft" },
   { label: "To collect", term: "to collect" },
   { label: "Collected", term: "collected" },
 ];
@@ -151,7 +157,10 @@ export default function BookerOrdersPage() {
                   <span className="pname">{o.customer.name}</span>
                   <br />
                   <span className="pmeta num">
-                    {o.code} · {o._count.items} items
+                    {/* Spec E §4a: _count.items is a LINE count — 'Items' may
+                        only ever carry a qty sum (ORD-00026 lie). */}
+                    {o.code} · {o._count.items}{" "}
+                    {o._count.items === 1 ? "line" : "lines"}
                     {canCollect && o.invoice
                       ? ` · Rs ${o.invoice.balance.toLocaleString("en-PK")} left`
                       : ""}

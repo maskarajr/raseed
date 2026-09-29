@@ -4,17 +4,22 @@ type StatusUi = { label: string; tone: PillTone };
 
 /** DB / domain status → locked StatusPill copy + tone.
  * Office order surfaces render this map 1:1 with the persisted enum (R4:
- * one axis per surface). 'Settled' is the office terminal word — if the
- * owner flips it to 'Collected', change ONLY this constant. The money-axis
- * words (To collect/Collected/Scheduled) live in orderLabel.ts, booker side. */
+ * one axis per surface). OWNER RULING (seq514/520, vocabulary.md v1): the
+ * terminal pill word is 'Collected' — 'Settled' retired, this constant was
+ * the single producer and is the single edit; the enum value and the verb
+ * 'settle' (auto-settle, no settle button) stay, they are not pill words.
+ * The booker-side money words (To collect/Collected) live in orderLabel.ts.
+ * Spec E §9 gate 24 (owner REMOVE ratified, seq474): green is reserved for
+ * money-in (Paid/Collected) and the physical fact Delivered — 'Confirmed' is
+ * s-info, same "office has it" band as Invoiced/Out for delivery. */
 const BY_KEY: Record<string, StatusUi> = {
   draft: { label: "Draft", tone: "neu" },
   submitted: { label: "Awaiting confirm", tone: "warn" },
-  confirmed: { label: "Confirmed", tone: "ok" },
+  confirmed: { label: "Confirmed", tone: "info" },
   invoiced: { label: "Invoiced", tone: "info" },
   out_for_delivery: { label: "Out for delivery", tone: "info" },
   delivered: { label: "Delivered", tone: "ok" },
-  settled: { label: "Settled", tone: "ok" },
+  settled: { label: "Collected", tone: "ok" },
   cancelled: { label: "Cancelled", tone: "bad" },
   unpaid: { label: "To collect", tone: "warn" },
   partial: { label: "To collect", tone: "warn" },
@@ -51,15 +56,21 @@ export function stockTone(qty: number, reorder: number | null): StatusUi {
  * seq268). ONE derived helper feeding order-detail Payment chip, invoice
  * detail, invoice print and booker detail; no surface keeps an inline
  * ternary. Method words only — amounts are shown by the surrounding rows,
- * never restated here. (Subtotal is part of the locked signature; the closed
- * matrix doesn't need it: partial-advance-then-collected hits
- * 'Paid — advance' via advance > 0 && balance == 0.)
+ * never restated here.
+ * F3 (Figmi seq486/seq497, ratified; F5 clamp per Breevie seq490): the
+ * signature reads the INVOICE table — (advance, total, amountPaid) — never
+ * order figures, so no caller mixes tables. Balance is derived and clamped
+ * here (max(0, total − amountPaid)); the surplus is never signed into it.
+ * (Subtotal was already ignored by design; the locked matrix doesn't need
+ * it: partial-advance-then-collected hits 'Paid — advance' via advance > 0
+ * && balance == 0.)
  */
 export function methodLabel(
   advance: number,
-  _subtotal: number,
-  balance: number,
+  total: number,
+  amountPaid: number,
 ): StatusUi {
+  const balance = Math.max(0, total - amountPaid);
   if (balance <= 0)
     return advance > 0
       ? { label: "Paid — advance", tone: "ok" }

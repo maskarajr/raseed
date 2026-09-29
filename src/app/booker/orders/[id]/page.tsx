@@ -52,6 +52,7 @@ type Detail = {
     balance: number;
     paymentStatus: string;
     deliveredAt: string | null;
+    returns?: { qty: number; amount: number }[];
   } | null;
 };
 
@@ -124,14 +125,46 @@ export default function BookerOrderDetailPage() {
   const ui = orderLabel(order);
   const inv = order.invoice;
   const balance = inv?.balance ?? 0;
+  // Spec E §9 detail-card fix (Privy seq476): the 'Collected' hero shows
+  // CASH IN (amountPaid) — a bare zero-balance read as "Collected Rs 0",
+  // which is a lie on any settled-with-advance order. Returns come through
+  // as their own line so an invoice paid above its (return-reduced) total
+  // stays legible instead of clamping into mystery.
+  const paid = inv?.amountPaid ?? 0;
+  const returnsTotal = (inv?.returns ?? []).reduce((s, r) => s + r.amount, 0);
+  // G1 (Figmi seq512): invoice.total is NET of returns, so raw paid can exceed
+  // it on any invoice that took cash before a return. The bar counts the part
+  // of the cash the invoice can still claim (counted = min(paid, total)); the
+  // hero keeps raw paid. The Math.min(100,…) is now a guard that cannot fire
+  // (reworded gate 30) — the cap lives on the numerator, never on the quotient.
+  const counted = Math.min(paid, inv?.total ?? 0);
   const collectedPct =
-    inv && inv.total > 0
-      ? Math.min(100, Math.floor(((inv.total - balance) / inv.total) * 100))
-      : 0;
+    inv && inv.total > 0 ? Math.min(100, Math.floor((counted / inv.total) * 100)) : 0;
   const isDraft = order.status === "draft";
   const isSubmitted = order.status === "submitted";
   const isCancelled = order.status === "cancelled";
   const itemCount = order.items.reduce((s, i) => s + i.qty, 0);
+  // Spec E §6 + §9(1) (owner REMOVE ratified @474): name who acts next, so
+  // the office-side transition rule reads as a rule, not a dead end. Money
+  // beats status — a balance means the booker's Collect is live regardless
+  // of delivery state. Terminal states and "nothing owed to anyone" show no
+  // row at all.
+  const nextRow: string | null =
+    order.status === "settled" || isCancelled
+      ? null
+      : isDraft
+        ? "Yours to submit"
+        : isSubmitted
+          ? "Office confirms"
+          : balance > 0
+            ? order.status === "delivered"
+              ? "Yours to collect"
+              : "Collect on delivery"
+            : order.status === "out_for_delivery"
+              ? "Office is on the road"
+              : order.status === "confirmed"
+                ? "Office dispatches"
+                : null;
 
   return (
     <BookerChrome
@@ -171,16 +204,29 @@ export default function BookerOrderDetailPage() {
             {inv?.deliveredAt ? "Delivered ✓" : "Not delivered"}
           </span>
         </div>
+        {nextRow && (
+          // Spec E §6: read-only, one line, names a party not a person, never
+          // restates the pill. Terminal states and held states show nothing.
+          <div className="prow">
+            <span className="prow-l">Next</span>
+            <span className="prow-v">{nextRow}</span>
+          </div>
+        )}
       </div>
 
-      {/* B. money hero — only once an invoice (money state) exists */}
-      {inv && (
+      {/* B. money hero — only once an invoice (money state) carries a number
+          worth naming (F1/gate 28: a money word never sits beside Rs 0) */}
+      {inv && (balance > 0 || paid > 0) && (
         <div className="phero">
           <div className="rowb">
             <p className="phero-lab">{balance > 0 ? "To collect" : "Collected"}</p>
             <span className="phero-route">{inv.code}</span>
           </div>
-          <p className="phero-val num"><Money value={balance} /></p>
+          <p className="phero-val num">
+            {/* 'Collected' = cash that landed (amountPaid), never the
+                balance-zero it used to print. */}
+            <Money value={balance > 0 ? balance : paid} />
+          </p>
           <div className="phero-bar">
             <span style={{ width: `${collectedPct}%` }} />
           </div>
@@ -189,7 +235,7 @@ export default function BookerOrderDetailPage() {
               {collectedPct}% of <Money value={inv.total} /> in
             </span>
             <span className="phero-meta">
-              {methodLabel(order.advance, order.subtotal, balance).label}
+              {methodLabel(order.advance, inv.total, paid).label}
             </span>
           </div>
         </div>
@@ -227,10 +273,29 @@ export default function BookerOrderDetailPage() {
           <span className="prow-l">Subtotal</span>
           <span className="prow-v money"><Money value={order.subtotal} /></span>
         </div>
+        {returnsTotal > 0 && (
+          // Privy seq489 + Figmi seq493 (gate 29, corrected): the Return
+          // entity is real and INV-00020 HAS a row — the card tells the story
+          // with the record that exists, mirroring office/invoices/[id]
+          // 'Subtotal / Returns −X / Invoice total'. No return record ⇒ no
+          // row; the delta is never inferred into a goods claim.
+          <div className="prow">
+            <span className="prow-l">Returns</span>
+            <span className="prow-v num">
+              −<Money value={returnsTotal} />
+            </span>
+          </div>
+        )}
         <div className="prow">
-          <span className="prow-l"><span className="pname">Total</span></span>
+          <span className="prow-l">
+            <span className="pname">{inv ? "Invoice total" : "Total"}</span>
+          </span>
           <span className="prow-v num" style={{ fontWeight: 600 }}>
-            <Money value={order.subtotal} />
+            {/* F4 (ratified): the two tables never share the bare word Total
+                while both are in view — once an invoice exists the grand row
+                reads the INVOICE table (Subtotal − Returns = Invoice total),
+                which is the number the money hero and bar measure against. */}
+            <Money value={inv ? inv.total : order.subtotal} />
           </span>
         </div>
       </div>

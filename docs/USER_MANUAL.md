@@ -31,7 +31,7 @@ The correct surface is chosen automatically by your role. To sign out, use the *
 - **Return** — a customer sends items back. Logged against an invoice: stock is restocked and the invoice balance drops.
 - **Payment** — cash received against an invoice.
 - **Balance due** — `Subtotal − Returns − Payments`. This is the amount the shop still owes. A shop with an unpaid balance is effectively a credit sale — there is no separate "credit" label.
-- **Settled** — an order settles **automatically** the moment its invoice balance reaches **Rs 0** (through payments and/or returns). There is no manual "settle" button.
+- **Collected** — an order settles **automatically** the moment its invoice balance reaches **Rs 0** (through payments and/or returns). There is no manual "settle" button.
 
 **Status pills** always show a colored chip **and** a text label:
 
@@ -43,7 +43,7 @@ The correct surface is chosen automatically by your role. To sign out, use the *
 | Invoiced | Invoice created; stock deducted |
 | Out for delivery | On its way to the shop |
 | Delivered | Received by the shop |
-| Settled | Fully paid (balance Rs 0) |
+| Collected | Fully paid (balance Rs 0) |
 | Cancelled | Voided before invoicing |
 | Return logged | At least one return recorded on the invoice |
 | Unpaid / Partial / Paid | Invoice payment status |
@@ -126,7 +126,7 @@ draft → submitted → confirmed → invoiced → out_for_delivery → delivere
 2. **Confirmed** → open the order and click **Generate invoice (deduct stock)**. This creates the invoice and reduces stock. You're taken to the invoice.
 3. **Invoiced** → optionally click **Mark out for delivery**.
 4. **Out for delivery** → optionally click **Mark delivered**.
-5. **Settled** happens on its own once the invoice balance reaches Rs 0 (from payments/returns) — there is no settle button.
+5. **Collected** happens on its own once the invoice balance reaches Rs 0 (from payments/returns) — there is no settle button.
 
 ### Cancelling
 While an order is **Draft**, **Submitted**, or **Confirmed**, you can **Cancel order** from the order detail. Once invoiced it can no longer be cancelled.
@@ -149,7 +149,7 @@ The invoices list shows Total, Paid, **Balance due**, and payment status. Open o
 1. Click **Record payment**.
 2. The **Amount** defaults to the full outstanding balance. You can enter a smaller amount for a **partial** payment. It cannot exceed the balance.
 3. Method is **Cash** (v1 is cash-only).
-4. Click **Record payment**. Balance updates; when it hits Rs 0 the order becomes **Settled** automatically.
+4. Click **Record payment**. Balance updates; when it hits Rs 0 the order becomes **Collected** automatically.
 
 Leaving a balance unpaid is fine — that is a credit sale, tracked by the Balance due figure.
 

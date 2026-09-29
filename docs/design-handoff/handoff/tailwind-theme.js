@@ -67,7 +67,6 @@ export const raseedTheme = {
 export const labelTone = {
   /* ok */
   paid: 'ok',
-  confirmed: 'ok',
   'in stock': 'ok',
   collected: 'ok',
   delivered: 'ok',
@@ -75,7 +74,7 @@ export const labelTone = {
   'on track': 'ok',
   active: 'ok',
   /* info */
-  scheduled: 'info',
+  confirmed: 'info',
   /* warn */
   'to collect': 'warn',
   'awaiting confirm': 'warn',
@@ -91,8 +90,8 @@ export const labelTone = {
 
 /** Filter-bar vocabularies (the `data-f` values each list ships with). */
 export const filterSets = {
-  orders: ['', 'scheduled', 'confirmed', 'awaiting', 'draft'],
+  orders: ['', 'awaiting', 'confirmed', 'out for delivery', 'collected'],
   invoices: ['', 'to collect', 'paid', 'draft'],
   products: ['', 'rice', 'oil', 'grocery', 'pulses'],
-  'booker-orders': ['', 'scheduled', 'to collect', 'collected'],
+  'booker-orders': ['', 'draft', 'to collect', 'collected'],
 };
