@@ -161,9 +161,11 @@ export default function BookerOrdersPage() {
                         only ever carry a qty sum (ORD-00026 lie). */}
                     {o.code} · {o._count.items}{" "}
                     {o._count.items === 1 ? "line" : "lines"}
-                    {canCollect && o.invoice
-                      ? ` · Rs ${o.invoice.balance.toLocaleString("en-PK")} left`
-                      : ""}
+                    {canCollect && o.invoice ? (
+                      <> · <Money value={o.invoice.balance} /> left</>
+                    ) : (
+                      ""
+                    )}
                   </span>
                 </span>
                 <StatusPill label={ui.label} tone={ui.tone} />

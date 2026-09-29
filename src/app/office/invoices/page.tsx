@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/client";
 import { Money } from "@/components/Money";
+import { formatPKR } from "@/lib/money";
 import { StatusPill } from "@/components/badges";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { PaymentSheet } from "@/components/PaymentSheet";
@@ -80,7 +81,7 @@ export default function InvoicesPage() {
       subtitle={
         !loaded
           ? "Loading…"
-          : `${filtered.length} shown · outstanding ${outstanding.toLocaleString("en-PK")}`
+          : `${filtered.length} shown · outstanding ${formatPKR(outstanding)}`
       }
       actions={
         <button

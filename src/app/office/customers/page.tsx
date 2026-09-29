@@ -17,6 +17,7 @@ import { SideSheet } from "@/components/SideSheet";
 import { OfficeChrome } from "@/components/OfficeChrome";
 import { SkelRows } from "@/components/skeletons";
 import { StatusPill } from "@/components/badges";
+import { Money } from "@/components/Money";
 import {
   busyStart,
   busyEnd,
@@ -121,7 +122,9 @@ export default function CustomersPage() {
                   <td className="sku">{c.route ?? "—"}</td>
                   <td>{c.booker?.name ?? "—"}</td>
                   <td className="money">
-                    {c.outstanding > 0 ? c.outstanding.toLocaleString("en-PK") : "—"}
+                    {/* G5/gate 33: through <Money>, single grouping; the — at
+                        zero is a workload cell convention, not money math. */}
+                    {c.outstanding > 0 ? <Money value={c.outstanding} /> : "—"}
                   </td>
                   <td>
                     <StatusPill status={c.active ? "active" : "inactive"} />
