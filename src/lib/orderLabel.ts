@@ -2,15 +2,16 @@ import { statusUi, type PillTone } from "./status";
 
 /**
  * ONE derived order label for every surface (booker list/detail, office
- * list/detail) — Figmi booker-order-detail.md §4/§5, frozen by Privy seq211:
- *
- *   Scheduled = confirmed | out_for_delivery (awaiting collection;
- *   not Collected, not Draft).
+ * list/detail) — Figmi booker-order-detail.md §4/§5, Spec E §9 (owner chose
+ * REMOVE, seq474): the old virtual `confirmed | out_for_delivery` band word
+ * was deleted. A pill word must be checkable on the screen that shows it,
+ * and this product has no delivery date to check against — so those statuses
+ * now fall through to the persisted lifecycle words.
  *
  * Precedence is explicit so a row never reads two ways:
  * Collected (money in full) > To collect (invoice exists with balance > 0) >
- * Scheduled (confirmed band) > raw lifecycle status.
- * Scheduled stays a virtual label — no persisted status, no new enum.
+ * raw lifecycle status (statusUi). Money words are booker-side only; the
+ * office list renders statusUi 1:1 with the enum.
  */
 export type LabelableOrder = {
   status: string;
@@ -26,12 +27,5 @@ export function orderLabel(o: LabelableOrder): { label: string; tone: PillTone }
     (inv != null && (inv.balance ?? 1) <= 0);
   if (paidOff) return { label: "Collected", tone: "ok" };
   if (inv && (inv.balance ?? 0) > 0) return { label: "To collect", tone: "warn" };
-  if (o.status === "confirmed" || o.status === "out_for_delivery")
-    return { label: "Scheduled", tone: "ok" };
   return statusUi(o.status);
-}
-
-/** Scheduled-band test for filters/metrics (drafts and collected never match). */
-export function isScheduledBand(o: LabelableOrder): boolean {
-  return orderLabel(o).label === "Scheduled";
 }

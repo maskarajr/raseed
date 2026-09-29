@@ -8,6 +8,8 @@ import { CountUp } from "@/components/CountUp";
 import { StatusPill } from "@/components/badges";
 import { BookerChrome } from "@/components/BookerChrome";
 import { startOfTodayKarachi } from "@/lib/day";
+import { orderLabel } from "@/lib/orderLabel";
+import { bookedSum, collectedSum } from "@/lib/money";
 import { SkelTiles, GLine, GPerson, GPill, GS } from "@/components/skeletons";
 
 type OrderRow = {
@@ -50,16 +52,15 @@ export default function BookerHome() {
       o.status !== "draft" &&
       new Date(o.createdAt).getTime() >= todayStart,
   );
-  const todayBooked = todayOrders.reduce((s, o) => s + o.subtotal, 0);
+  // Spec E §9 (Figmi seq444, merged via #17): the hero money comes from the
+  // ONE formula set in lib/money.ts — no local reduce here either. Behavior
+  // is identical (todayOrders already excludes drafts; collectedSum is the
+  // same min(subtotal, amountPaid) this page invented), now gate-26 clean.
+  const todayBooked = bookedSum(todayOrders);
   // Privy coherence item (seq85): advance is real cash in the booker's
-  // pocket. The hero reads the invoice-derived ledger — invoice.amountPaid is
-  // seeded from order.advance at invoicing (deriveInvoiceState path), so a
-  // prepaid stop counts as collected the moment the advance exists. Capped at
-  // the order subtotal; scoped to today's bookings to match the denominator.
-  const collectedAmt = todayOrders.reduce(
-    (s, o) => s + Math.min(o.subtotal, o.invoice?.amountPaid ?? 0),
-    0,
-  );
+  // pocket — invoice.amountPaid is seeded from order.advance at invoicing, so
+  // a prepaid stop counts as collected the moment the advance exists.
+  const collectedAmt = collectedSum(todayOrders);
   const pct =
     todayBooked > 0
       ? Math.min(100, Math.floor((collectedAmt / todayBooked) * 100))
@@ -75,34 +76,52 @@ export default function BookerHome() {
   const nextStops = openStops.slice(0, 5);
   const stopsLeft = openStops.length;
   const toCollect = openStops.filter((o) => (o.invoice?.balance ?? 0) > 0).length;
-  // G3/G4 (qa-v3-design-fidelity-final): the hero is route-conditional — a
-  // zero-day must not render an ink hero claiming Rs 0 of Rs 0. Route chip is
-  // the board's identity line `Route {n} · {N} shops`; pct floor-truncates.
-  const routeNo =
-    todayOrders.find((o) => o.customer.route)?.customer.route ?? null;
-  const routeLabel = `Route ${routeNo ?? "—"} · ${todayOrders.length} shops`;
+  // Spec E §5 (routeLine): name a route ONLY when every counted stop belongs
+  // to it — the old chips paired one found route with an all-stops count, a
+  // fabricated pair on any multi-route day (Bilal spans Routes 1 and 5). One
+  // helper feeds both chips: form A counts today's booked SHOPS, the carry-over
+  // chip counts OPEN stops. 'open' is never droppable (10px mono: 'stops' is
+  // one letter from 'shops' and they mean opposite things); plural is real.
+  const routeLine = (
+    count: number,
+    routeNos: (string | null)[],
+    unit: "stop" | "shop",
+    open = false,
+  ): string => {
+    const uniq = [...new Set(routeNos.filter((r): r is string => !!r))];
+    const n = `${count} ${count === 1 ? unit : `${unit}s`}${open ? " open" : ""}`;
+    if (uniq.length === 1) return `Route ${uniq[0]} · ${n}`;
+    if (uniq.length === 0) return n;
+    return `${n} · ${uniq.length} routes`;
+  };
+  // G3/G4: hero form picks per day; the chip is honest via routeLine.
+  const routeLabel = routeLine(
+    todayOrders.length,
+    todayOrders.map((o) => o.customer.route),
+    "shop",
+  );
   const hasRouteToday = todayOrders.length > 0;
   // Privy seq384 fix: the ghost promises a hero on every day, so the READY
-  // state must keep the frame mounted too. A created-today-zero day with open
-  // stops is real work, not a blank: quiet `Rs 0` (a true value — no "% of
-  // Rs 0 booked" claim) + the board line re-pointed at today's OPEN route.
-  const openRouteNo =
-    openStops.find((o) => o.customer.route)?.customer.route ?? null;
+  // state must keep the frame mounted too — the predicate picks the FORM,
+  // never deletes the frame.
   const openRouteLabel =
     stopsLeft === 0
       ? "No stops open today"
-      : openRouteNo
-        ? `Route ${openRouteNo} · ${stopsLeft} ${stopsLeft === 1 ? "stop" : "stops"} open`
-        : `${stopsLeft} ${stopsLeft === 1 ? "stop" : "stops"} open`;
+      : routeLine(
+          stopsLeft,
+          openStops.map((o) => o.customer.route),
+          "stop",
+          true,
+        );
 
-  // Spec §4 freeze: "To collect" is an invoice fact (balance > 0), not a raw
-  // status; confirmed/out_for_delivery without a balance read Scheduled.
-  const stopState = (o: OrderRow): { n: string; pill: string } => {
-    if (o.invoice?.paymentStatus === "paid" || (o.invoice != null && (o.invoice.balance ?? 1) <= 0))
-      return { n: "ok", pill: "settled" };
-    if ((o.invoice?.balance ?? 0) > 0) return { n: "warm", pill: "to collect" };
-    return { n: "", pill: "scheduled" };
-  };
+  // Spec E §2 (owner REMOVE confirmed @474): stopState's pill half is DELETED
+  // — this page no longer derives its own vocabulary. The pill is orderLabel,
+  // same as the orders tab, so both surfaces match for the same session. The
+  // dot half stays, derived FROM the tone (§9(2) table): .pstop-n has exactly
+  // three board variants — ok (money in), warm (someone must act), neutral
+  // (nothing to act on yet). The 5-tone pill vocabulary never leaks into dots.
+  const dotClass = (tone: string): string =>
+    tone === "ok" ? "ok" : tone === "warn" ? "warm" : "";
 
   return (
     <BookerChrome title={`Salaam, ${first}`}>
@@ -173,13 +192,13 @@ export default function BookerHome() {
 
       {phase === "loading" ? (
         <div className="pstats">
-          <SkelTiles labels={["Orders", "Stops left", "To collect"]} />
+          <SkelTiles labels={["Booked today", "Stops left", "Bills open"]} />
         </div>
       ) : (
       <div className="pstats">
-        <div className="pstat"><p className="pstat-lab">Orders</p><p className="pstat-val num"><CountUp value={todayOrders.length} /></p></div>
+        <div className="pstat"><p className="pstat-lab">Booked today</p><p className="pstat-val num"><CountUp value={todayOrders.length} /></p></div>
         <div className="pstat"><p className="pstat-lab">Stops left</p><p className="pstat-val num"><CountUp value={stopsLeft} /></p></div>
-        <div className="pstat"><p className="pstat-lab">To collect</p><p className="pstat-val num"><CountUp value={toCollect} /></p></div>
+        <div className="pstat"><p className="pstat-lab">Bills open</p><p className="pstat-val num"><CountUp value={toCollect} /></p></div>
       </div>
       )}
 
@@ -213,10 +232,10 @@ export default function BookerHome() {
           </p>
         )}
         {nextStops.map((o, i) => {
-          const st = stopState(o);
+          const ui = orderLabel(o);
           return (
             <div className="pstop" key={o.id}>
-              <span className={`pstop-n ${st.n}`}>{i + 1}</span>
+              <span className={`pstop-n ${dotClass(ui.tone)}`}>{i + 1}</span>
               <span className="grow">
                 <Link href="/booker/orders" className="pname">{o.customer.name}</Link>
                 <br />
@@ -225,7 +244,7 @@ export default function BookerHome() {
                     (o.customer.route ? `Route ${o.customer.route}` : "")}
                 </span>
               </span>
-              <StatusPill status={st.pill} />
+              <StatusPill label={ui.label} tone={ui.tone} />
             </div>
           );
         })}

@@ -62,9 +62,9 @@ encoding, not an empty outline; the average reconciles (`6,184,200 / 412 = 15,01
 
 **Layout** — appbar (`6 shown · 38 placed today`, `New order` primary); a filter row:
 `FilterChipBar` left, search right; full-width `DataTable` in a card.
-**Contents** — chips `All · Scheduled · Confirmed · Awaiting · Draft`; search placeholder
+**Contents** — chips `All · Awaiting confirm · Confirmed · Out for delivery · Collected`; search placeholder
 "Order or customer". Columns: Order · Customer · Booker · Placed · Value · Status.
-Six rows across Scheduled, Confirmed, Awaiting confirm, Confirmed, Cancelled, Draft.
+Six rows across Out for delivery, Confirmed, Awaiting confirm, Confirmed, Cancelled, Draft.
 **Actions** — row → `/office/orders/[id]`; `New order`.
 **Acceptance** — the `All` chip is the reset (empty `data-f`); each chip narrows to a
 non-empty set; the `.tbl-empty` state appears when a filter matches nothing; the
@@ -180,7 +180,7 @@ of bookers.
 · Collected · Status. Rows: Ahmed Raza (Route 3, 0300 1234567, 9, `Rs 128,400`, `Rs 91,000`,
 Confirmed) · Bilal Khan (Route 1, 0301 7654321, 6, `Rs 74,900`, `Rs 74,900`, Confirmed) ·
 Sana Iqbal (Route 5, 0301 9988776, 11, `Rs 96,200`, `Rs 50,000`, Awaiting confirm) · Usman
-Ali (Route 2, 0302 4455667, 7, `Rs 61,050`, `Rs 61,050`, Scheduled) · Hina Shah (Route 4,
+Ali (Route 2, 0302 4455667, 7, `Rs 61,050`, `Rs 61,050`, Confirmed) · Hina Shah (Route 4,
 0303 1122334, 5, `Rs 38,900`, `Rs 0`, Draft).
 **Actions** — `Add booker` (invite); per-row activate/deactivate and reset password.
 **Acceptance** — `Value today` and `Collected` are separate columns because collection is
@@ -212,7 +212,7 @@ a sticky primary CTA with safe-area padding.
 **Layout** — appbar greeting `Salaam, Ahmed` with an offline-queue button; metric cards;
 "Next stops"; CTA.
 **Contents** — `Today's orders` `9`; `Collections` vs target (status `On track`); next stops
-with `Scheduled` / `Confirmed` / `To collect` pills; recent activity.
+with `Confirmed` / `Out for delivery` / `To collect` pills; recent activity.
 **Actions** — `New order` (primary, block) → `/booker/orders/new`; next-stop row → order.
 **Acceptance** — greeting is the signed-in booker's first name; the collection metric shows
 booked vs collected (the booker's core measure); PWA has no horizontal scroll at 390px.
@@ -222,7 +222,7 @@ booked vs collected (the booker's core measure); PWA has no horizontal scroll at
 
 **Layout** — appbar `My orders` with back and a `6 today` meta; chips; a card list
 (`.pcard`), not a table.
-**Contents** — chips `All · Scheduled · To collect · Collected`; one card per order with
+**Contents** — chips `All · Draft · To collect · Collected`; one card per order with
 customer, route, amount, status pill, and a `Collect` action on the to-collect cards.
 **Actions** — card → order; `Collect` → record collection.
 **Acceptance** — the chip filter drives `[data-row]` on the cards (there is no table body

@@ -219,8 +219,9 @@ export default function OfficeDashboard() {
   const pcount = (st: string) =>
     data.pipeline?.find((p) => p.status === st)?.count ?? 0;
   const pipeSteps: { lab: string; n: number; now?: boolean }[] = [
-    // §4 freeze: Scheduled means confirmed | out_for_delivery — the draft
-    // stage keeps its own name in the pipeline.
+    // Spec E §9 REMOVE (owner @474): the pipeline names the persisted
+    // statuses it actually holds — the deleted virtual band gave this
+    // stage no extra word; the draft stage keeps its own name.
     { lab: "Draft", n: pcount("draft") },
     {
       lab: "Awaiting confirm",

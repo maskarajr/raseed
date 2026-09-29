@@ -6,11 +6,14 @@ type StatusUi = { label: string; tone: PillTone };
  * Office order surfaces render this map 1:1 with the persisted enum (R4:
  * one axis per surface). 'Settled' is the office terminal word — if the
  * owner flips it to 'Collected', change ONLY this constant. The money-axis
- * words (To collect/Collected/Scheduled) live in orderLabel.ts, booker side. */
+ * words (To collect/Collected) live in orderLabel.ts, booker side.
+ * Spec E §9 gate 24 (owner REMOVE ratified, seq474): green is reserved for
+ * money-in (Paid/Settled) and the physical fact Delivered — 'Confirmed' is
+ * s-info, same "office has it" band as Invoiced/Out for delivery. */
 const BY_KEY: Record<string, StatusUi> = {
   draft: { label: "Draft", tone: "neu" },
   submitted: { label: "Awaiting confirm", tone: "warn" },
-  confirmed: { label: "Confirmed", tone: "ok" },
+  confirmed: { label: "Confirmed", tone: "info" },
   invoiced: { label: "Invoiced", tone: "info" },
   out_for_delivery: { label: "Out for delivery", tone: "info" },
   delivered: { label: "Delivered", tone: "ok" },

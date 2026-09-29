@@ -28,7 +28,7 @@ Foreground/background pairs are shipped as a matched set; no other status colour
 | Tone | fg | bg | Contrast |
 |---|---|---|---|
 | `ok` (Paid, Confirmed, In stock) | `#0A4C37` | `#E4F1EC` | 8.61 |
-| `info` (Scheduled, Invoiced) | `#14486F` | `#E3EEF6` | 8.15 |
+| `info` (Confirmed, Invoiced) | `#14486F` | `#E3EEF6` | 8.15 |
 | `warn` (To collect, Awaiting confirm, Low) | `#7A3512` | `#FBE9DF` | 7.60 |
 | `bad` (Cancelled, Out of stock) | `#7A1F1F` | `#F7E3E3` | 8.35 |
 | `neu` (Draft, Inactive) | `#49525A` | `#ECEEF1` | 6.85 |

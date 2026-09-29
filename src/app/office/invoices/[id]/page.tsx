@@ -194,12 +194,23 @@ export default function InvoiceDetailPage() {
                 <Money value={inv.amountPaid} />
               </dd>
             </div>
-            <div>
-              <dt>To collect</dt>
-              <dd className="num" style={{ color: "var(--warn-fg)" }}>
-                <Money value={inv.balance} />
-              </dd>
-            </div>
+            {inv.balance > 0 ? (
+              // F1 (Figmi seq486, gate 28): the locked word 'To collect' never
+              // sits beside a zero. Received above already carries the cash.
+              <div>
+                <dt>To collect</dt>
+                <dd className="num" style={{ color: "var(--warn-fg)" }}>
+                  <Money value={inv.balance} />
+                </dd>
+              </div>
+            ) : (
+              <div>
+                <dt>Outstanding</dt>
+                <dd className="num" style={{ color: "var(--ok-fg)" }}>
+                  Nothing owed
+                </dd>
+              </div>
+            )}
           </dl>
         </div>
         <div className="card2" style={{ width: 340 }}>
@@ -226,12 +237,22 @@ export default function InvoiceDetailPage() {
               </div>
             ))
           )}
-          <div className="prow">
-            <span className="pname">To collect</span>
-            <span className="num" style={{ fontWeight: 600, color: "var(--warn-fg)" }}>
-              <Money value={inv.balance} />
-            </span>
-          </div>
+          {inv.balance > 0 ? (
+            <div className="prow">
+              <span className="pname">To collect</span>
+              <span className="num" style={{ fontWeight: 600, color: "var(--warn-fg)" }}>
+                <Money value={inv.balance} />
+              </span>
+            </div>
+          ) : inv.amountPaid > 0 ? (
+            // F1/gate 28: zero balance names the ending, not a zero debt.
+            <div className="prow">
+              <span className="pname">Collected</span>
+              <span className="num" style={{ fontWeight: 600 }}>
+                <Money value={inv.amountPaid} />
+              </span>
+            </div>
+          ) : null}
         </div>
       </div>
       <div className="card2 grow">

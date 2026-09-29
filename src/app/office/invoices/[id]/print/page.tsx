@@ -200,10 +200,19 @@ export default function InvoicePrintPage() {
           <span className="muted">Received to date</span>
           <span className="num">− <Money value={inv.amountPaid} /></span>
         </div>
-        <div className="trow grand">
-          <span>To collect</span>
-          <span className="num"><Money value={inv.balance} /></span>
-        </div>
+        {inv.balance > 0 ? (
+          <div className="trow grand">
+            <span>To collect</span>
+            <span className="num"><Money value={inv.balance} /></span>
+          </div>
+        ) : (
+          // F1/gate 28 (Privy seq489 — print is the second office invoice
+          // page): the locked debt word never prints beside a zero.
+          <div className="trow grand">
+            <span>Paid in full</span>
+            <span className="num"><Money value={inv.amountPaid} /></span>
+          </div>
+        )}
       </div>
       <p
         className="meta"
