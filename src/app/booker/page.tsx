@@ -82,6 +82,18 @@ export default function BookerHome() {
     todayOrders.find((o) => o.customer.route)?.customer.route ?? null;
   const routeLabel = `Route ${routeNo ?? "—"} · ${todayOrders.length} shops`;
   const hasRouteToday = todayOrders.length > 0;
+  // Privy seq384 fix: the ghost promises a hero on every day, so the READY
+  // state must keep the frame mounted too. A created-today-zero day with open
+  // stops is real work, not a blank: quiet `Rs 0` (a true value — no "% of
+  // Rs 0 booked" claim) + the board line re-pointed at today's OPEN route.
+  const openRouteNo =
+    openStops.find((o) => o.customer.route)?.customer.route ?? null;
+  const openRouteLabel =
+    stopsLeft === 0
+      ? "No stops open today"
+      : openRouteNo
+        ? `Route ${openRouteNo} · ${stopsLeft} ${stopsLeft === 1 ? "stop" : "stops"} open`
+        : `${stopsLeft} ${stopsLeft === 1 ? "stop" : "stops"} open`;
 
   // Spec §4 freeze: "To collect" is an invoice fact (balance > 0), not a raw
   // status; confirmed/out_for_delivery without a balance read Scheduled.
@@ -97,7 +109,7 @@ export default function BookerHome() {
       {error && <p className="muted">{error}</p>}
       {phase === "loading" && (
         // §2b: the hero FRAME and its label are chrome — real at t=0. Only
-        // the amount ghosts; the bar sits at 0 (never an Rs 0 ink hero).
+        // the amount ghosts; §2c rule 3 keeps the track grey-filled.
         <div className="phero" aria-busy="true">
           <span className="sr-only">Loading today's route…</span>
           <div className="rowb">
@@ -122,17 +134,40 @@ export default function BookerHome() {
             <p className="phero-lab">Collected today</p>
             <span className="phero-route">{routeLabel}</span>
           </div>
-          {/* R3 (Figmi seq253): cash-side scope — today's receipts can include
-              collections on earlier invoices, so it needn't match booked. */}
-          <p className="phero-meta" style={{ marginTop: 2 }}>
-            cash received today · incl. earlier invoices
-          </p>
-          <p className="phero-val num"><CountUp value={collectedAmt} money /></p>
+          {/* Figmi seq395 adjust 3: the 'cash received today · incl. earlier
+              invoices' meta dropped — collectedAmt only sums today-created
+              orders (no paidAt in schema), so it asserted an unverifiable
+              scope. Restore when paidAt lands. */}
+          {collectedAmt === 0 ? (
+            // no ink zero (§8b gate 16); copy split by provability
+            <p className="phero-val is-quiet">
+              {todayBooked > 0 ? "Nothing collected yet" : "No bookings today"}
+            </p>
+          ) : (
+            <p className="phero-val num"><CountUp value={collectedAmt} money /></p>
+          )}
           <div className="phero-bar"><span style={{ width: `${pct}%` }}></span></div>
-          <div className="rowb" style={{ marginTop: 8 }}>
-            <span className="phero-meta">{pct}% of <Money value={todayBooked} /> booked</span>
-            <span className="phero-meta"><Money value={Math.max(0, todayBooked - collectedAmt)} /> to go</span>
+          {todayBooked > 0 && (
+            <div className="rowb" style={{ marginTop: 8 }}>
+              <span className="phero-meta">{pct}% of <Money value={todayBooked} /> booked</span>
+              <span className="phero-meta"><Money value={Math.max(0, todayBooked - collectedAmt)} /> to go</span>
+            </div>
+          )}
+        </div>
+      )}
+      {phase === "ready" && !hasRouteToday && (
+        // §2c rule 5 (Figmi-blessed): frame stays mounted — the predicate picks
+        // the FORM, never deletes it. Quiet 22px copy, never an ink zero, never
+        // a grey preview (§8b gates 13/16). Carry-over day keeps the real track
+        // EMPTY (a true 0% is an empty track); off day drops the bar row —
+        // nothing to measure.
+        <div className="phero">
+          <div className="rowb">
+            <p className="phero-lab">Collected today</p>
+            <span className="phero-route">{openRouteLabel}</span>
           </div>
+          <p className="phero-val is-quiet">No bookings today</p>
+          {stopsLeft > 0 && <div className="phero-bar" />}
         </div>
       )}
 
