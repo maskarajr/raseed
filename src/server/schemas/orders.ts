@@ -42,4 +42,21 @@ export const listOrdersQuerySchema = z.object({
   status: z.enum(ORDER_STATUSES).optional(),
 });
 
+// Batch confirm/invoice (owner seq18). The client sends the EXACT ids of the
+// filter population it is acting on — the server never re-derives a filter, so
+// a stale list can only fail per id (see `batchOrderAction`), never widen.
+// Bound is a batch cap, not pagination: >200 ids is rejected so one click
+// cannot turn into an unbounded transaction storm.
+export const BATCH_ORDER_MAX_IDS = 200;
+
+export const batchOrderActionSchema = z.object({
+  action: z.enum(["confirm", "invoice"]),
+  ids: z
+    .array(z.string().min(1))
+    .min(1)
+    .max(BATCH_ORDER_MAX_IDS),
+});
+
+export type BatchOrderApiInput = z.infer<typeof batchOrderActionSchema>;
+
 export type CreateOrderApiInput = z.infer<typeof createOrderSchema>;
