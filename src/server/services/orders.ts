@@ -3,6 +3,7 @@ import type { SessionUser } from "@/server/auth/session";
 import { ApiError } from "@/server/http";
 import { canTransition, type OrderStatus } from "@/lib/enums";
 import { nextOrderCode } from "./codes";
+import { generateInvoice } from "./invoices";
 import { settleOrderIfPaid } from "./settle";
 
 export type OrderItemInput = {
@@ -285,4 +286,81 @@ export async function transitionOrder(
 
     return updated;
   });
+}
+
+// ---------------------------------------------------------------------------
+// Batch confirm / invoice (owner seq18 'Confirm All' / 'Invoice All').
+//
+// Deliberately THIN: each id goes through the SAME single-order service, so
+// confirm stays one transaction per order and invoice keeps the stock-deduct,
+// advance-ledger and balance-settle path exactly as the per-order endpoint
+// runs it. No bulk shortcut, no new money logic.
+//
+// A failure on one id is collected and the loop continues: one already-
+// invoiced or foreign id must never abort the rest of the batch, and must
+// never surface as a 500.
+// ---------------------------------------------------------------------------
+
+export type BatchAction = "confirm" | "invoice";
+
+export type BatchFailure = {
+  id: string;
+  code: string;
+  reason: string;
+};
+
+// Machine-readable label per single-order status. The message stays in
+// `reason` so the UI can show the server's own wording.
+const BATCH_FAILURE_CODES: Record<number, string> = {
+  400: "invalid_state",
+  403: "forbidden",
+  404: "not_found",
+  409: "already_invoiced",
+};
+
+export async function batchOrderAction(
+  session: SessionUser,
+  action: BatchAction,
+  ids: string[],
+) {
+  const ok: Awaited<ReturnType<typeof transitionOrder>>[] = [];
+  const failed: BatchFailure[] = [];
+
+  for (const id of ids) {
+    try {
+      if (action === "confirm") {
+        ok.push(await transitionOrder(session, id, "confirmed"));
+      } else {
+        await generateInvoice(session, id);
+        // generateInvoice answers with the invoice; the batch contract answers
+        // with the order, in the same include shape confirm already returns.
+        ok.push(
+          await prisma.order.findUniqueOrThrow({
+            where: { id },
+            include: { items: true, customer: true },
+          }),
+        );
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        failed.push({
+          id,
+          code: BATCH_FAILURE_CODES[err.status] ?? "invalid_state",
+          reason: err.message,
+        });
+      } else {
+        // Anything that is not a service-rejected transition is a real fault:
+        // keep it visible in the server log, but hand the client the same
+        // neutral reason instead of leaking driver/ORM detail.
+        console.error("Batch order unexpected failure:", id, err);
+        failed.push({
+          id,
+          code: "internal_error",
+          reason: "Internal error processing this order",
+        });
+      }
+    }
+  }
+
+  return { ok, failed };
 }

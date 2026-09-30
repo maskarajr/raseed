@@ -1018,6 +1018,170 @@ async function main() {
     );
   }
   // ---------------------------------------------------------------
+  section("15. Batch confirm / invoice (POST /api/orders/batch)");
+  {
+    type BatchRes = {
+      ok: { id: string; status: string }[];
+      failed: { id: string; code: string; reason: string }[];
+    };
+
+    // Dedicated SKU with a known head of stock so the invoice-path stock
+    // assertions below are exact regardless of what sections 5-14 consumed.
+    const prodC = await office.req<{ product: { id: string } }>(
+      "POST",
+      "/api/products",
+      {
+        sku: `E2E-C-${stamp}`,
+        name: "E2E Product C",
+        price: 20,
+        stockQty: 10,
+        reorderLevel: 1,
+      },
+    );
+    check(prodC.status === 201, "product C created for the batch scenarios");
+    const cId = prodC.data.product.id;
+    const stockBefore = (await getProduct(office, cId)).stockQty;
+
+    const mkOrder = async (qty: number, submit = true) => {
+      const r = await booker.req<{ order: { id: string } }>("POST", "/api/orders", {
+        customerId,
+        submit,
+        items: [{ productId: cId, qty, unitPrice: 20 }],
+      });
+      return r.data.order.id;
+    };
+    const readOrder = async (id: string) =>
+      (await office.req<{ order: { status: string } }>("GET", `/api/orders/${id}`))
+        .data.order;
+
+    const b1 = await mkOrder(1);
+    const b2 = await mkOrder(2);
+    const b3 = await mkOrder(3);
+    const draft = await mkOrder(1, false);
+
+    // --- AC-1/AC-3: mixed population -> exact ok/failed split, loop continues
+    const mixed = await office.req<BatchRes>("POST", "/api/orders/batch", {
+      action: "confirm",
+      ids: [b1, b2, b3, draft, `nope-${stamp}`],
+    });
+    check(mixed.status === 200, `mixed batch returns 200, not an error status (got ${mixed.status})`);
+    check(mixed.data.ok.length === 3, `3 valid submitted orders confirmed (got ${mixed.data.ok.length})`);
+    check(
+      mixed.data.ok.every((o) => o.status === "confirmed"),
+      "every ok entry comes back already in 'confirmed'",
+    );
+    check(mixed.data.failed.length === 2, `draft + bogus id landed in failed (got ${mixed.data.failed.length})`);
+    check(
+      mixed.data.failed.find((f) => f.id === draft)?.code === "invalid_state",
+      `draft rejection labelled invalid_state (got ${mixed.data.failed.find((f) => f.id === draft)?.code})`,
+    );
+    check(
+      mixed.data.failed.find((f) => f.id === `nope-${stamp}`)?.code === "not_found",
+      "unknown id becomes a failed entry, not a 500",
+    );
+    check((await readOrder(draft)).status === "draft", "failed order untouched by the batch");
+
+    // --- AC-2 + AC-7: invoice batch keeps the per-order stock-deduct path
+    const inv = await office.req<BatchRes>("POST", "/api/orders/batch", {
+      action: "invoice",
+      ids: [b1, b2],
+    });
+    check(inv.status === 200 && inv.data.ok.length === 2, `2 confirmed orders invoiced (got ${inv.status}/${inv.data.ok?.length})`);
+    check(
+      inv.data.ok.every((o) => o.status === "invoiced"),
+      "ok entries report status 'invoiced'",
+    );
+    const stockAfter = (await getProduct(office, cId)).stockQty;
+    check(
+      stockAfter === stockBefore - 3,
+      `stock deducted by the summed line qty (1+2): ${stockBefore} -> ${stockAfter}`,
+    );
+
+    // --- re-run safety: already-invoiced ids fail, they do not double-deduct
+    const again = await office.req<BatchRes>("POST", "/api/orders/batch", {
+      action: "invoice",
+      ids: [b1, b1],
+    });
+    check(
+      again.status === 200 && again.data.ok.length === 0 && again.data.failed.length === 2,
+      `re-invoicing the same id fails per entry, no double write (ok ${again.data.ok?.length}, failed ${again.data.failed?.length})`,
+    );
+    check(
+      again.data.failed.every((f) => f.code === "already_invoiced"),
+      "already-invoiced ids labelled already_invoiced",
+    );
+    check(
+      (await getProduct(office, cId)).stockQty === stockAfter,
+      "failed invoice batch left stock unchanged",
+    );
+    // b3 stays confirmed and is still individually invoiceable (no state leak).
+    check((await readOrder(b3)).status === "confirmed", "unrelated order unaffected by batch failures");
+
+    // --- AC-4: booker may not batch at all, and nothing moves
+    const sana = makeClient();
+    const sanaLogin = await sana.req<{ user: { id: string } }>(
+      "POST",
+      "/api/auth/login",
+      { email: "sana@raseed.local", password: "booker123" },
+    );
+    const sanaOrderRes = await office.req<{ order: { id: string } }>("POST", "/api/orders", {
+      customerId,
+      bookerId: sanaLogin.data.user.id,
+      submit: true,
+      items: [{ productId: cId, qty: 1, unitPrice: 20 }],
+    });
+    const sanaOrder = sanaOrderRes.data.order.id;
+    const forbidden = await booker.req<BatchRes>("POST", "/api/orders/batch", {
+      action: "confirm",
+      ids: [b3, sanaOrder],
+    });
+    check(forbidden.status === 403, `booker batch rejected 403 (got ${forbidden.status})`);
+    const sanaBatch = await sana.req("POST", "/api/orders/batch", {
+      action: "confirm",
+      ids: [b3],
+    });
+    check(
+      sanaBatch.status === 403,
+      `a second booker cannot batch another booker's order either (got ${sanaBatch.status})`,
+    );
+    check(
+      (await readOrder(b3)).status === "confirmed" &&
+        (await readOrder(sanaOrder)).status === "submitted",
+      "role-gated batch wrote nothing, including the cross-booker id",
+    );
+
+    // --- AC-5: input bounds enforced before any write
+    const empty = await office.req<BatchRes>("POST", "/api/orders/batch", {
+      action: "confirm",
+      ids: [],
+    });
+    check(empty.status === 400, `empty ids rejected 400 (got ${empty.status})`);
+    const oversized = await office.req<BatchRes>("POST", "/api/orders/batch", {
+      action: "confirm",
+      ids: Array.from({ length: 201 }, (_, i) => `id-${i}`),
+    });
+    check(oversized.status === 400, `201 ids rejected 400 (got ${oversized.status})`);
+    const badAction = await office.req<BatchRes>("POST", "/api/orders/batch", {
+      action: "cancel",
+      ids: [b3],
+    });
+    check(badAction.status === 400, `unknown action rejected 400 (got ${badAction.status})`);
+    check(
+      (await readOrder(b3)).status === "confirmed",
+      "rejected requests performed no mutation",
+    );
+
+    // --- the batch surface stays consistent with the single-order route
+    const single = await office.req<{ order: { status: string } }>(
+      "POST",
+      `/api/orders/${b3}/invoice`,
+    );
+    check(
+      single.status === 201 && (await readOrder(b3)).status === "invoiced",
+      "order handled by batch is identical to the single-order path",
+    );
+  }
+  // ---------------------------------------------------------------
   console.log(`\n================ SUMMARY ================`);
   console.log(`  PASSED: ${pass}`);
   console.log(`  FAILED: ${fail}`);
