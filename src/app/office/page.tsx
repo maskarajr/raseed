@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/client";
+import { batchSummary, fetchIdsByStatus, runBatch } from "@/lib/batchOps";
 import { Money } from "@/components/Money";
 import { CountUp } from "@/components/CountUp";
 import { OfficeChrome } from "@/components/OfficeChrome";
@@ -86,6 +87,7 @@ export default function OfficeDashboard() {
   const [series, setSeries] = useState<SeriesPoint[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [today, setToday] = useState("");
+  const [batchBusy, setBatchBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -272,6 +274,27 @@ export default function OfficeDashboard() {
     toast("Dashboard exported · 7-day series");
   }
 
+  // Confirm All on the Awaiting card: same endpoint the Orders page uses, over
+  // the full submitted population (re-fetched server-side, not the 5 shown).
+  async function confirmAll() {
+    if (batchBusy) return;
+    setBatchBusy(true);
+    try {
+      const ids = await fetchIdsByStatus("submitted");
+      if (ids.length === 0) {
+        toast("Nothing awaiting confirmation.");
+        return;
+      }
+      const res = await runBatch("confirm", ids);
+      toast(batchSummary("confirm", res.ok.length, res.failed.length));
+      await load();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Confirm All failed");
+    } finally {
+      setBatchBusy(false);
+    }
+  }
+
   return (
     <OfficeChrome
       title="Dashboard"
@@ -430,6 +453,19 @@ export default function OfficeDashboard() {
                 ))}
               </div>
             )}
+            <div className="card2-foot">
+              <button
+                type="button"
+                className={`btn-sec${batchBusy ? " is-busy" : ""}`}
+                disabled={batchBusy || kpis.awaitingConfirm === 0}
+                aria-disabled={batchBusy || kpis.awaitingConfirm === 0 || undefined}
+                aria-busy={batchBusy || undefined}
+                onClick={confirmAll}
+              >
+                {batchBusy && <span className="btn-spin" />}
+                {batchBusy ? "Confirming…" : "Confirm All"}
+              </button>
+            </div>
           </div>
         </aside>
       </div>
