@@ -4,6 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/client";
+import {
+  type BatchAction,
+  batchSummary,
+  fetchIdsByStatus,
+  runBatch,
+} from "@/lib/batchOps";
 import { Money } from "@/components/Money";
 import { StatusPill } from "@/components/badges";
 import { OfficeChrome } from "@/components/OfficeChrome";
@@ -11,6 +17,7 @@ import { startOfTodayKarachi, endOfTodayKarachi } from "@/lib/day";
 import { statusUi } from "@/lib/status";
 import { SideSheet } from "@/components/SideSheet";
 import { SkelRows } from "@/components/skeletons";
+import { useToast } from "@/components/Toast";
 
 type OrderRow = {
   id: string;
@@ -48,6 +55,7 @@ const TERM_STATUSES: Record<string, string[]> = {
 
 export default function OrdersPage() {
   const router = useRouter();
+  const toast = useToast();
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [term, setTerm] = useState("");
   const [search, setSearch] = useState("");
@@ -55,6 +63,7 @@ export default function OrdersPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
+  const [batchBusy, setBatchBusy] = useState(false);
 
   async function load() {
     try {
@@ -92,6 +101,81 @@ export default function OrdersPage() {
     return t >= startOfTodayKarachi().getTime() && t < endOfTodayKarachi().getTime();
   }).length;
 
+  // Batch acts on the whole status band (the "filter population"), not the
+  // visible/searched slice — so re-fetch that status server-side first.
+  async function handleBatch(action: BatchAction) {
+    if (batchBusy) return;
+    setBatchBusy(true);
+    setError(null);
+    try {
+      const status = action === "confirm" ? "submitted" : "confirmed";
+      const ids = await fetchIdsByStatus(status);
+      if (ids.length === 0) {
+        toast(
+          action === "confirm"
+            ? "Nothing awaiting confirmation."
+            : "Nothing confirmed to invoice.",
+        );
+        return;
+      }
+      const res = await runBatch(action, ids);
+      toast(batchSummary(action, res.ok.length, res.failed.length));
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Batch action failed");
+    } finally {
+      setBatchBusy(false);
+    }
+  }
+
+  const TIP_PLACEHOLDER = "Select the Filter to Confirm All at once";
+
+  let batchControl: JSX.Element;
+  if (term === "awaiting") {
+    batchControl = (
+      <button
+        type="button"
+        className={`btn-primary${batchBusy ? " is-busy" : ""}`}
+        disabled={batchBusy}
+        aria-disabled={batchBusy || undefined}
+        aria-busy={batchBusy || undefined}
+        onClick={() => handleBatch("confirm")}
+      >
+        {batchBusy && <span className="btn-spin" />}
+        {batchBusy ? "Confirming…" : "Confirm All"}
+      </button>
+    );
+  } else if (term === "confirmed") {
+    batchControl = (
+      <button
+        type="button"
+        className={`btn-primary${batchBusy ? " is-busy" : ""}`}
+        disabled={batchBusy}
+        aria-disabled={batchBusy || undefined}
+        aria-busy={batchBusy || undefined}
+        onClick={() => handleBatch("invoice")}
+      >
+        {batchBusy && <span className="btn-spin" />}
+        {batchBusy ? "Invoicing…" : "Invoice All"}
+      </button>
+    );
+  } else {
+    // Wrong filter / All: no action — placeholder at the same spot explaining
+    // which filter unlocks it. Focusable + aria-disabled so it reaches keyboard
+    // and touch users (tap raises the same hint as a toast).
+    batchControl = (
+      <button
+        type="button"
+        className="btn-sec tip"
+        data-tip={TIP_PLACEHOLDER}
+        aria-disabled="true"
+        onClick={() => toast(TIP_PLACEHOLDER)}
+      >
+        Confirm All
+      </button>
+    );
+  }
+
   return (
     <OfficeChrome
       title="Orders"
@@ -120,12 +204,15 @@ export default function OrdersPage() {
             </button>
           ))}
         </div>
-        <input
-          className="search"
-          placeholder="Order, customer, booker"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="rowr">
+          {batchControl}
+          <input
+            className="search"
+            placeholder="Order, customer, booker"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </div>
       {error && <p className="muted">{error}</p>}
       <div className="card2 grow">
